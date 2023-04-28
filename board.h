@@ -4,17 +4,17 @@
 #include "bitboard.h"
 #include "attacks.h"
 #include "pinmask.h"
+#include "move_t.h"
 #include <sstream>
 #include <tuple>
 #include <vector>
-#include "move.h"
 
 struct board_info {
     int castling_rights;
     Square enpassant;
     int fifty_move_clock;
     int full_move_counter;
-    move m_move;
+    move_t m_move;
     uint64_t hv_occ_white;
     uint64_t hv_occ_black;
     uint64_t ad_occ_white;
@@ -22,7 +22,7 @@ struct board_info {
 };
 
 class board {
-    Color side; // side to move
+    Color side; // side to move_t
 
     Square enpassant;
 
@@ -48,19 +48,13 @@ class board {
 public:
     board(const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     : bitboards{}, side_occupancy{}, occupancy{}, enpassant(N_SQUARES) {
-        enpassant = N_SQUARES;
         castling_rights = 0;
         fifty_move_clock = 0;
         full_move_counter = 0;
         side = WHITE;
         fen_to_board(fen);
         //gs = game_state(side, enpassant, castling_rights & 1, castling_rights & 2, castling_rights & 4, castling_rights & 8);
-        hv_occupancy[WHITE] = bitboards[WHITE][ROOK] | bitboards[WHITE][QUEEN];
-        hv_occupancy[BLACK] = bitboards[BLACK][ROOK] | bitboards[BLACK][QUEEN];
-
-        ad_occupancy[WHITE] = bitboards[WHITE][BISHOP] | bitboards[WHITE][QUEEN];
-        ad_occupancy[BLACK] = bitboards[BLACK][BISHOP] | bitboards[BLACK][QUEEN];
-        history.emplace_back(castling_rights, enpassant, fifty_move_clock, full_move_counter, move(),hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
+        history.emplace_back(castling_rights, enpassant, fifty_move_clock, full_move_counter, move_t(), hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
     }
 
     void print_square(int square)
@@ -92,7 +86,7 @@ public:
 
                 // print number of file on the left side of board
                 if(file == 0) {
-                    std::cout << rank + 1 << " "; //
+                    std::cout << rank + 1 << " ";
                 }
 
                 print_square(square);
@@ -106,7 +100,7 @@ public:
             std::cout << char('a' + file) << " ";
         }
 
-        std::cout << ((side == WHITE) ? "\n\nWHITE" : "\n\nBLACK") << " to move ";
+        std::cout << ((side == WHITE) ? "\n\nWHITE" : "\n\nBLACK") << " to move_t ";
 
         if(enpassant != N_SQUARES) {
             std::cout << "\n\nEnpassant square: " << squareToString[enpassant];
@@ -130,9 +124,11 @@ public:
     /// \param fen
     void fen_to_board(const std::string& fen) {
         // Reset all bitboards
-        for(auto &color_bitboard : bitboards)
-            for(auto & bitboard : color_bitboard)
+        for(auto &color_bitboard : bitboards) {
+            for (auto &bitboard: color_bitboard) {
                 bitboard = 0ull;
+            }
+        }
         side_occupancy[WHITE] = side_occupancy[BLACK] = occupancy = 0ull;
 
         // FEN fields
@@ -162,7 +158,7 @@ public:
             file = 0;
         }
 
-        // Parse the side to move
+        // Parse the side to move_t
         side = (side_str == "w") ? WHITE : BLACK;
 
         // Parse the castling rights
@@ -179,12 +175,17 @@ public:
             side_occupancy[BLACK] |= bitboards[BLACK][piece];
         }
         occupancy = (side_occupancy[WHITE] | side_occupancy[BLACK]);
+        hv_occupancy[WHITE] = bitboards[WHITE][ROOK] | bitboards[WHITE][QUEEN];
+        hv_occupancy[BLACK] = bitboards[BLACK][ROOK] | bitboards[BLACK][QUEEN];
+
+        ad_occupancy[WHITE] = bitboards[WHITE][BISHOP] | bitboards[WHITE][QUEEN];
+        ad_occupancy[BLACK] = bitboards[BLACK][BISHOP] | bitboards[BLACK][QUEEN];
     }
 
     // NOT USED
     bool is_square_attacked(Color color, Square square) const {
-        return (KGSSB::Rook(square, occupancy) & (hv_occupancy[color]))
-        || (KGSSB::Bishop(square, occupancy) & (ad_occupancy[color]))
+        return (KGSSB::rook(square, occupancy) & (hv_occupancy[color]))
+        || (KGSSB::bishop(square, occupancy) & (ad_occupancy[color]))
         || (KING_ATTACKS[square] & bitboards[color][KING])
         || (KNIGHT_ATTACKS[square] & bitboards[color][KNIGHT])
         || (PAWN_ATTACKS_TABLE[color ^ 1][square] & bitboards[color][PAWN]);
@@ -192,8 +193,8 @@ public:
 
     template<Color enemy_color>
     uint64_t attackers(int square) const {
-        return (KGSSB::Rook(square, occupancy) & (hv_occupancy[enemy_color]))
-               | (KGSSB::Bishop(square, occupancy) & (ad_occupancy[enemy_color]))
+        return (attacks<ROOK>(square, occupancy) & (hv_occupancy[enemy_color]))
+               | (attacks<BISHOP>(square, occupancy) & (ad_occupancy[enemy_color]))
                | (KING_ATTACKS[square] & bitboards[enemy_color][KING])
                | (KNIGHT_ATTACKS[square] & bitboards[enemy_color][KNIGHT])
                | (PAWN_ATTACKS_TABLE[side][square] & bitboards[enemy_color][PAWN]
@@ -215,12 +216,12 @@ public:
         }
         uint64_t ad_pieces = ad_occupancy[their_color];
         while(ad_pieces) {
-            attacked_squares |= KGSSB::Bishop(pop_lsb(ad_pieces), occupancy);
+            attacked_squares |= KGSSB::bishop(pop_lsb(ad_pieces), occupancy);
         }
 
         uint64_t hv_pieces = hv_occupancy[their_color];
         while(hv_pieces) {
-            attacked_squares |= KGSSB::Rook(pop_lsb(hv_pieces), occupancy);
+            attacked_squares |= KGSSB::rook(pop_lsb(hv_pieces), occupancy);
         }
 
         attacked_squares |= KING_ATTACKS[lsb(bitboards[their_color][KING])];
@@ -248,7 +249,7 @@ public:
                 return checkers;
             }
         } else {
-            return 0;
+            return 0ull;
         }
     }
 
@@ -268,7 +269,7 @@ public:
 
     Color get_side() { return side; }
 
-    [[nodiscard]] uint64_t get_pawn_bitboard() const {
+    uint64_t get_pawn_bitboard() const {
         return bitboards[side][PAWN];
     }
 
@@ -276,6 +277,7 @@ public:
         return bitboards[side][KNIGHT];
     }
 
+    template <Color our_color>
     std::tuple<uint64_t, uint64_t, uint64_t> get_slider_bitboards() {
         return {bitboards[side][ROOK], bitboards[side][BISHOP], bitboards[side][QUEEN]};
     }
@@ -284,16 +286,23 @@ public:
         return lsb(bitboards[side][KING]);
     }
 
-    template <Color our_color, Color enemy_color>
-    std::tuple<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t> get_bitboards() {
-        return {
-                side_occupancy[our_color], side_occupancy[enemy_color], occupancy, ~occupancy, attackers<enemy_color>(get_king_square())
-        };
+    uint64_t get_occupancy() const {
+        return occupancy;
+    }
+
+    template <Color enemy_color>
+    uint64_t get_enemy_bitboard() const {
+        return side_occupancy[enemy_color];
+    }
+
+    template <Color enemy_color>
+    uint64_t get_checkers() {
+        return attackers<enemy_color>(get_king_square());
     }
 
     template<Color our_color, Color their_color>
-    std::tuple<uint64_t, uint64_t,uint64_t, uint64_t, uint64_t, uint64_t> get_pinners(int king_square) {
-        uint64_t seen_squares = KGSSB::Queen(king_square, occupancy);
+    std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_pinners(int king_square) {
+        uint64_t seen_squares = KGSSB::queen(king_square, occupancy);
         uint64_t our_side_occupancy = side_occupancy[our_color];
         uint64_t possible_pins = seen_squares & our_side_occupancy;
         uint64_t occupied = occupancy ^ possible_pins;
@@ -308,7 +317,7 @@ public:
 
         uint64_t pinner[4] = {horizontal_pinners, vertical_pinners, antidiagonal_pinners, diagonal_pinners};
 
-        uint64_t pin[4] = {}, move[4] = {};
+        uint64_t pin[4] = {};
 
         for(int i = 0; i < 4; i++) {
             while (pinner[i]) {
@@ -317,18 +326,7 @@ public:
             }
         }
 
-        uint64_t pinHV = pin[0] | pin[1];
-        uint64_t pinAD = pin[2] | pin[3];
-
-        for(auto & p : pin)
-            p &= our_side_occupancy;
-
-        move[0] = ~(pin[1] | pin[2] | pin[3]); // horizontal
-        move[1] = ~(pin[0] | pin[2] | pin[3]); // vertical
-        move[2] = ~(pin[0] | pin[1] | pin[3]); // antidiagonal
-        move[3] = ~(pin[0] | pin[1] | pin[2]); // diagonal
-
-        return {pinHV, pinAD, move[0], move[1], move[2], move[3]};
+        return {pin[0], pin[1], pin[2], pin[3]};
     }
 
     int get_castle_rights() const {return castling_rights;}
@@ -394,7 +392,7 @@ public:
     }
 
     template<Color our_color>
-    void make_move(move m) {
+    void make_move(move_t m) {
         fifty_move_clock++;
         if constexpr (our_color == BLACK) {
             full_move_counter++;
@@ -538,14 +536,14 @@ public:
         history.emplace_back(castling_rights, enpassant, fifty_move_clock, full_move_counter, m, hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
     }
 
-    void make_move(move m) {
+    void make_move(move_t m) {
         side == WHITE ? make_move<WHITE>(m) : make_move<BLACK>(m);
     }
 
     template <Color our_color>
     void undo_move() {
         board_info b_info = history.back();
-        const move played_move = b_info.m_move;
+        const move_t played_move = b_info.m_move;
 
         side = our_color;
 
