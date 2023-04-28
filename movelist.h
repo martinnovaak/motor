@@ -1,31 +1,41 @@
-#ifndef MOTOR_MOVELIST_H
-#define MOTOR_MOVELIST_H
+#ifndef MOVEGEN_MOVELIST_H
+#define MOVEGEN_MOVELIST_H
 
-#include "move.h"
+#include "move_t.h"
+#include <utility>
 
 class movelist {
 private:
-    move list[256];
-    uint32_t count;
+    std::array<move_t, 256> list;
+    size_t count;
 public:
-    class iterator {
-    private:
-        move* ptr;
-    public:
-        iterator(move* p) : ptr(p) {}
-        iterator& operator++() {++ptr; return *this;}
-        iterator operator++(int) {iterator tmp(*this); operator++(); return tmp;}
-        bool operator==(const iterator& other) const {return ptr == other.ptr;}
-        bool operator!=(const iterator& other) const {return !(*this == other);}
-        move& operator*() {return *ptr;}
-    };
+    using const_iterator = typename std::array<move_t, 256>::const_iterator;
+
     constexpr movelist() : count(0) {}
-    uint32_t size() const {return count;}
-    void add(move m) {list[count++] = m;}
-    void clear() {count = 0;}
-    move& operator[](uint32_t index) {return list[index];}
-    iterator begin() {return iterator(list);}
-    iterator end() {return iterator(list + count);}
+
+    size_t size() const {
+        return count;
+    }
+
+    void add(move_t && m) {
+        list[count] = m;
+        count++;
+    }
+
+    void clear() {
+        count = 0;
+    }
+    move_t& operator[](uint32_t index) {
+        return list[index];
+    }
+
+    const_iterator begin() const {
+        return list.begin();
+    }
+    
+    const_iterator end() const {
+        return std::next(list.begin(), count);
+    }
 };
 
-#endif //MOTOR_MOVELIST_H
+#endif //MOVEGEN_MOVELIST_H
