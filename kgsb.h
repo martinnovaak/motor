@@ -1,7 +1,7 @@
 #ifndef MOTOR_KGSB_H
 #define MOTOR_KGSB_H
 
-#include "bitboard.h"
+#include <cstdint>
 
 namespace KGSSB
 {
@@ -283,35 +283,35 @@ namespace KGSSB
     static constexpr uint64_t file_a2_a7 = 0x0001010101010100ull;
     static constexpr uint64_t diag_c2h7  = 0x0080402010080400ull;
 
-    static constexpr uint64_t bishop_diagonal(int sq, uint64_t occ) {
+    static uint64_t bishop_diagonal(int sq, uint64_t occ) {
         return  dSubset[sq][(((occ & dMask[sq]) * file_b2_b7) >> 58)];
     }
 
-    static constexpr uint64_t bishop_antidiagonal(int sq, uint64_t occ) {
+    static uint64_t bishop_antidiagonal(int sq, uint64_t occ) {
         return  aSubset[sq][(((occ & aMask[sq]) * file_b2_b7) >> 58)];
     }
 
-    static constexpr uint64_t rook_horizontal(int sq, uint64_t occ) {
+    static uint64_t rook_horizontal(int sq, uint64_t occ) {
         return hSubset[sq][(occ >> horizontal_shift_table[sq]) & 63];
     }
 
-    static constexpr uint64_t rook_vertical(int sq, uint64_t occ) {
+    static uint64_t rook_vertical(int sq, uint64_t occ) {
         return vSubset[sq][((((occ >> (sq & 7)) & file_a2_a7) * diag_c2h7) >> 58)];
     }
 
-    static constexpr uint64_t bishop(int sq, uint64_t occ)
+    static uint64_t bishop(int sq, uint64_t occ)
     {
         return  dSubset[sq][(((occ & dMask[sq]) * file_b2_b7) >> 58)] +
                 aSubset[sq][(((occ & aMask[sq]) * file_b2_b7) >> 58)];
     }
 
-    static constexpr uint64_t rook(int sq, uint64_t occ)
+    static uint64_t rook(int sq, uint64_t occ)
     {
         return hSubset[sq][(occ >> horizontal_shift_table[sq]) & 63] +
                vSubset[sq][((((occ >> (sq & 7)) & file_a2_a7) * diag_c2h7) >> 58)];
     }
 
-    static constexpr uint64_t queen(int sq, uint64_t occ)
+    static uint64_t queen(int sq, uint64_t occ)
     {
         return rook(sq, occ) | bishop(sq, occ);
     }

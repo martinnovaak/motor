@@ -34,7 +34,7 @@ enum PieceType : int {
 };
 
 static char Pieces[] {
-    'P','N','B','R','Q', 'K'
+    'P','N','B','R','Q','K'
 };
 
 enum Rank {
@@ -73,14 +73,14 @@ constexpr static uint64_t files[] {
 };
 
 constexpr static uint64_t ranks[] {
-        0xFFull,
-        0xFF00ull,
-        0xFF0000ull,
-        0xFF000000ull,
-        0xFF00000000ull,
-        0xFF0000000000ull,
-        0xFF000000000000ull,
-        0xFF00000000000000ull
+        0xffull,
+        0xff00ull,
+        0xff0000ull,
+        0xff000000ull,
+        0xff00000000ull,
+        0xff0000000000ull,
+        0xff000000000000ull,
+        0xff00000000000000ull
 };
 
 constexpr static uint64_t not_penultimate_ranks[] {

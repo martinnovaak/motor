@@ -1,7 +1,6 @@
 #ifndef MOTOR_ATTACKS_H
 #define MOTOR_ATTACKS_H
 
-#include <cstdint>
 #include "kgsb.h"
 
 static constexpr uint64_t PAWN_ATTACKS_TABLE[2][64] = {
@@ -124,9 +123,9 @@ static constexpr uint64_t bishop_mask[64] {
 template <PieceType piece>
 constexpr uint64_t attacks(int square, uint64_t occupancy) {
     switch (piece) {
-        case BISHOP: return KGSSB::Bishop(square, occupancy);
-        case ROOK: return KGSSB::Rook(square, occupancy);
-        case QUEEN: return KGSSB::Queen(square, occupancy);
+        case BISHOP: return KGSSB::bishop(square, occupancy);
+        case ROOK: return KGSSB::rook(square, occupancy);
+        case QUEEN: return KGSSB::queen(square, occupancy);
         case KNIGHT: return KNIGHT_ATTACKS[square];
         case KING: return KING_ATTACKS[square];
     }

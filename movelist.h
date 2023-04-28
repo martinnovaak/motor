@@ -13,27 +13,28 @@ public:
 
     constexpr movelist() : count(0) {}
 
-    size_t size() const {
+    constexpr size_t size() const {
         return count;
     }
 
-    void add(move_t && m) {
+    constexpr void add(move_t && m) {
         list[count] = m;
         count++;
     }
 
-    void clear() {
+    constexpr void clear() {
         count = 0;
     }
-    move_t& operator[](uint32_t index) {
+
+    constexpr move_t& operator[](uint32_t index) {
         return list[index];
     }
 
-    const_iterator begin() const {
+    constexpr const_iterator begin() const {
         return list.begin();
     }
-    
-    const_iterator end() const {
+
+    constexpr const_iterator end() const {
         return std::next(list.begin(), count);
     }
 };
