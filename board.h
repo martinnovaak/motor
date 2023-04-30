@@ -57,15 +57,12 @@ public:
         history.emplace_back(castling_rights, enpassant, fifty_move_clock, full_move_counter, move_t(), hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
     }
 
-    void print_square(int square)
+    void print_square(int square) const
     {
-        int color = WHITE;
-        int piece = PAWN;
         bool empty = true;
 
-        // loop over all bitboards
-        for(; color < N_COLORS && empty; color++){
-            piece = PAWN;
+        for(int color = WHITE; color < N_COLORS && empty; color++){
+            int piece = PAWN;
             for(;piece < N_PIECE_TYPES && empty; piece++) {
                 if(get_bit(bitboards[color][piece], square)) {
                     std::cout << piece_to_char[Color(color)][PieceType(piece)] << " ";
@@ -77,7 +74,7 @@ public:
         std::cout << ". ";
     }
 
-    void print_board()
+    void print_board() const
     {
         for (int rank = 7; rank >= 0; rank--)
         {
@@ -174,21 +171,14 @@ public:
             side_occupancy[WHITE] |= bitboards[WHITE][piece];
             side_occupancy[BLACK] |= bitboards[BLACK][piece];
         }
+
         occupancy = (side_occupancy[WHITE] | side_occupancy[BLACK]);
+
         hv_occupancy[WHITE] = bitboards[WHITE][ROOK] | bitboards[WHITE][QUEEN];
         hv_occupancy[BLACK] = bitboards[BLACK][ROOK] | bitboards[BLACK][QUEEN];
 
         ad_occupancy[WHITE] = bitboards[WHITE][BISHOP] | bitboards[WHITE][QUEEN];
         ad_occupancy[BLACK] = bitboards[BLACK][BISHOP] | bitboards[BLACK][QUEEN];
-    }
-
-    // NOT USED
-    bool is_square_attacked(Color color, Square square) const {
-        return (KGSSB::rook(square, occupancy) & (hv_occupancy[color]))
-        || (KGSSB::bishop(square, occupancy) & (ad_occupancy[color]))
-        || (KING_ATTACKS[square] & bitboards[color][KING])
-        || (KNIGHT_ATTACKS[square] & bitboards[color][KNIGHT])
-        || (PAWN_ATTACKS_TABLE[color ^ 1][square] & bitboards[color][PAWN]);
     }
 
     template<Color enemy_color>
@@ -214,6 +204,7 @@ public:
         while(knights) {
             attacked_squares |= KNIGHT_ATTACKS[pop_lsb(knights)];
         }
+
         uint64_t ad_pieces = ad_occupancy[their_color];
         while(ad_pieces) {
             attacked_squares |= KGSSB::bishop(pop_lsb(ad_pieces), occupancy);
@@ -237,29 +228,13 @@ public:
     }
 
     uint64_t get_checkmask(uint64_t checkers, int square) {
-        unsigned int checks = popcount(checkers);
-        if(checks == 0) {
+        unsigned int number_of_checks = popcount(checkers);
+        if(number_of_checks == 0) {
             return full_board;
-        } else if(checks == 1){
-            int checker = lsb(checkers);
-            PieceType type = pieces[checker];
-            if(type == ROOK || type == BISHOP || type == QUEEN) {
-                return pinmask[ (square << 6) |  checker];
-            } else {
-                return checkers;
-            }
+        } else if(number_of_checks == 1) {
+            return pinmask[(square << 6) | lsb(checkers)];
         } else {
             return 0ull;
-        }
-    }
-
-    void print_attacked_squares() const {
-        uint64_t bitboard = side_occupancy[side];
-        while(bitboard) {
-            int square = pop_lsb(bitboard);
-            if (is_square_attacked(static_cast<Color>(side ^ 1), static_cast<Square>(square))) {
-                std::cout << squareToString[square] << std::endl;
-            }
         }
     }
 
@@ -279,7 +254,7 @@ public:
 
     template <Color our_color>
     std::tuple<uint64_t, uint64_t, uint64_t> get_slider_bitboards() {
-        return {bitboards[side][ROOK], bitboards[side][BISHOP], bitboards[side][QUEEN]};
+        return {bitboards[our_color][ROOK], bitboards[our_color][BISHOP], bitboards[our_color][QUEEN]};
     }
 
     int get_king_square() {
@@ -296,12 +271,12 @@ public:
     }
 
     template <Color enemy_color>
-    uint64_t get_checkers() {
+    uint64_t get_checkers() const {
         return attackers<enemy_color>(get_king_square());
     }
 
     template<Color our_color, Color their_color>
-    std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_pinners(int king_square) {
+    std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_pinners(int king_square) const {
         uint64_t seen_squares = KGSSB::queen(king_square, occupancy);
         uint64_t our_side_occupancy = side_occupancy[our_color];
         uint64_t possible_pins = seen_squares & our_side_occupancy;
@@ -315,25 +290,39 @@ public:
         uint64_t antidiagonal_pinners = KGSSB::bishop_antidiagonal(king_square, occupied) & seen_enemy_ad_pieces;
         uint64_t diagonal_pinners = KGSSB::bishop_diagonal(king_square, occupied) & seen_enemy_ad_pieces;
 
-        uint64_t pinner[4] = {horizontal_pinners, vertical_pinners, antidiagonal_pinners, diagonal_pinners};
+        uint64_t horizontal_pinmask{}, vertical_pinmask{}, antidiagonal_pinmask{}, diagonal_pinmask{};
 
-        uint64_t pin[4] = {};
+        int king_square_shifted = king_square << 6;
 
-        for(int i = 0; i < 4; i++) {
-            while (pinner[i]) {
-                int pinner_square = pop_lsb(pinner[i]);
-                pin[i] |= pinmask[(king_square << 6) | pinner_square];
-            }
+        while (horizontal_pinners) {
+            horizontal_pinmask |= pinmask[king_square_shifted | pop_lsb(horizontal_pinners)];
         }
 
-        return {pin[0], pin[1], pin[2], pin[3]};
+        while (vertical_pinners) {
+            vertical_pinmask |= pinmask[king_square_shifted | pop_lsb(vertical_pinners)];
+        }
+
+        while (antidiagonal_pinners) {
+            antidiagonal_pinmask |= pinmask[king_square_shifted | pop_lsb(antidiagonal_pinners)];
+        }
+
+        while (diagonal_pinners) {
+            diagonal_pinmask |= pinmask[king_square_shifted | pop_lsb(diagonal_pinners)];
+        }   
+
+        return {horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask};
     }
 
-    int get_castle_rights() const {return castling_rights;}
-    int enpassant_square() const {return enpassant;}
+    int get_castle_rights() const {
+        return castling_rights;
+    }
+
+    int enpassant_square() const {
+        return enpassant;
+    }
 
     template<Color their_color>
-    bool check_legality_of_enpassant (int square_from, int enpassant_pawn) {
+    bool check_legality_of_enpassant (int square_from, int enpassant_pawn) const {
         // CHECKING if king will get horizontal check after removing both pawns after enpassant
         int king_square = get_king_square();
         return !(KGSSB::rook_horizontal(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (hv_occupancy[their_color]));
