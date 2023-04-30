@@ -2,6 +2,7 @@
 #include "movegen.h"
 #include "movelist.h"
 #include <chrono>
+#include <iomanip>
 
 uint64_t perft(board & b, int depth) {
     movelist ml;
@@ -38,7 +39,7 @@ uint64_t perft_debug(board b, int depth) {
 
 int main() 
 {
-    std::string input, command, fen;
+    std::string fen;
     int depth = 5;
 
     std::cout << "FEN: ";
@@ -47,25 +48,30 @@ int main()
     std::cout << "Depth: ";
     std::cin >> depth;
 
-    // print the parsed command, depth, and FEN string
-    std::cout << "Command: " << command << std::endl;
-    std::cout << "Depth:   " << depth << std::endl;
-    std::cout << "FEN:     " << fen << std::endl;
+    std::cout << std::endl;
 
     board b(fen);
     auto start = std::chrono::steady_clock::now();
-    std::cout << perft_debug(b, depth) << "\n";
+    uint64_t nodes = perft_debug(b, depth);
+    std::cout << "\nNodes: " << nodes << "\n\n";
     auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+    std::chrono::duration<double, std::milli> elapsed_milliseconds = end - start;
+    std::cout << "Time: " << elapsed_milliseconds << "\n";
+    std::cout << std::fixed << std::setprecision(0) << "NPS: "  << round(nodes / elapsed_milliseconds.count()) * 1000 << "\n";
 
+#if defined(_WIN32) || defined(_WIN64)
+    system("pause");
+#else
+    cout << "Press any key to exit...";
+    cin.get();
+#endif
     /*
     board b ("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
     auto start = std::chrono::steady_clock::now();
     std::cout << perft_debug(b, 5) << "\n";
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
-    std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+    std::cout << "Time: " << elapsed_seconds.count() << "s\n";
     */
     
     return 0;
