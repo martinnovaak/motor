@@ -257,7 +257,7 @@ public:
         return {bitboards[our_color][ROOK], bitboards[our_color][BISHOP], bitboards[our_color][QUEEN]};
     }
 
-    int get_king_square() {
+    int get_king_square() const {
         return lsb(bitboards[side][KING]);
     }
 
