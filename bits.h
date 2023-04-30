@@ -1,23 +1,7 @@
 #ifndef MOTOR_BITS_H
 #define MOTOR_BITS_H
 
-#include <iostream>
 #include <cstdint>
-#include <bitset>
-#include <string>
-
-static void print_bitboard(uint64_t bitboard)
-{
-    std::bitset<64> b(bitboard);
-    std::string str_bitset = b.to_string();
-    for (int i = 56; i >= 0; i-=8)
-    {
-        for(int j = 0; j < 8 ; j++)
-            std::cout << b[i + j] << " ";
-        std::cout << "\n";
-    }
-    std::cout << "\n\n";
-}
 
 static bool get_bit(uint64_t bitboard, int square) {
     uint64_t mask = 1ull << square; // create a mask with a 1 at the i-th bit

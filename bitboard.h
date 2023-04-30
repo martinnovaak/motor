@@ -4,6 +4,7 @@
 #include "bits.h"
 #include <unordered_map>
 #include <tuple>
+#include <string>
 
 enum Square : int {
     A1, B1, C1, D1, E1, F1, G1, H1,

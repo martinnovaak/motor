@@ -24,42 +24,43 @@ enum MoveType : int {
 
 class move_t {
 public:
-    constexpr move_t() {
+    move_t() {
         m_move = {};
     }
-    constexpr move_t(int from, int to, Color color, int moving_piece, int type_information, int captured_piece) {
+    
+    move_t(int from, int to, Color color, int moving_piece, int type_information, int captured_piece) {
         m_move = from | to << 6 | color << 12 | moving_piece << 13 | type_information << 16 | captured_piece << 20;
     }
 
-    constexpr move_t(int from, int to, Color color, int moving_piece, int type_information) {
+    move_t(int from, int to, Color color, int moving_piece, int type_information) {
         m_move = from | to << 6 | color << 12 | moving_piece << 13 | type_information << 16;
     }
 
-    constexpr move_t(int from, int to, Color color, int moving_piece) {
+    move_t(int from, int to, Color color, int moving_piece) {
         m_move = from | to << 6 | color << 12 | moving_piece << 13;
     }
 
-    constexpr Square get_from() const {
+    Square get_from() const {
         return Square(m_move & 63);
     }
 
-    constexpr Square get_to() const {
+    Square get_to() const {
         return Square(m_move >> 6 & 63);
     }
 
-    constexpr Color get_color() const {
+    Color get_color() const {
         return Color(m_move >> 12 & 1);
     }
 
-    constexpr PieceType get_piece() const {
+    PieceType get_piece() const {
         return PieceType(m_move >> 13 & 7);
     }
 
-    constexpr MoveType get_move_type() const {
+    MoveType get_move_type() const {
         return MoveType(m_move >> 16 & 15);
     }
 
-    constexpr PieceType get_captured_piece() const {
+    PieceType get_captured_piece() const {
         return PieceType(m_move >> 20 & 7);
     }
 
