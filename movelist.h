@@ -2,7 +2,7 @@
 #define MOVEGEN_MOVELIST_H
 
 #include "move_t.h"
-#include <utility>
+#include <array>
 
 class movelist {
 private:
@@ -11,30 +11,30 @@ private:
 public:
     using const_iterator = typename std::array<move_t, 256>::const_iterator;
 
-    constexpr movelist() : count(0) {}
+    movelist() : count(0) {}
 
-    constexpr size_t size() const {
+    size_t size() const {
         return count;
     }
 
-    constexpr void add(move_t && m) {
+    void add(move_t && m) {
         list[count] = m;
         count++;
     }
 
-    constexpr void clear() {
+    void clear() {
         count = 0;
     }
 
-    constexpr move_t& operator[](uint32_t index) {
+    move_t& operator[](uint32_t index) {
         return list[index];
     }
 
-    constexpr const_iterator begin() const {
+    const_iterator begin() const {
         return list.begin();
     }
 
-    constexpr const_iterator end() const {
+    const_iterator end() const {
         return std::next(list.begin(), count);
     }
 };

@@ -11,7 +11,7 @@ void generate_pawn_moves(board & b, movelist & ml, uint64_t checkmask, uint64_t 
     constexpr uint64_t penultimate_rank = (our_color == WHITE ? ranks[RANK_7] : ranks[RANK_2]);
     constexpr uint64_t not_penultimate_rank = (our_color == WHITE) ? not_penultimate_ranks[WHITE] : not_penultimate_ranks[BLACK];
     constexpr uint64_t enpassant_rank = (our_color == WHITE ? ranks[RANK_3] : ranks[RANK_6]);
-    constexpr Direction up = (our_color == WHITE ? NORTH : SOUTH);
+    constexpr Direction up   = (our_color == WHITE ? NORTH   : SOUTH);
     constexpr Direction up_2 = (our_color == WHITE ? NORTH_2 : SOUTH_2);
     constexpr Direction antidiagonal_capture = (our_color == WHITE ? NORTH_WEST : SOUTH_EAST);
     constexpr Direction diagonal_capture = (our_color == WHITE ? NORTH_EAST : SOUTH_WEST);
@@ -24,7 +24,7 @@ void generate_pawn_moves(board & b, movelist & ml, uint64_t checkmask, uint64_t 
     const uint64_t pawns_not_penultimate = pawns & not_penultimate_rank;
 
     const uint64_t blocking_squares = empty & checkmask;
-    const uint64_t threat_squares = enemy & checkmask;
+    const uint64_t threat_squares   = enemy & checkmask;
 
     // PAWN PUSH
 
@@ -106,48 +106,6 @@ void generate_pawn_moves(board & b, movelist & ml, uint64_t checkmask, uint64_t 
         if(enpassant_diagonal && b.check_legality_of_enpassant<their_color>(enpassant_square - diagonal_capture, enpassant_square - up)) {
             ml.add(move_t(enpassant_square - diagonal_capture, enpassant_square, our_color, PAWN, EN_PASSANT, PAWN));
         }
-
-
-        /*
-        auto b1 = pawns_not_penultimate & PAWN_ATTACKS_TABLE[their_color][enpassant_square];
-
-        while (b1) {
-            int square_from = pop_lsb(b1);
-            if (b.check_legality_of_enpassant<their_color>(square_from, enpassant_square - up)) {
-                ml.add(move_t(square_from, enpassant_square, our_color, PAWN, EN_PASSANT, PAWN));
-            }
-        }
-        */
-    }
-}
-
-template <Color our_color, PieceType pt, bool pinHV, bool pinDA>
-void generate_slider_moves(board & b, movelist & ml, uint64_t piece_bitboard, uint64_t checkmask, uint64_t enemy, uint64_t empty, uint64_t occupancy)
-{
-    while(piece_bitboard) {
-        int square = pop_lsb(piece_bitboard);
-        uint64_t attack_bitboard = attacks<pt>(square, occupancy) & checkmask;
-
-        if constexpr (pinHV) {
-            attack_bitboard &= rook_mask[square];
-        }
-
-        if constexpr (pinDA) {
-            attack_bitboard &= bishop_mask[square];
-        }
-
-        uint64_t captures = attack_bitboard & enemy;
-        uint64_t quiets = attack_bitboard & empty;
-
-        while(captures) {
-            int target_square = pop_lsb(captures);
-            ml.add(move_t(square, target_square, our_color, pt, CAPTURE, b.get_piece(target_square)));
-        }
-
-        while(quiets) {
-            int target_square = pop_lsb(quiets);
-            ml.add(move_t(square, target_square, our_color, pt));
-        }
     }
 }
 
@@ -158,11 +116,13 @@ void generate_knight_moves(board & b, movelist & ml, uint64_t target, uint64_t p
     while(piece_bitboard) {
         int square = pop_lsb(piece_bitboard);
         uint64_t attack_bitboard = attacks<KNIGHT>(square, occupancy) & target;
+        
         uint64_t captures = attack_bitboard & enemy;
         while(captures) {
             int target_square = pop_lsb(captures);
             ml.add(move_t(square, target_square, our_color, KNIGHT, CAPTURE, b.get_piece(target_square)));
         }
+
         uint64_t quiets = attack_bitboard & empty;
         while(quiets) {
             int target_square = pop_lsb(quiets);
@@ -194,11 +154,13 @@ void generate_castle_moves(movelist & ml, int castling_right, uint64_t safe_squa
     constexpr int king_e_square = our_color == WHITE ? E1 : E8;
     constexpr int king_g_square = our_color == WHITE ? G1 : G8;
     constexpr int king_c_square = our_color == WHITE ? C1 : C8;
-    constexpr uint64_t kingside_castle_efg_mask = our_color == WHITE ? 0x70ull : 0x7000000000000000ull;
-    constexpr uint64_t kingside_castle_fg_mask = our_color == WHITE ? 0x60ull : 0x6000000000000000ull;
+
+    constexpr uint64_t kingside_castle_efg_mask  = our_color == WHITE ? 0x70ull : 0x7000000000000000ull;
+    constexpr uint64_t kingside_castle_fg_mask   = our_color == WHITE ? 0x60ull : 0x6000000000000000ull;
     constexpr uint64_t queenside_castle_cde_mask = our_color == WHITE ? 0x1cull : 0x1c00000000000000ull;
-    constexpr uint64_t queenside_castle_bcd_mask = our_color == WHITE ? 0xeull : 0xe00000000000000ull;
-    constexpr int kingside_castle_right = our_color == WHITE ? CASTLE_WHITE_KINGSIDE : CASTLE_BLACK_KINGSIDE;
+    constexpr uint64_t queenside_castle_bcd_mask = our_color == WHITE ? 0xeull  : 0xe00000000000000ull;
+
+    constexpr int kingside_castle_right  = our_color == WHITE ? CASTLE_WHITE_KINGSIDE  : CASTLE_BLACK_KINGSIDE;
     constexpr int queenside_castle_right = our_color == WHITE ? CASTLE_WHITE_QUEENSIDE : CASTLE_BLACK_QUEENSIDE;
 
     if(castling_right & kingside_castle_right
@@ -215,6 +177,29 @@ void generate_castle_moves(movelist & ml, int castling_right, uint64_t safe_squa
         ml.add(move_t(king_e_square, king_c_square, our_color, KING, QUEEN_CASTLE));
     }
 }
+
+template <Color our_color, Ray ray, PieceType pt>
+void generate_slider_moves(board& b, movelist& ml, uint64_t piece_bitboard, uint64_t checkmask, uint64_t enemy, uint64_t empty, uint64_t occupancy)
+{
+    while (piece_bitboard) {
+        int square = pop_lsb(piece_bitboard);
+        uint64_t attack_bitboard = ray_attacks<ray>(square, occupancy) & checkmask;
+
+        uint64_t captures = attack_bitboard & enemy;
+        uint64_t quiets = attack_bitboard & empty;
+
+        while (captures) {
+            int target_square = pop_lsb(captures);
+            ml.add(move_t(square, target_square, our_color, pt, CAPTURE, b.get_piece(target_square)));
+        }
+
+        while (quiets) {
+            int target_square = pop_lsb(quiets);
+            ml.add(move_t(square, target_square, our_color, pt));
+        }
+    }
+}
+
 
 template <Color our_color>
 void generate_all_moves(board & b, movelist & ml) {
@@ -237,32 +222,39 @@ void generate_all_moves(board & b, movelist & ml) {
 
     auto [pin_h, pin_v, pin_a, pin_d] = b.get_pinners<our_color, enemy_color>(king_square);
     auto [rook_bitboard, bishop_bitboard, queen_bitboard] = b.get_slider_bitboards<our_color>();
+
     uint64_t pin_hv = pin_h | pin_v;
     uint64_t pin_ad = pin_a | pin_d;
+    
     rook_bitboard &= ~pin_ad; // rooks pinned diagonally cannot move_t
     bishop_bitboard &= ~pin_hv; // bishops pinned horizontally and vertically cannot move_t
+    
     uint64_t non_pinned_pieces = ~(pin_ad | pin_hv);
 
-    uint64_t hv_checkmask = checkmask & pin_hv;
-    uint64_t ad_checkmask = checkmask & pin_ad;
+    uint64_t h_checkmask = checkmask & pin_h;
+    uint64_t v_checkmask = checkmask & pin_v;
+    uint64_t a_checkmask = checkmask & pin_a;
+    uint64_t d_checkmask = checkmask & pin_d;
 
     // non-pinned rooks
-    generate_slider_moves<our_color, ROOK, false, false>(b, ml, rook_bitboard & ~pin_hv, checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::ROOK, ROOK>(b, ml, rook_bitboard & ~pin_hv, checkmask, enemy_pieces, empty, occupancy);
     // horizontally/vertically pinned rooks
-    generate_slider_moves<our_color, ROOK, true, false>(b, ml, rook_bitboard & pin_hv, hv_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::HORIZONTAL, ROOK>(b, ml, rook_bitboard & pin_h, h_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::VERTICAL, ROOK>(b, ml, rook_bitboard & pin_v, v_checkmask, enemy_pieces, empty, occupancy);
     // non-pinned bishops
-    generate_slider_moves<our_color, BISHOP, false, false>(b, ml, bishop_bitboard & ~pin_ad, checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::BISHOP, BISHOP>(b, ml, bishop_bitboard & ~pin_ad, checkmask, enemy_pieces, empty, occupancy);
     // antidiagonally/diagonally pinned bishops
-    generate_slider_moves<our_color, BISHOP, false, true>(b, ml, bishop_bitboard & pin_ad, ad_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::ANTIDIAGONAL, BISHOP>(b, ml, bishop_bitboard & pin_a, a_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::DIAGONAL, BISHOP>(b, ml, bishop_bitboard & pin_d, d_checkmask, enemy_pieces, empty, occupancy);
     // non-pinned queens
-    generate_slider_moves<our_color, QUEEN, false, false>(b, ml, queen_bitboard & non_pinned_pieces, checkmask, enemy_pieces, empty, occupancy);
-    // horizontally/vertically pinned queens
-    generate_slider_moves<our_color, QUEEN, true, false>(b, ml, pin_hv & queen_bitboard, hv_checkmask, enemy_pieces, empty, occupancy);
-    // antidiagonally/diagonally pinned queens
-    generate_slider_moves<our_color, QUEEN, false, true>(b, ml, pin_ad & queen_bitboard, ad_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::QUEEN, QUEEN>(b, ml, queen_bitboard & non_pinned_pieces, checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::HORIZONTAL, QUEEN>(b, ml, queen_bitboard & pin_h, h_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::VERTICAL, QUEEN>(b, ml, queen_bitboard & pin_v, v_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::ANTIDIAGONAL, QUEEN>(b, ml, queen_bitboard & pin_a, a_checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<our_color, Ray::DIAGONAL, QUEEN>(b, ml, queen_bitboard & pin_d, d_checkmask, enemy_pieces, empty, occupancy);
 
     generate_knight_moves<our_color>(b, ml,checkmask, non_pinned_pieces, enemy_pieces, empty, occupancy);
-    generate_pawn_moves<our_color>(b, ml, checkmask, ~pin_h, ~(pin_a | pin_d), ~(pin_d | pin_v), ~(pin_a | pin_v), enemy_pieces, empty);
+    generate_pawn_moves<our_color>(b, ml, checkmask, ~pin_h, ~pin_ad, ~(pin_d | pin_v), ~(pin_a | pin_v), enemy_pieces, empty);
     generate_castle_moves<our_color>(ml, b.get_castle_rights(),  safe_squares, empty);
 }
 

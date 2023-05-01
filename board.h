@@ -72,7 +72,6 @@ public:
                 if(file == 0) {
                     std::cout << rank + 1 << " ";
                 }
-
                 print_square(square);
             }
             std::cout << "\n";
@@ -252,8 +251,8 @@ public:
     std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_pinners(int king_square) const {
         uint64_t seen_squares = KGSSB::queen(king_square, occupancy);
         uint64_t our_side_occupancy = side_occupancy[our_color];
-        uint64_t possible_pins = seen_squares & our_side_occupancy;
-        uint64_t occupied = occupancy ^ possible_pins;
+        uint64_t possibly_pinned_pieces = seen_squares & our_side_occupancy;
+        uint64_t occupied = occupancy ^ possibly_pinned_pieces;
 
         uint64_t seen_enemy_pieces  = ~(seen_squares & side_occupancy[their_color]);
         uint64_t seen_enemy_hv_pieces = seen_enemy_pieces & hv_occupancy[their_color];
