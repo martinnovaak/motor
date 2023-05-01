@@ -116,12 +116,25 @@ constexpr uint64_t ray_attacks(int square, uint64_t occupancy)
 
 template <PieceType piece>
 constexpr uint64_t attacks(int square, uint64_t occupancy) {
-    switch (piece) {
-        case BISHOP: return KGSSB::bishop(square, occupancy);
-        case ROOK: return KGSSB::rook(square, occupancy);
-        case QUEEN: return KGSSB::queen(square, occupancy);
-        case KNIGHT: return KNIGHT_ATTACKS[square];
-        case KING: return KING_ATTACKS[square];
+    if constexpr (piece == BISHOP) 
+    {
+        return KGSSB::bishop(square, occupancy);
+    }
+    else if constexpr (piece == ROOK) 
+    {
+        return KGSSB::rook(square, occupancy);
+    }
+    else if constexpr (piece == QUEEN) 
+    {
+        return KGSSB::queen(square, occupancy);
+    }
+    else if constexpr (piece == KNIGHT) 
+    {
+        return KNIGHT_ATTACKS[square];
+    } 
+    else if constexpr (piece == KING) 
+    {
+        return KING_ATTACKS[square];
     }
 }
 

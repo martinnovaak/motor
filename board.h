@@ -210,22 +210,22 @@ public:
         }
     }
 
-    PieceType get_piece(int square) {
+    PieceType get_piece(int square) const {
         return pieces[square];
     }
 
-    Color get_side() { return side; }
+    Color get_side() const { return side; }
 
     uint64_t get_pawn_bitboard() const {
         return bitboards[side][PAWN];
     }
 
-    uint64_t get_knight_bitboard() {
+    uint64_t get_knight_bitboard() const {
         return bitboards[side][KNIGHT];
     }
 
     template <Color our_color>
-    std::tuple<uint64_t, uint64_t, uint64_t> get_slider_bitboards() {
+    std::tuple<uint64_t, uint64_t, uint64_t> get_slider_bitboards() const {
         return {bitboards[our_color][ROOK], bitboards[our_color][BISHOP], bitboards[our_color][QUEEN]};
     }
 

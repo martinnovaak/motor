@@ -6,7 +6,7 @@
 #include "movelist.h"
 
 template <Color our_color>
-void generate_pawn_moves(board & b, movelist & ml, uint64_t checkmask, uint64_t move_h, uint64_t move_v, uint64_t move_a, uint64_t move_d, uint64_t enemy, uint64_t empty) {
+void generate_pawn_moves(const board & b, movelist & ml, uint64_t pawn_bitboard, uint64_t checkmask, uint64_t move_v, uint64_t move_a, uint64_t move_d, uint64_t enemy, uint64_t empty) {
     constexpr Color their_color = (our_color == WHITE) ? BLACK : WHITE;
     constexpr uint64_t penultimate_rank = (our_color == WHITE ? ranks[RANK_7] : ranks[RANK_2]);
     constexpr uint64_t not_penultimate_rank = (our_color == WHITE) ? not_penultimate_ranks[WHITE] : not_penultimate_ranks[BLACK];
@@ -18,10 +18,8 @@ void generate_pawn_moves(board & b, movelist & ml, uint64_t checkmask, uint64_t 
     constexpr Direction antidiagonal_enpassant = (our_color == BLACK ? NORTH_WEST : SOUTH_EAST);
     constexpr Direction diagonal_enpassant = (our_color == BLACK ? NORTH_EAST : SOUTH_WEST);
 
-    const uint64_t pawns = b.get_pawn_bitboard() & move_h; // horizontally pinned pawns cannot move
-
-    const uint64_t pawns_penultimate = pawns & penultimate_rank;
-    const uint64_t pawns_not_penultimate = pawns & not_penultimate_rank;
+    const uint64_t pawns_penultimate = pawn_bitboard & penultimate_rank;
+    const uint64_t pawns_not_penultimate = pawn_bitboard & not_penultimate_rank;
 
     const uint64_t blocking_squares = empty & checkmask;
     const uint64_t threat_squares   = enemy & checkmask;
@@ -110,11 +108,10 @@ void generate_pawn_moves(board & b, movelist & ml, uint64_t checkmask, uint64_t 
 }
 
 template <Color our_color>
-void generate_knight_moves(board & b, movelist & ml, uint64_t target, uint64_t pin, uint64_t enemy, uint64_t empty, uint64_t occupancy)
+void generate_knight_moves(const board & b, movelist & ml, uint64_t knight_bitboard, uint64_t target, uint64_t enemy, uint64_t empty, uint64_t occupancy)
 {
-    uint64_t piece_bitboard = b.get_knight_bitboard() & pin; // pinned knight cannot move_t
-    while(piece_bitboard) {
-        int square = pop_lsb(piece_bitboard);
+    while(knight_bitboard) {
+        int square = pop_lsb(knight_bitboard);
         uint64_t attack_bitboard = attacks<KNIGHT>(square, occupancy) & target;
         
         uint64_t captures = attack_bitboard & enemy;
@@ -132,7 +129,7 @@ void generate_knight_moves(board & b, movelist & ml, uint64_t target, uint64_t p
 }
 
 template <Color our_color>
-void generate_king_moves(board &b, movelist & ml, int king_square, uint64_t safe_squares, uint64_t empty, uint64_t enemy)
+void generate_king_moves(const board & b, movelist & ml, int king_square, uint64_t safe_squares, uint64_t empty, uint64_t enemy)
 {
     uint64_t king_moves = KING_ATTACKS[king_square] & safe_squares;
 
@@ -179,7 +176,7 @@ void generate_castle_moves(movelist & ml, int castling_right, uint64_t safe_squa
 }
 
 template <Color our_color, Ray ray, PieceType pt>
-void generate_slider_moves(board& b, movelist& ml, uint64_t piece_bitboard, uint64_t checkmask, uint64_t enemy, uint64_t empty, uint64_t occupancy)
+void generate_slider_moves(const board & b, movelist& ml, uint64_t piece_bitboard, uint64_t checkmask, uint64_t enemy, uint64_t empty, uint64_t occupancy)
 {
     while (piece_bitboard) {
         int square = pop_lsb(piece_bitboard);
@@ -206,30 +203,34 @@ void generate_all_moves(board & b, movelist & ml) {
     constexpr Color enemy_color = our_color == WHITE ? BLACK : WHITE;
 
     int king_square = b.get_king_square();
-    uint64_t enemy_pieces = b.get_enemy_bitboard<enemy_color>();
-    uint64_t occupancy = b.get_occupancy();
-    uint64_t empty = ~occupancy;
-    uint64_t checkers = b.get_checkers<enemy_color>();
+    const uint64_t enemy_pieces = b.get_enemy_bitboard<enemy_color>();
+    const uint64_t occupancy = b.get_occupancy();
+    const uint64_t empty = ~occupancy;
+    const uint64_t checkers = b.get_checkers<enemy_color>();
 
-    uint64_t safe_squares = b.get_safe_squares<enemy_color>(king_square);
+    const uint64_t safe_squares = b.get_safe_squares<enemy_color>(king_square);
 
-    uint64_t checkmask = b.get_checkmask(checkers, king_square);
+    const uint64_t checkmask = b.get_checkmask(checkers, king_square);
 
     generate_king_moves<our_color>(b, ml, king_square, safe_squares, empty, enemy_pieces);
 
-    if(checkmask == 0)
-        return;
+    //if(checkmask == 0)
+    //    return;
 
     auto [pin_h, pin_v, pin_a, pin_d] = b.get_pinners<our_color, enemy_color>(king_square);
-    auto [rook_bitboard, bishop_bitboard, queen_bitboard] = b.get_slider_bitboards<our_color>();
 
     uint64_t pin_hv = pin_h | pin_v;
     uint64_t pin_ad = pin_a | pin_d;
-    
-    rook_bitboard &= ~pin_ad; // rooks pinned diagonally cannot move_t
-    bishop_bitboard &= ~pin_hv; // bishops pinned horizontally and vertically cannot move_t
-    
     uint64_t non_pinned_pieces = ~(pin_ad | pin_hv);
+
+    auto [rook_bitboard, bishop_bitboard, queen_bitboard] = b.get_slider_bitboards<our_color>();
+    uint64_t knight_bitboard = b.get_knight_bitboard();
+    uint64_t pawn_bitboard = b.get_pawn_bitboard();
+    
+    rook_bitboard &= ~pin_ad; // rooks pinned diagonally cannot move
+    bishop_bitboard &= ~pin_hv; // bishops pinned horizontally and vertically cannot move
+    pawn_bitboard &= ~pin_h;  // pawns pinned horizontally cannot move
+    knight_bitboard &= non_pinned_pieces; // pinned knights cannot move
 
     uint64_t h_checkmask = checkmask & pin_h;
     uint64_t v_checkmask = checkmask & pin_v;
@@ -253,8 +254,8 @@ void generate_all_moves(board & b, movelist & ml) {
     generate_slider_moves<our_color, Ray::ANTIDIAGONAL, QUEEN>(b, ml, queen_bitboard & pin_a, a_checkmask, enemy_pieces, empty, occupancy);
     generate_slider_moves<our_color, Ray::DIAGONAL, QUEEN>(b, ml, queen_bitboard & pin_d, d_checkmask, enemy_pieces, empty, occupancy);
 
-    generate_knight_moves<our_color>(b, ml,checkmask, non_pinned_pieces, enemy_pieces, empty, occupancy);
-    generate_pawn_moves<our_color>(b, ml, checkmask, ~pin_h, ~pin_ad, ~(pin_d | pin_v), ~(pin_a | pin_v), enemy_pieces, empty);
+    generate_knight_moves<our_color>(b, ml, knight_bitboard,checkmask, enemy_pieces, empty, occupancy);
+    generate_pawn_moves<our_color>(b, ml, pawn_bitboard, checkmask, ~pin_ad, ~(pin_d | pin_v), ~(pin_a | pin_v), enemy_pieces, empty);
     generate_castle_moves<our_color>(ml, b.get_castle_rights(),  safe_squares, empty);
 }
 
