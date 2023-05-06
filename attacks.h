@@ -1,7 +1,7 @@
 #ifndef MOTOR_ATTACKS_H
 #define MOTOR_ATTACKS_H
 
-#include "kgsb.h"
+#include "magic_kindergarten.h"
 
 static constexpr uint64_t PAWN_ATTACKS_TABLE[2][64] = {
         // white pawn attacks
@@ -89,53 +89,28 @@ enum class Ray : int {
 };
 
 template <Ray ray> 
-constexpr uint64_t ray_attacks(int square, uint64_t occupancy)
+constexpr uint64_t attacks(int square, uint64_t occupancy)
 {
     if constexpr (ray == Ray::HORIZONTAL) {
-        return KGSSB::rook_horizontal(square, occupancy);
+        return Magic_Kindergarten::rook_horizontal(square, occupancy);
     }
     else if constexpr (ray == Ray::VERTICAL) {
-        return KGSSB::rook_vertical(square, occupancy);
+        return Magic_Kindergarten::rook_vertical(square, occupancy);
     }
     else if constexpr (ray == Ray::ANTIDIAGONAL) {
-        return KGSSB::bishop_antidiagonal(square, occupancy);
+        return Magic_Kindergarten::bishop_antidiagonal(square, occupancy);
     }
     else if constexpr (ray == Ray::DIAGONAL) {
-        return KGSSB::bishop_diagonal(square, occupancy);
+        return Magic_Kindergarten::bishop_diagonal(square, occupancy);
     }
     else if constexpr (ray == Ray::ROOK) {
-        return KGSSB::rook(square, occupancy);
+        return Magic_Kindergarten::rook(square, occupancy);
     }
     else if constexpr (ray == Ray::BISHOP) {
-        return KGSSB::bishop(square, occupancy);
+        return Magic_Kindergarten::bishop(square, occupancy);
     }
     else if constexpr (ray == Ray::QUEEN) {
-        return KGSSB::queen(square, occupancy);
+        return Magic_Kindergarten::queen(square, occupancy);
     }
 }
-
-template <PieceType piece>
-constexpr uint64_t attacks(int square, uint64_t occupancy) {
-    if constexpr (piece == BISHOP) 
-    {
-        return KGSSB::bishop(square, occupancy);
-    }
-    else if constexpr (piece == ROOK) 
-    {
-        return KGSSB::rook(square, occupancy);
-    }
-    else if constexpr (piece == QUEEN) 
-    {
-        return KGSSB::queen(square, occupancy);
-    }
-    else if constexpr (piece == KNIGHT) 
-    {
-        return KNIGHT_ATTACKS[square];
-    } 
-    else if constexpr (piece == KING) 
-    {
-        return KING_ATTACKS[square];
-    }
-}
-
 #endif //MOTOR_ATTACKS_H

@@ -61,8 +61,7 @@ public:
         return piece_to_char[color][piece];
     }
 
-    void print_board() const
-    {
+    void print_board() const {
         for (int rank = 7; rank >= 0; rank--) {
             std::cout << rank + 1 << " ";
             for(int file = 0; file < 8 ; file++) {
@@ -78,7 +77,7 @@ public:
             std::cout << char('a' + file) << " ";
         }
 
-        std::cout << ((side == WHITE) ? "\n\nWHITE" : "\n\nBLACK") << " to move_t ";
+        std::cout << ((side == WHITE) ? "\n\nWHITE" : "\n\nBLACK") << " to move ";
 
         if(enpassant != N_SQUARES) {
             std::cout << "\n\nEnpassant square: " << square_to_string[enpassant];
@@ -215,12 +214,11 @@ public:
 
     template<Color enemy_color>
     uint64_t attackers(int square) const {
-        return (attacks<ROOK>(square, occupancy) & (hv_occupancy[enemy_color]))
-               | (attacks<BISHOP>(square, occupancy) & (ad_occupancy[enemy_color]))
+        return   (attacks<Ray::ROOK>(square, occupancy) & (hv_occupancy[enemy_color]))
+               | (attacks<Ray::BISHOP>(square, occupancy) & (ad_occupancy[enemy_color]))
                | (KING_ATTACKS[square] & bitboards[enemy_color][KING])
                | (KNIGHT_ATTACKS[square] & bitboards[enemy_color][KNIGHT])
-               | (PAWN_ATTACKS_TABLE[side][square] & bitboards[enemy_color][PAWN]
-               & side_occupancy[enemy_color]);
+               | (PAWN_ATTACKS_TABLE[side][square] & bitboards[enemy_color][PAWN]);
     }
 
     template <Color their_color>
@@ -239,12 +237,12 @@ public:
 
         uint64_t ad_pieces = ad_occupancy[their_color];
         while(ad_pieces) {
-            attacked_squares |= KGSSB::bishop(pop_lsb(ad_pieces), occupancy);
+            attacked_squares |= attacks<Ray::BISHOP>(pop_lsb(ad_pieces), occupancy);
         }
 
         uint64_t hv_pieces = hv_occupancy[their_color];
         while(hv_pieces) {
-            attacked_squares |= KGSSB::rook(pop_lsb(hv_pieces), occupancy);
+            attacked_squares |= attacks<Ray::ROOK>(pop_lsb(hv_pieces), occupancy);
         }
 
         attacked_squares |= KING_ATTACKS[lsb(bitboards[their_color][KING])];
@@ -309,18 +307,18 @@ public:
 
     template<Color our_color, Color their_color>
     std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_pinners(int king_square) const {
-        uint64_t seen_squares = KGSSB::queen(king_square, occupancy);
-        uint64_t our_side_occupancy = side_occupancy[our_color];
-        uint64_t possibly_pinned_pieces = seen_squares & our_side_occupancy;
+        uint64_t seen_squares = attacks<Ray::QUEEN>(king_square, occupancy);
+        uint64_t possibly_pinned_pieces = seen_squares & side_occupancy[our_color];
         uint64_t occupied = occupancy ^ possibly_pinned_pieces;
 
-        uint64_t seen_enemy_pieces  = ~(seen_squares & side_occupancy[their_color]);
-        uint64_t seen_enemy_hv_pieces = seen_enemy_pieces & hv_occupancy[their_color];
-        uint64_t seen_enemy_ad_pieces = seen_enemy_pieces & ad_occupancy[their_color];
-        uint64_t horizontal_pinners = KGSSB::rook_horizontal(king_square, occupied) & seen_enemy_hv_pieces;
-        uint64_t vertical_pinners = KGSSB::rook_vertical(king_square, occupied) & seen_enemy_hv_pieces;
-        uint64_t antidiagonal_pinners = KGSSB::bishop_antidiagonal(king_square, occupied) & seen_enemy_ad_pieces;
-        uint64_t diagonal_pinners = KGSSB::bishop_diagonal(king_square, occupied) & seen_enemy_ad_pieces;
+        //uint64_t seen_enemy_pieces    = ~(seen_squares & side_occupancy[their_color]);
+        seen_squares = ~seen_squares;
+        uint64_t seen_enemy_hv_pieces = seen_squares & hv_occupancy[their_color];
+        uint64_t seen_enemy_ad_pieces = seen_squares & ad_occupancy[their_color];
+        uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(king_square, occupied) & seen_enemy_hv_pieces;
+        uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(king_square, occupied) & seen_enemy_hv_pieces;
+        uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(king_square, occupied) & seen_enemy_ad_pieces;
+        uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(king_square, occupied) & seen_enemy_ad_pieces;
 
         uint64_t horizontal_pinmask{}, vertical_pinmask{}, antidiagonal_pinmask{}, diagonal_pinmask{};
 
@@ -340,7 +338,7 @@ public:
             diagonal_pinmask |= pinmask[king_square][pop_lsb(diagonal_pinners)];
         }   
 
-        return {horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask};
+        return { horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask };
     }
 
     int get_castle_rights() const {
@@ -355,7 +353,7 @@ public:
     bool check_legality_of_enpassant (int square_from, int enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
         int king_square = get_king_square();
-        return !(KGSSB::rook_horizontal(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (hv_occupancy[their_color]));
+        return !(attacks<Ray::HORIZONTAL>(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (hv_occupancy[their_color]));
     }
 
     template<Color our_color>
@@ -632,11 +630,7 @@ public:
     }
 
     void undo_move() {
-        if(side == WHITE) {
-            undo_move<BLACK>();
-        } else {
-            undo_move<WHITE>();
-        }
+        side == WHITE ? undo_move<BLACK>() : undo_move<WHITE>();
     }
 };
 

@@ -112,7 +112,7 @@ void generate_knight_moves(const board & b, movelist & ml, uint64_t knight_bitbo
 {
     while(knight_bitboard) {
         int square = pop_lsb(knight_bitboard);
-        uint64_t attack_bitboard = attacks<KNIGHT>(square, occupancy) & target;
+        uint64_t attack_bitboard = KNIGHT_ATTACKS[square] & target;
         
         uint64_t captures = attack_bitboard & enemy;
         while(captures) {
@@ -180,7 +180,7 @@ void generate_slider_moves(const board & b, movelist& ml, uint64_t piece_bitboar
 {
     while (piece_bitboard) {
         int square = pop_lsb(piece_bitboard);
-        uint64_t attack_bitboard = ray_attacks<ray>(square, occupancy) & checkmask;
+        uint64_t attack_bitboard = attacks<ray>(square, occupancy) & checkmask;
 
         uint64_t captures = attack_bitboard & enemy;
         uint64_t quiets = attack_bitboard & empty;
