@@ -1,7 +1,6 @@
 #ifndef MOTOR_MOVE_T_H
 #define MOTOR_MOVE_T_H
 
-#include <cstdint>
 #include <iostream>
 #include <bitset>
 
@@ -69,7 +68,7 @@ public:
     }
 
     void print_move() const {
-        std::cout << Pieces[get_piece()] << squareToString[get_from()] << squareToString[get_to()] <<" ";
+        std::cout << " " << square_to_string[get_from()] << square_to_string[get_to()] << " ";
     }
 private:
     uint32_t m_move;

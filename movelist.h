@@ -17,7 +17,7 @@ public:
         return count;
     }
 
-    void add(move_t && m) {
+    void add(move_t m) {
         list[count] = m;
         count++;
     }
@@ -38,5 +38,4 @@ public:
         return std::next(list.begin(), count);
     }
 };
-
 #endif //MOVEGEN_MOVELIST_H

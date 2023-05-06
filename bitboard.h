@@ -34,10 +34,6 @@ enum PieceType : int {
     N_PIECE_TYPES
 };
 
-static char Pieces[] {
-    'P','N','B','R','Q','K'
-};
-
 enum Rank {
     RANK_1,
     RANK_2,
@@ -129,7 +125,6 @@ constexpr uint64_t shift(uint64_t bitboard) {
     }
 }
 
-
 const std::unordered_map<std::string, Square> stringToSquare = {
         {"a1", A1}, {"b1", B1}, {"c1", C1}, {"d1", D1}, {"e1", E1}, {"f1", F1}, {"g1", G1}, {"h1", H1},
         {"a2", A2}, {"b2", B2}, {"c2", C2}, {"d2", D2}, {"e2", E2}, {"f2", F2}, {"g2", G2}, {"h2", H2},
@@ -142,7 +137,7 @@ const std::unordered_map<std::string, Square> stringToSquare = {
         {"-", N_SQUARES}
 };
 
-const std::string squareToString[] = {
+const std::string square_to_string[] = {
         "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
         "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
         "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
@@ -161,13 +156,14 @@ static std::unordered_map<Color, std::unordered_map<PieceType, char>> piece_to_c
     map[WHITE][ROOK] = 'R';
     map[WHITE][QUEEN] = 'Q';
     map[WHITE][KING] = 'K';
+    map[WHITE][N_PIECE_TYPES] = '.';
     map[BLACK][PAWN] = 'p';
     map[BLACK][KNIGHT] = 'n';
     map[BLACK][BISHOP] = 'b';
     map[BLACK][ROOK] = 'r';
     map[BLACK][QUEEN] = 'q';
     map[BLACK][KING] = 'k';
-    map[N_COLORS][N_PIECE_TYPES] = '.';
+    map[BLACK][N_PIECE_TYPES] = '.';
     return map;
 }();
 
