@@ -3,18 +3,12 @@
 
 #include "bitboard.h"
 #include "attacks.h"
-#include "pinmask.h"
 #include "move_t.h"
 #include <sstream>
 #include <tuple>
 #include <vector>
 #include <array>
-
-constexpr static std::array<uint64_t, 64> undo_array = []{
-    std::array<uint64_t, 64> arr;
-    for (int i = 0; i < 64; i++) arr[i] = ~(1ull << i);
-    return arr;
-}();
+#include <bitset>
 
 struct board_info {
     int castling_rights;
@@ -45,14 +39,13 @@ class board {
     std::vector<board_info> history;
 public:
     board(const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-    : bitboards{}, side_occupancy{}, occupancy{}, enpassant(N_SQUARES) {
-        for (auto & piece : pieces) {
+            : bitboards{}, side_occupancy{}, occupancy{}, enpassant(N_SQUARES) {
+        castling_rights = fifty_move_clock = full_move_counter = 0;
+        for (auto& piece : pieces) {
             piece = N_PIECE_TYPES;
         }
-        castling_rights = fifty_move_clock = full_move_counter = 0;
         side = WHITE;
         fen_to_board(fen);
-        history.emplace_back(castling_rights, enpassant, fifty_move_clock, move_t(), hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
     }
 
     char piece_at(int square) const {
@@ -93,7 +86,11 @@ public:
                 bitboard = 0ull;
             }
         }
+        for (auto & piece : pieces) {
+            piece = N_PIECE_TYPES;
+        }
         side_occupancy[WHITE] = side_occupancy[BLACK] = occupancy = 0ull;
+        history.clear();
 
         // FEN fields
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -144,6 +141,7 @@ public:
         hv_occupancy[BLACK] = bitboards[BLACK][ROOK] | bitboards[BLACK][QUEEN];
         ad_occupancy[WHITE] = bitboards[WHITE][BISHOP] | bitboards[WHITE][QUEEN];
         ad_occupancy[BLACK] = bitboards[BLACK][BISHOP] | bitboards[BLACK][QUEEN];
+        history.emplace_back(castling_rights, enpassant, fifty_move_clock, move_t(), hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
     }
 
     std::string fen() const {
@@ -156,7 +154,7 @@ public:
             }
 
             for (int file = FILE_A; file <= FILE_H; ++file) {
-                Square square = Square(rank * 8 + file);
+                auto square = Square(rank * 8 + file);
                 char piece = piece_at(square);
                 if (piece == '.') {
                     ++empty;
@@ -164,7 +162,7 @@ public:
                     if (empty > 0) {
                         oss << empty;
                         empty = 0;
-                    }                    
+                    }
                     oss << piece;
                 }
             }
@@ -212,13 +210,21 @@ public:
         return oss.str();
     }
 
+    bool in_check() const {
+        if(side == WHITE) {
+            return attackers<BLACK>(get_king_square());
+        } else {
+            return attackers<WHITE>(get_king_square());
+        }
+    }
+
     template<Color enemy_color>
     uint64_t attackers(int square) const {
-        return   (attacks<Ray::ROOK>(square, occupancy) & (hv_occupancy[enemy_color]))
-               | (attacks<Ray::BISHOP>(square, occupancy) & (ad_occupancy[enemy_color]))
-               | (KING_ATTACKS[square] & bitboards[enemy_color][KING])
-               | (KNIGHT_ATTACKS[square] & bitboards[enemy_color][KNIGHT])
-               | (PAWN_ATTACKS_TABLE[side][square] & bitboards[enemy_color][PAWN]);
+        return     (attacks<Ray::ROOK >(square, occupancy) & (hv_occupancy[enemy_color]))
+                 | (attacks<Ray::BISHOP>(square, occupancy) & (ad_occupancy[enemy_color]))
+                 | (KING_ATTACKS[square]   & bitboards[enemy_color][KING])
+                 | (KNIGHT_ATTACKS[square] & bitboards[enemy_color][KNIGHT])
+                 | (PAWN_ATTACKS_TABLE[side][square] & bitboards[enemy_color][PAWN]);
     }
 
     template <Color their_color>
@@ -258,6 +264,17 @@ public:
     }
 
     uint64_t get_checkmask(uint64_t checkers, int square) {
+        if(checkers == 0) {
+            return full_board;
+        }
+        int sq = pop_lsb(checkers);
+        if(checkers) {
+            return 0ull;
+        }
+        return pinmask[square][sq];
+
+
+        /* Probably slower
         unsigned int number_of_checks = popcount(checkers);
         if(number_of_checks == 0) {
             return full_board;
@@ -266,6 +283,7 @@ public:
         } else {
             return 0ull;
         }
+         */
     }
 
     PieceType get_piece(int square) const {
@@ -305,20 +323,22 @@ public:
         return attackers<enemy_color>(get_king_square());
     }
 
+    uint64_t get_pieces (int color, int piece) const {
+        return bitboards[color][piece];
+    }
+
     template<Color our_color, Color their_color>
     std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_pinners(int king_square) const {
         uint64_t seen_squares = attacks<Ray::QUEEN>(king_square, occupancy);
         uint64_t possibly_pinned_pieces = seen_squares & side_occupancy[our_color];
         uint64_t occupied = occupancy ^ possibly_pinned_pieces;
 
-        //uint64_t seen_enemy_pieces    = ~(seen_squares & side_occupancy[their_color]);
-        seen_squares = ~seen_squares;
-        uint64_t seen_enemy_hv_pieces = seen_squares & hv_occupancy[their_color];
-        uint64_t seen_enemy_ad_pieces = seen_squares & ad_occupancy[their_color];
-        uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(king_square, occupied) & seen_enemy_hv_pieces;
-        uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(king_square, occupied) & seen_enemy_hv_pieces;
+        uint64_t seen_enemy_hv_pieces = ~seen_squares & hv_occupancy[their_color];
+        uint64_t seen_enemy_ad_pieces = ~seen_squares & ad_occupancy[their_color];
+        uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(king_square, occupied)   & seen_enemy_hv_pieces;
+        uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(king_square, occupied)     & seen_enemy_hv_pieces;
         uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(king_square, occupied) & seen_enemy_ad_pieces;
-        uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(king_square, occupied) & seen_enemy_ad_pieces;
+        uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(king_square, occupied)     & seen_enemy_ad_pieces;
 
         uint64_t horizontal_pinmask{}, vertical_pinmask{}, antidiagonal_pinmask{}, diagonal_pinmask{};
 
@@ -336,7 +356,7 @@ public:
 
         while (diagonal_pinners) {
             diagonal_pinmask |= pinmask[king_square][pop_lsb(diagonal_pinners)];
-        }   
+        }
 
         return { horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask };
     }
@@ -404,6 +424,7 @@ public:
         if constexpr (our_color == BLACK) {
             full_move_counter++;
         }
+
         enpassant = N_SQUARES;
 
         constexpr Color their_color = (our_color == WHITE) ? BLACK : WHITE;
@@ -589,7 +610,7 @@ public:
             case QUEEN_CASTLE:
                 set_piece<our_color>(our_rook_A_square,ROOK);
                 unset_piece<our_color>(our_D_square, ROOK);
-                unset_piece<our_color>(our_C_square, KING);              
+                unset_piece<our_color>(our_C_square, KING);
                 break;
             case CAPTURE:
                 replace_piece<their_color, our_color, false>(square_to, played_move.get_captured_piece());
