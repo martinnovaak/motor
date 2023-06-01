@@ -18,5 +18,5 @@ static int evaluate(board& b) {
         }
     }
 
-    return score;
+    return b.get_side() == WHITE ? score : -score;
 }
