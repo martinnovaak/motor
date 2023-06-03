@@ -16,7 +16,6 @@ struct search_data {
     int ply = 0;
     int nodes_searched = 0;
     move_t killer_moves[MAX_DEPTH][2] = {};
-    int history_moves[64][64] = {};
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
@@ -24,10 +23,6 @@ struct search_data {
     void update_killer(move_t move) {
         killer_moves[ply][0] = killer_moves[ply][1];
         killer_moves[ply][1] = move;
-    }
-
-    void update_history(move_t move, int depth) {
-        history_moves[move.get_from()][move.get_to()] = depth;
     }
 
     void update_pv(move_t move, int depth) {
@@ -72,8 +67,6 @@ static void score_moves(movelist & ml, const search_data & data) {
             move.set_score(310);
         } else if (data.killer_moves[data.ply][1] == move) {
             move.set_score(300);
-        } else {
-            move.set_score(data.history_moves[from][to]);
         }
     }
 }
@@ -177,9 +170,6 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, int de
         }
         if (score > alpha) {
             alpha = score;
-            if(!m.is_capture()) {
-                data.update_history(m, depth);
-            }
             data.update_pv(m, depth);
         }
     }
