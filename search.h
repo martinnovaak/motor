@@ -3,6 +3,7 @@
 
 #include "eval.h"
 #include "movegen.h"
+#include "stopwatch_t.h"
 
 constexpr int MAX_DEPTH = 64;
 
@@ -14,9 +15,15 @@ struct search_info {
 struct search_data {
     int ply = 0;
     int nodes_searched = 0;
+    move_t killer_moves[MAX_DEPTH][2] = {};
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
+
+    void update_killer(move_t move) {
+        killer_moves[ply][0] = killer_moves[ply][1];
+        killer_moves[ply][1] = move;
+    }
 
     void update_pv(move_t move, int depth) {
         pv_table[ply][ply] = move;
@@ -56,6 +63,10 @@ static void score_moves(movelist & ml, const search_data & data) {
             } else {
                 move.set_score(320 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             }
+        } else if (data.killer_moves[data.ply][0] == move) {
+            move.set_score(310);
+        } else if (data.killer_moves[data.ply][1] == move) {
+            move.set_score(300);
         }
     }
 }
@@ -152,6 +163,9 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, int de
         chessboard.undo_move();
         data.ply--;
         if (score >= beta) {
+            if (!m.is_capture()) {
+                data.update_killer(m);
+            }
             return beta;
         }
         if (score > alpha) {
