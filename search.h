@@ -20,6 +20,7 @@ struct search_data {
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
+    bool follow_pv = false, score_pv = false;
 
     void update_killer(move_t move) {
         killer_moves[ply][0] = killer_moves[ply][1];
@@ -138,7 +139,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     if (data.ply >= MAX_DEPTH ) {
         return evaluate(chessboard);
     }
-
+    
     data.pv_length[data.ply] = data.ply;
 
     if (depth == 0) {
@@ -148,6 +149,16 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     data.nodes_searched++;
 
     bool in_check = chessboard.in_check();
+
+    if(depth >= 3 && !in_check && data.ply) {
+        int R = 2;
+        Square enpassant = chessboard.make_null_move();
+        int score = -alphabeta(chessboard, -beta, -beta + 1, data, stopwatch, depth - 1 - R);
+        chessboard.unmake_null_move(enpassant);
+        if(score >= beta) {
+            return beta;
+        }
+    }
 
     movelist ml;
     generate_moves(chessboard, ml);
