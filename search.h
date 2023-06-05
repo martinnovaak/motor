@@ -48,13 +48,13 @@ constexpr int INF = 50'000;
 
 //                      [victim][attacker]
 constexpr static int mvv_lva[6][6] = {
-//attacker:  P, N,  B,  R,  Q,  NONE
-        {5, 4, 3, 2, 1, 0},    // victim PAWN
-        {10, 9, 8, 7, 6, 0},   // victim KNIGHT
-        {15, 14, 13, 12, 11, 0},    // victim BISHOP
-        {20, 19, 18, 17, 16, 0},    // victim ROOK
-        {25, 24, 23, 22, 21, 0},    // victim QUEEN
-        {0,  0,  0,  0,  0,  0},    // victim NONE
+//attacker:   P,  N,  B,  R,  Q, NONE
+            { 5,  4,  3,  2,  1,  0},    // victim PAWN
+            {10,  9,  8,  7,  6,  0},   // victim KNIGHT
+            {15, 14, 13, 12, 11,  0},    // victim BISHOP
+            {20, 19, 18, 17, 16,  0},    // victim ROOK
+            {25, 24, 23, 22, 21,  0},    // victim QUEEN
+            { 0,  0,  0,  0,  0,  0},    // victim NONE
 };
 
 
