@@ -20,7 +20,7 @@ struct search_data {
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
-    bool follow_pv = false, score_pv = false;
+    bool null_move = false;
 
     void update_killer(move_t move) {
         killer_moves[ply][0] = killer_moves[ply][1];
@@ -48,13 +48,13 @@ constexpr int INF = 50'000;
 
 //                      [victim][attacker]
 constexpr static int mvv_lva[6][6] = {
-//attacker:   P,  N,  B,  R,  Q, NONE
-            { 5,  4,  3,  2,  1,  0},    // victim PAWN
-            {10,  9,  8,  7,  6,  0},   // victim KNIGHT
-            {15, 14, 13, 12, 11,  0},    // victim BISHOP
-            {20, 19, 18, 17, 16,  0},    // victim ROOK
-            {25, 24, 23, 22, 21,  0},    // victim QUEEN
-            { 0,  0,  0,  0,  0,  0},    // victim NONE
+//attacker:  P, N,  B,  R,  Q,  NONE
+        {5, 4, 3, 2, 1, 0},    // victim PAWN
+        {10, 9, 8, 7, 6, 0},   // victim KNIGHT
+        {15, 14, 13, 12, 11, 0},    // victim BISHOP
+        {20, 19, 18, 17, 16, 0},    // victim ROOK
+        {25, 24, 23, 22, 21, 0},    // victim QUEEN
+        {0,  0,  0,  0,  0,  0},    // victim NONE
 };
 
 
@@ -136,10 +136,13 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     if(stopwatch.should_end(data.nodes_searched)) {
         return alpha;
     }
+
+    int eval = evaluate(chessboard);
+
     if (data.ply >= MAX_DEPTH ) {
-        return evaluate(chessboard);
+        return eval;
     }
-    
+
     data.pv_length[data.ply] = data.ply;
 
     if (depth == 0) {
@@ -150,13 +153,14 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
     bool in_check = chessboard.in_check();
 
-    if(depth >= 3 && !in_check && data.ply) {
-        int R = 2;
+    // NULL MOVE PRUNING
+    if(depth >= 3 && !in_check && !data.null_move && eval >= beta && !chessboard.pawn_endgame()) {
         Square enpassant = chessboard.make_null_move();
-        int score = -alphabeta(chessboard, -beta, -beta + 1, data, stopwatch, depth - 1 - R);
+        data.null_move = true;
+        int nullmove_score = -alphabeta(chessboard, -beta, -beta + 1, data, stopwatch, depth - 3);
         chessboard.unmake_null_move(enpassant);
-        if(score >= beta) {
-            return beta;
+        if(nullmove_score >= beta) {
+            return nullmove_score;
         }
     }
 
@@ -179,6 +183,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
     for (const move_t& m : ml) {
         chessboard.make_move(m);
+        data.null_move = false;
         data.square_of_last_move = m.get_from();
         data.ply++;
 

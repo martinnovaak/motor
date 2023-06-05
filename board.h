@@ -34,13 +34,14 @@ class board {
     uint64_t  ad_occupancy[N_COLORS];
 
     int fifty_move_clock;
-    int full_move_counter;
+    //int full_move_counter;
 
     std::vector<board_info> history;
 public:
     board(const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             : bitboards{}, side_occupancy{}, occupancy{}, enpassant(N_SQUARES) {
-        castling_rights = fifty_move_clock = full_move_counter = 0;
+        castling_rights = fifty_move_clock = 0;
+        //full_move_counter = 0;
         for (auto& piece : pieces) {
             piece = N_PIECE_TYPES;
         }
@@ -97,7 +98,7 @@ public:
 
         // Split the FEN string into fields
         std::stringstream ss(fen);
-        ss >> board_str >> side_str >> castling_str >> enpassant_str >> fifty_move_clock >> full_move_counter;
+        ss >> board_str >> side_str >> castling_str >> enpassant_str >> fifty_move_clock ;//>> full_move_counter;
 
         // Parse the board state
         int rank = 7, file = 0;
@@ -204,8 +205,8 @@ public:
 
         oss << ' ';
         oss << fifty_move_clock;
-        oss << ' ';
-        oss << full_move_counter;
+        //oss << ' ';
+        //oss << full_move_counter;
 
         return oss.str();
     }
@@ -376,6 +377,24 @@ public:
         return !(attacks<Ray::HORIZONTAL>(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (hv_occupancy[their_color]));
     }
 
+    bool pawn_endgame() const {
+        return side_occupancy[side] == (bitboards[side][PAWN] | bitboards[side][KING]);
+    }
+
+    Square make_null_move() {
+        Square enpas = enpassant;
+        side = static_cast<Color>(side ^ 1);
+        enpassant = N_SQUARES;
+        history.back().enpassant = N_SQUARES;
+        return enpas;
+    }
+
+    void unmake_null_move(Square enpas) {
+        side = static_cast<Color>(side ^ 1);
+        enpassant = enpas;
+        history.back().enpassant = enpas;
+    }
+
     template<Color our_color>
     void set_piece(Square square, PieceType piece) {
         pieces[square] = piece;
@@ -421,9 +440,11 @@ public:
     template<Color our_color>
     void make_move(move_t m) {
         fifty_move_clock++;
+        /*
         if constexpr (our_color == BLACK) {
             full_move_counter++;
         }
+        */
 
         enpassant = N_SQUARES;
 
@@ -572,10 +593,11 @@ public:
     void undo_move() {
         board_info b_info = history.back();
         const move_t played_move = b_info.m_move;
-
+        /*
         if constexpr (our_color == BLACK) {
             full_move_counter--;
         }
+        */
 
         side = our_color;
 
