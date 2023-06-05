@@ -25,6 +25,7 @@ This is how motor can find pinners on each ray.
 ## Horizontal attacks
 TODO
 
+## Usage in pinner generation
 ```
 uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(king_square, occupied)   & seen_enemy_hv_pieces;
 uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(king_square, occupied)     & seen_enemy_hv_pieces;
