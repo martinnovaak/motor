@@ -6,6 +6,8 @@
 #include "stopwatch_t.h"
 
 constexpr int MAX_DEPTH = 64;
+constexpr int full_depth_moves = 4;
+constexpr int reduction_limit = 3;
 
 struct search_info {
     int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, movetime = -1;
@@ -20,7 +22,6 @@ struct search_data {
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
-    bool null_move = false;
 
     void update_killer(move_t move) {
         killer_moves[ply][0] = killer_moves[ply][1];
@@ -49,7 +50,7 @@ constexpr int INF = 50'000;
 //                      [victim][attacker]
 constexpr static int mvv_lva[6][6] = {
 //attacker:  P, N,  B,  R,  Q,  NONE
-        {5, 4, 3, 2, 1, 0},    // victim PAWN
+        {5,  4-40, 3, 2, 1, 0},    // victim PAWN
         {10, 9, 8, 7, 6, 0},   // victim KNIGHT
         {15, 14, 13, 12, 11, 0},    // victim BISHOP
         {20, 19, 18, 17, 16, 0},    // victim ROOK
@@ -63,7 +64,9 @@ static void score_moves(movelist & ml, const search_data & data) {
         Square from = move.get_from();
         Square to   = move.get_to();
 
-        if(move.is_capture()) {
+        if(move == data.pv_table[data.ply][data.ply]) {
+            move.set_score(400);
+        } else if(move.is_capture()) {
             if(to == data.square_of_last_move) {
                 move.set_score(360 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             } else {
@@ -137,6 +140,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         return alpha;
     }
 
+    bool pv_node = beta > alpha + 1;
     int eval = evaluate(chessboard);
 
     if (data.ply >= MAX_DEPTH ) {
@@ -145,7 +149,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
     data.pv_length[data.ply] = data.ply;
 
-    if (depth == 0) {
+    if (depth <= 0) {
         return quiescence(chessboard, alpha, beta, data, stopwatch);
     }
 
@@ -154,9 +158,8 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     bool in_check = chessboard.in_check();
 
     // NULL MOVE PRUNING
-    if(depth >= 3 && !in_check && !data.null_move && eval >= beta && !chessboard.pawn_endgame()) {
+    if(data.ply && depth >= 3 && !in_check && !pv_node && eval >= beta && !chessboard.pawn_endgame()) {
         Square enpassant = chessboard.make_null_move();
-        data.null_move = true;
         int nullmove_score = -alphabeta(chessboard, -beta, -beta + 1, data, stopwatch, depth - 3);
         chessboard.unmake_null_move(enpassant);
         if(nullmove_score >= beta) {
@@ -180,16 +183,33 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     }
 
     sort_moves(ml, data);
+    int moves_searched = 0;
 
     for (const move_t& m : ml) {
         chessboard.make_move(m);
-        data.null_move = false;
         data.square_of_last_move = m.get_from();
         data.ply++;
 
-        int score = -alphabeta(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
+        int score;
+        if(moves_searched == 0) {
+            score = -alphabeta(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
+        } else {
+            if(moves_searched >= full_depth_moves && depth >= reduction_limit && !pv_node && !in_check && !chessboard.in_check() && m.is_quiet()) {
+                score = -alphabeta(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - 2);
+            } else {
+                score = alpha + 1;
+            }
+
+            if(score > alpha) {
+                score = -alphabeta(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - 1);
+                if(score > alpha && score < beta) {
+                    score = -alphabeta(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
+                }
+            }
+        }
 
         chessboard.undo_move();
+        moves_searched++;
         data.ply--;
         if (score >= beta) {
             if (!m.is_capture()) {
@@ -211,8 +231,10 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
 void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & stopwatch) {
     std::string best_move;
+    int score;
     for(int current_depth = 1; current_depth <= MAX_DEPTH; current_depth++) {
-        int score = alphabeta(chessboard, -INF, INF, data, stopwatch, current_depth);
+        data.ply = 0;
+        score = alphabeta(chessboard, -INF, INF, data, stopwatch, current_depth);
 
         if(stopwatch.stopped()) {
             break;
