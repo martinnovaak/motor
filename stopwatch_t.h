@@ -16,10 +16,8 @@ public:
             time_limit = movetime;
         } else if(time == -1) {
             infinite_time = true;
-        } else if(increment == 0) {
-            time_limit = 975 * time / movestogo / 1000;
         } else {
-            time_limit = 975 * increment * time / movestogo / 1000;
+            time_limit = increment + 975 * time / movestogo / 1000;
         }
     }
 
