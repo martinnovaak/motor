@@ -89,6 +89,7 @@ public:
         }
         side_occupancy[WHITE] = side_occupancy[BLACK] = occupancy = 0ull;
         history.clear();
+        hash_key = 0;
 
         // FEN fields
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -110,6 +111,7 @@ public:
                     int square = rank * 8 + file;
                     set_bit(bitboards[color][piece], square);
                     hash_key ^= piece_keys[color][piece][square];
+                    //std::cout << piece_keys[color][piece][square] << "\n";
                     pieces[square] = piece;
                     file++;
                 }
@@ -117,6 +119,7 @@ public:
             rank--;
             file = 0;
         }
+        //std::cout << "\n\n\n\n";
 
         // Parse the side to move
         side = (side_str == "w") ? WHITE : BLACK;
@@ -381,17 +384,38 @@ public:
         return side_occupancy[side] == (bitboards[side][PAWN] | bitboards[side][KING]);
     }
 
+    bool is_draw() const {
+        if (fifty_move_clock == 100) {
+            return true;
+        }
+
+        const int end = std::max(0, (int)history.size() - 1 - fifty_move_clock);
+        int repetitions = 1;
+
+        for (int i = history.size() - 3; i >= end; i -= 2) {
+            if (history[i].hash_key == hash_key) {
+                repetitions++;
+            }
+        }
+
+        return repetitions >= 3;
+    }
+
     Square make_null_move() {
         Square enpas = enpassant;
         side = static_cast<Color>(side ^ 1);
         enpassant = N_SQUARES;
         history.back().enpassant = N_SQUARES;
+        hash_key ^= side_key;
+        hash_key ^= enpassant_keys[enpassant];
         return enpas;
     }
 
     void unmake_null_move(Square enpas) {
         side = static_cast<Color>(side ^ 1);
         enpassant = enpas;
+        hash_key ^= side_key;
+        hash_key ^= enpassant_keys[enpassant];
         history.back().enpassant = enpas;
     }
 
@@ -674,6 +698,10 @@ public:
 
     void undo_move() {
         side == WHITE ? undo_move<BLACK>() : undo_move<WHITE>();
+    }
+
+    uint64_t get_hash_key() const {
+        return hash_key;
     }
 };
 
