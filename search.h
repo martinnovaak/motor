@@ -254,8 +254,8 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
                 data.update_killer(m);
             }
 
-            flag = BOUND::LOWER;
-            break;
+            ttable.insert(key, beta, best_move, depth, BOUND::LOWER);
+            return beta;
         }
         if (score > alpha) {
             alpha = score;
@@ -267,8 +267,8 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         }
     }
 
-    ttable.insert(key, eval, best_move, depth, flag);
-    return eval;
+    ttable.insert(key, alpha, best_move, depth, flag);
+    return alpha;
 }
 
 int aspiration_window(board & chessboard, int score, search_data & data, stopwatch_t & stopwatch, transposition_table & ttable, int depth) {

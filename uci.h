@@ -93,15 +93,15 @@ void uci_go(board& b, const std::string& command) {
         } else if (tokens[i] == "movestogo") {
             info.movestogo = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "depth") {
-            info.max_depth = std::stoi(tokens[i + 1]);
+            //info.max_depth = std::stoi(tokens[i + 1]); // NOT SUPPORTED RIGHT NOW
         } else if (tokens[i] == "movetime") {
             info.movetime = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "infinite") {
             info.infinite = true;
         }
-
-        find_best_move(b, info);
     }
+
+    find_best_move(b, info);
 }
 
 void uci_process(board& b, const std::string& command) {
@@ -137,6 +137,7 @@ void uci_process(board& b, const std::string& command) {
         std::cout << "uciok" << std::endl;
     }
     else if (tokens[0] == "ucinewgame") {
+        ttable.clear();
         position_uci(b, "startpos");
     }
 }
