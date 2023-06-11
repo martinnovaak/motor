@@ -224,7 +224,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
         int score;
         if(moves_searched == 0) {
-            eval = score = -alphabeta(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
+            score = -alphabeta(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
         } else {
             if(moves_searched >= full_depth_moves && depth >= reduction_limit && !pv_node && !in_check && !chessboard.in_check() && m.is_quiet()) {
                 score = -alphabeta(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - 2);
@@ -244,7 +244,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         moves_searched++;
         data.ply--;
 
-        if(score >= eval) {
+        if(score > eval) {
             eval = score;
             best_move = m;
         }
