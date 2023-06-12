@@ -9,16 +9,14 @@
 #include <vector>
 #include <array>
 #include <bitset>
+#include "zobrist.h"
 
 struct board_info {
     int castling_rights;
     Square enpassant;
     int fifty_move_clock;
     move_t m_move;
-    uint64_t hv_occ_white;
-    uint64_t hv_occ_black;
-    uint64_t ad_occ_white;
-    uint64_t ad_occ_black;
+    uint64_t hash_key;
 };
 
 class board {
@@ -26,22 +24,19 @@ class board {
     Square enpassant;
     int castling_rights;
 
-    PieceType pieces[N_SQUARES];
-    uint64_t  bitboards[N_COLORS][N_PIECE_TYPES];
-    uint64_t  side_occupancy[N_COLORS]; // occupancy bitboards
+    std::array<PieceType, N_SQUARES> pieces;
+    std::array<std::array<uint64_t, N_PIECE_TYPES>, N_COLORS> bitboards;
+    std::array<uint64_t, N_COLORS>  side_occupancy; // occupancy bitboards
     uint64_t  occupancy;
-    uint64_t  hv_occupancy[N_COLORS];
-    uint64_t  ad_occupancy[N_COLORS];
 
     int fifty_move_clock;
-    //int full_move_counter;
+    uint64_t hash_key;
 
     std::vector<board_info> history;
 public:
     board(const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             : bitboards{}, side_occupancy{}, occupancy{}, enpassant(N_SQUARES) {
-        castling_rights = fifty_move_clock = 0;
-        //full_move_counter = 0;
+        castling_rights = fifty_move_clock, hash_key = 0;
         for (auto& piece : pieces) {
             piece = N_PIECE_TYPES;
         }
@@ -73,11 +68,13 @@ public:
 
         std::cout << ((side == WHITE) ? "\n\nWHITE" : "\n\nBLACK") << " to move ";
 
-        if(enpassant != N_SQUARES) {
+        if(enpassant != EMPTY) {
             std::cout << "\n\nEnpassant square: " << square_to_string[enpassant];
         }
 
         std::cout << "\n\nCastling: " << std::bitset<4>(castling_rights) <<"\n\n\n";
+
+        std::cout << "\n\n Hash key: " << hash_key << "\n\n\n";
     }
 
     void fen_to_board(const std::string& fen) {
@@ -92,6 +89,7 @@ public:
         }
         side_occupancy[WHITE] = side_occupancy[BLACK] = occupancy = 0ull;
         history.clear();
+        hash_key = 0;
 
         // FEN fields
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -112,6 +110,8 @@ public:
                     auto [color, piece] = charToPiece[c];
                     int square = rank * 8 + file;
                     set_bit(bitboards[color][piece], square);
+                    hash_key ^= piece_keys[color][piece][square];
+                    //std::cout << piece_keys[color][piece][square] << "\n";
                     pieces[square] = piece;
                     file++;
                 }
@@ -119,6 +119,7 @@ public:
             rank--;
             file = 0;
         }
+        //std::cout << "\n\n\n\n";
 
         // Parse the side to move
         side = (side_str == "w") ? WHITE : BLACK;
@@ -128,9 +129,17 @@ public:
         for(char right : castling_str) {
             castling_rights |= char_to_castling_right.at(right);
         }
+        hash_key ^= castling_keys[castling_rights];
 
         // Parse the en passant square
         enpassant = stringToSquare.at(enpassant_str);
+        if(enpassant != EMPTY) {
+            hash_key ^= enpassant_keys[enpassant];
+        }
+
+        if(side == BLACK) {
+            hash_key ^= side_key;
+        }
 
         for(int piece = PAWN; piece < N_PIECE_TYPES; piece ++) {
             side_occupancy[WHITE] |= bitboards[WHITE][piece];
@@ -138,16 +147,12 @@ public:
         }
 
         occupancy = (side_occupancy[WHITE] | side_occupancy[BLACK]);
-        hv_occupancy[WHITE] = bitboards[WHITE][ROOK] | bitboards[WHITE][QUEEN];
-        hv_occupancy[BLACK] = bitboards[BLACK][ROOK] | bitboards[BLACK][QUEEN];
-        ad_occupancy[WHITE] = bitboards[WHITE][BISHOP] | bitboards[WHITE][QUEEN];
-        ad_occupancy[BLACK] = bitboards[BLACK][BISHOP] | bitboards[BLACK][QUEEN];
-        history.emplace_back(castling_rights, enpassant, fifty_move_clock, move_t(), hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
+        history.emplace_back(castling_rights, enpassant, fifty_move_clock, move_t(), hash_key);
     }
 
     std::string fen() const {
         std::ostringstream oss;
-        for (int rank = RANK_8; rank >= RANK_1; --rank) {
+        for (int rank = RANK_8; rank >= RANK_1; rank--) {
             int empty = 0;
             if ((ranks[rank] & occupancy) == 0ull) {
                 oss << "8/";
@@ -158,7 +163,7 @@ public:
                 auto square = Square(rank * 8 + file);
                 char piece = piece_at(square);
                 if (piece == '.') {
-                    ++empty;
+                    empty++;
                 } else {
                     if (empty > 0) {
                         oss << empty;
@@ -205,8 +210,6 @@ public:
 
         oss << ' ';
         oss << fifty_move_clock;
-        //oss << ' ';
-        //oss << full_move_counter;
 
         return oss.str();
     }
@@ -219,13 +222,13 @@ public:
         }
     }
 
-    template<Color enemy_color>
+    template<Color their_color>
     uint64_t attackers(int square) const {
-        return     (attacks<Ray::ROOK >(square, occupancy) & (hv_occupancy[enemy_color]))
-                 | (attacks<Ray::BISHOP>(square, occupancy) & (ad_occupancy[enemy_color]))
-                 | (KING_ATTACKS[square]   & bitboards[enemy_color][KING])
-                 | (KNIGHT_ATTACKS[square] & bitboards[enemy_color][KNIGHT])
-                 | (PAWN_ATTACKS_TABLE[side][square] & bitboards[enemy_color][PAWN]);
+        return     (attacks<Ray::ROOK >(square, occupancy) & (bitboards[their_color][ROOK] | bitboards[their_color][QUEEN]))
+                 | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][BISHOP] | bitboards[their_color][QUEEN]))
+                 | (KING_ATTACKS[square]   & bitboards[their_color][KING])
+                 | (KNIGHT_ATTACKS[square] & bitboards[their_color][KNIGHT])
+                 | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][PAWN]);
     }
 
     template <Color their_color>
@@ -242,12 +245,12 @@ public:
             attacked_squares |= KNIGHT_ATTACKS[pop_lsb(knights)];
         }
 
-        uint64_t ad_pieces = ad_occupancy[their_color];
+        uint64_t ad_pieces = bitboards[their_color][BISHOP] | bitboards[their_color][QUEEN];
         while(ad_pieces) {
             attacked_squares |= attacks<Ray::BISHOP>(pop_lsb(ad_pieces), occupancy);
         }
 
-        uint64_t hv_pieces = hv_occupancy[their_color];
+        uint64_t hv_pieces = bitboards[their_color][ROOK] | bitboards[their_color][QUEEN];
         while(hv_pieces) {
             attacked_squares |= attacks<Ray::ROOK>(pop_lsb(hv_pieces), occupancy);
         }
@@ -334,8 +337,8 @@ public:
         uint64_t possibly_pinned_pieces = seen_squares & side_occupancy[our_color];
         uint64_t occupied = occupancy ^ possibly_pinned_pieces;
 
-        uint64_t seen_enemy_hv_pieces = ~seen_squares & hv_occupancy[their_color];
-        uint64_t seen_enemy_ad_pieces = ~seen_squares & ad_occupancy[their_color];
+        uint64_t seen_enemy_hv_pieces = ~seen_squares & (bitboards[their_color][ROOK] | bitboards[their_color][QUEEN]);
+        uint64_t seen_enemy_ad_pieces = ~seen_squares & (bitboards[their_color][BISHOP] | bitboards[their_color][QUEEN]);
         uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(king_square, occupied)   & seen_enemy_hv_pieces;
         uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(king_square, occupied)     & seen_enemy_hv_pieces;
         uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(king_square, occupied) & seen_enemy_ad_pieces;
@@ -374,11 +377,28 @@ public:
     bool check_legality_of_enpassant (int square_from, int enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
         int king_square = get_king_square();
-        return !(attacks<Ray::HORIZONTAL>(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (hv_occupancy[their_color]));
+        return !(attacks<Ray::HORIZONTAL>(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (bitboards[their_color][ROOK] | bitboards[their_color][QUEEN]));
     }
 
     bool pawn_endgame() const {
         return side_occupancy[side] == (bitboards[side][PAWN] | bitboards[side][KING]);
+    }
+
+    bool is_draw() const {
+        if (fifty_move_clock == 100) {
+            return true;
+        }
+
+        const int end = std::max(0, (int)history.size() - 1 - fifty_move_clock);
+        int repetitions = 1;
+
+        for (int i = history.size() - 3; i >= end; i -= 2) {
+            if (history[i].hash_key == hash_key) {
+                repetitions++;
+            }
+        }
+
+        return repetitions >= 3;
     }
 
     Square make_null_move() {
@@ -386,12 +406,16 @@ public:
         side = static_cast<Color>(side ^ 1);
         enpassant = N_SQUARES;
         history.back().enpassant = N_SQUARES;
+        hash_key ^= side_key;
+        hash_key ^= enpassant_keys[enpassant];
         return enpas;
     }
 
     void unmake_null_move(Square enpas) {
         side = static_cast<Color>(side ^ 1);
         enpassant = enpas;
+        hash_key ^= side_key;
+        hash_key ^= enpassant_keys[enpassant];
         history.back().enpassant = enpas;
     }
 
@@ -404,6 +428,8 @@ public:
         bitboards[our_color][piece] |= bitboard;
         side_occupancy[our_color] |= bitboard;
         occupancy |= bitboard;
+
+        hash_key ^= piece_keys[our_color][piece][square];
     }
 
     template<Color our_color>
@@ -415,6 +441,8 @@ public:
         bitboards[our_color][piece] &= bitboard;
         side_occupancy[our_color] &= bitboard;
         occupancy &= bitboard;
+
+        hash_key ^= piece_keys[our_color][piece][square];
     }
 
     template<Color our_color, Color their_color, bool make_move>
@@ -431,22 +459,18 @@ public:
         side_occupancy[their_color] &= rem_bitboard;
         side_occupancy[our_color]   |= bitboard;
 
-        if constexpr (make_move) {
-            hv_occupancy[their_color] &= rem_bitboard;
-            ad_occupancy[their_color] &= rem_bitboard;
-        }
+        hash_key ^= piece_keys[our_color][piece][square];
+        hash_key ^= piece_keys[their_color][captured_piece][square];
     }
 
     template<Color our_color>
     void make_move(move_t m) {
         fifty_move_clock++;
-        /*
-        if constexpr (our_color == BLACK) {
-            full_move_counter++;
-        }
-        */
 
         enpassant = N_SQUARES;
+
+        hash_key ^= enpassant_keys[enpassant];
+        hash_key ^= side_key;
 
         constexpr Color their_color = (our_color == WHITE) ? BLACK : WHITE;
         constexpr Direction down  =   (our_color == WHITE) ? SOUTH : NORTH;
@@ -477,26 +501,29 @@ public:
             case DOUBLE_PAWN_PUSH:
                 set_piece<our_color>(square_to, PAWN);
                 enpassant = (Square) (square_to + down);
+                hash_key ^= enpassant_keys[enpassant];
                 break;
             case KING_CASTLE:
                 unset_piece<our_color>(our_rook_H_square,ROOK);
                 set_piece<our_color>(our_F_square, ROOK);
                 set_piece<our_color>(our_G_square, KING);
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
                 break;
             case QUEEN_CASTLE:
                 unset_piece<our_color>(our_rook_A_square,ROOK);
                 set_piece<our_color>(our_D_square, ROOK);
                 set_piece<our_color>(our_C_square, KING);
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
                 break;
             case CAPTURE:
                 fifty_move_clock = 0;
                 replace_piece<our_color, their_color, true>(square_to, piece);
                 if(square_to == opponent_rook_H_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_kingside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 } else if (square_to == opponent_rook_A_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_queenside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 }
                 break;
             case EN_PASSANT:
@@ -508,51 +535,59 @@ public:
                 break;
             case BISHOP_PROMOTION:
                 set_piece<our_color>(square_to, BISHOP);
-                ad_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][BISHOP];
                 break;
             case ROOK_PROMOTION:
                 set_piece<our_color>(square_to, ROOK);
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
                 break;
             case QUEEN_PROMOTION:
                 set_piece<our_color>(square_to, QUEEN);
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
-                ad_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][BISHOP];
                 break;
             case KNIGHT_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, KNIGHT);
                 if(square_to == opponent_rook_H_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_kingside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 } else if (square_to == opponent_rook_A_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_queenside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 }
                 break;
             case BISHOP_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, BISHOP);
-                ad_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][BISHOP];
                 if(square_to == opponent_rook_H_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_kingside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 } else if (square_to == opponent_rook_A_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_queenside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 }
                 break;
             case ROOK_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, ROOK);
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
                 if(square_to == opponent_rook_H_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_kingside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 } else if (square_to == opponent_rook_A_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_queenside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 }
                 break;
             case QUEEN_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, QUEEN);
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
-                ad_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][BISHOP];
                 if(square_to == opponent_rook_H_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_kingside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 } else if (square_to == opponent_rook_A_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_opponent_queenside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 }
                 break;
         }
@@ -561,28 +596,26 @@ public:
             case PAWN:
                 fifty_move_clock = 0;
                 break;
-            case BISHOP:
-                ad_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][BISHOP];
-                break;
             case ROOK:
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
                 if (square_from == our_rook_A_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_player_queenside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 } else if (square_from == our_rook_H_square) {
+                    hash_key ^= castling_keys[castling_rights];
                     castling_rights &= forbid_player_kingside_castling;
+                    hash_key ^= castling_keys[castling_rights];
                 }
                 break;
-            case QUEEN:
-                hv_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][ROOK];
-                ad_occupancy[our_color] = bitboards[our_color][QUEEN] | bitboards[our_color][BISHOP];
-                break;
             case KING:
+                hash_key ^= castling_keys[castling_rights];
                 castling_rights &= forbid_player_castling;
+                hash_key ^= castling_keys[castling_rights];
                 break;
         }
 
         side = their_color;
-        history.emplace_back(castling_rights, enpassant, fifty_move_clock, m, hv_occupancy[WHITE], hv_occupancy[BLACK], ad_occupancy[WHITE], ad_occupancy[BLACK]);
+        history.emplace_back(castling_rights, enpassant, fifty_move_clock, m, hash_key);
     }
 
     void make_move(move_t m) {
@@ -593,11 +626,6 @@ public:
     void undo_move() {
         board_info b_info = history.back();
         const move_t played_move = b_info.m_move;
-        /*
-        if constexpr (our_color == BLACK) {
-            full_move_counter--;
-        }
-        */
 
         side = our_color;
 
@@ -615,8 +643,6 @@ public:
         const Square square_to = played_move.get_to();
         PieceType piece = played_move.get_piece();
         const MoveType movetype = played_move.get_move_type();
-        //const PieceType captured_piece = played_move.get_captured_piece();
-
 
         set_piece<our_color>(square_from, piece);
         switch (movetype) {
@@ -661,19 +687,21 @@ public:
                 break;
         }
 
+
         history.pop_back();
         b_info = history.back();
         enpassant = b_info.enpassant;
         fifty_move_clock  = b_info.fifty_move_clock;
         castling_rights   = b_info.castling_rights;
-        hv_occupancy[WHITE] = b_info.hv_occ_white;
-        hv_occupancy[BLACK] = b_info.hv_occ_black;
-        ad_occupancy[WHITE] = b_info.ad_occ_white;
-        ad_occupancy[BLACK] = b_info.ad_occ_black;
+        hash_key = b_info.hash_key;
     }
 
     void undo_move() {
         side == WHITE ? undo_move<BLACK>() : undo_move<WHITE>();
+    }
+
+    uint64_t get_hash_key() const {
+        return hash_key;
     }
 };
 
