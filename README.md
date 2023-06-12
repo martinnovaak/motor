@@ -1,1 +1,23 @@
 # motor
+
+### Board Representation
+* Bitboards 
+* Legal move generator
+* [Magic Kindergarten](https://github.com/martinnovaak/motor/blob/main/magic_kindergarten.h) for sliding pieces
+
+### Search
+* AlphaBeta pruning
+* Quiescence search
+* Iterative deepening
+* Null move pruning
+* Late move pruning
+
+### Move ordering
+* Transposition Table move ordering
+* MVV-LVA
+* Killer moves
+* History moves
+
+### Evaluation
+* Material counting
+* Piece square tables
