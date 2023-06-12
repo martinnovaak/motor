@@ -3,7 +3,7 @@
 ### Board Representation
 * Bitboards 
 * Legal move generator
-* [Magic Kindergarten](https://github.com/martinnovaak/motor/blob/main/magic_kindergarten.h) for sliding pieces
+* [Magic Kindergarten](https://github.com/martinnovaak/motor/blob/main/kindergarten.md) for sliding pieces
 
 ### Search
 * AlphaBeta pruning
