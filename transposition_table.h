@@ -17,7 +17,7 @@ struct tt_info {
     int score;
     move_t best_move;
     int depth;
-    BOUND type;
+    BOUND type = INVALID;
 };
 
 // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
@@ -54,6 +54,11 @@ public:
     void resize(const uint64_t size) {
         tt_table.resize(size);
         bucket_count = size / sizeof(tt_info);
+        tt_table.resize(bucket_count);
+    }
+
+    void clear() {
+        tt_table = std::vector<tt_info>(bucket_count);
     }
 
     void insert(uint64_t zobrist_hash, int score, move_t best_move, int depth, BOUND type) {

@@ -94,6 +94,27 @@ public:
         }
     }
 
+    bool is_quiet() const {
+        switch (get_move_type()) {
+            case QUIET:
+            case DOUBLE_PAWN_PUSH:
+            case KING_CASTLE:
+            case QUEEN_CASTLE:
+                return true;
+            case CAPTURE:
+            case EN_PASSANT:
+            case KNIGHT_PROMOTION:
+            case BISHOP_PROMOTION:
+            case ROOK_PROMOTION:
+            case QUEEN_PROMOTION:
+            case KNIGHT_PROMOTION_CAPTURE:
+            case BISHOP_PROMOTION_CAPTURE:
+            case ROOK_PROMOTION_CAPTURE:
+            case QUEEN_PROMOTION_CAPTURE:
+                return false;
+        }
+    }
+
     std::string to_string() const {
         std::string move_string = "";
         move_string.append(square_to_string[get_from()]);
@@ -102,28 +123,29 @@ public:
         switch (mt)
         {
             case KNIGHT_PROMOTION:
-                return move_string + "N";
+                return move_string + "n";
             case BISHOP_PROMOTION:
-                return move_string + "B";
+                return move_string + "b";
             case ROOK_PROMOTION:
-                return move_string + "R";
+                return move_string + "r";
             case QUEEN_PROMOTION:
-                return move_string + "Q";
+                return move_string + "q";
             case KNIGHT_PROMOTION_CAPTURE:
-                return move_string + "N";
+                return move_string + "n";
             case BISHOP_PROMOTION_CAPTURE:
-                return move_string + "B";
+                return move_string + "b";
             case ROOK_PROMOTION_CAPTURE:
-                return move_string + "R";
+                return move_string + "r";
             case QUEEN_PROMOTION_CAPTURE:
-                return move_string + "Q";
+                return move_string + "q";
             default:
                 return move_string;
         }
     }
 
     bool operator==(const move_t & other_move) const {
-        return m_move == other_move.m_move;
+        return (this->m_move & 0x7fffffull) == (other_move.m_move & 0x7fffffull);
+        //return m_move == other_move.m_move;
     }
 
     void set_score(uint32_t score) {
