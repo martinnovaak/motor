@@ -1,7 +1,7 @@
 # motor
 
-### Board Representation
-* Bitboards 
+### Movegenerator
+* Bitboards representation
 * Legal move generator
 * [Magic Kindergarten](https://github.com/martinnovaak/motor/blob/main/kindergarten.md) for sliding pieces
 
