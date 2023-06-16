@@ -10,7 +10,7 @@
 * Quiescence search
 * Iterative deepening
 * Null move pruning
-* Late move pruning
+* Late move reduction
 
 ### Move ordering
 * Transposition Table move ordering
