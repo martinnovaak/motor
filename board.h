@@ -42,6 +42,21 @@ public:
         }
         side = WHITE;
         fen_to_board(fen);
+
+        uint64_t checkers;
+        if(side == WHITE) {
+            checkers = get_checkers<BLACK>();
+        } else {
+            checkers = get_checkers<WHITE>();
+        }
+        switch (popcount(checkers)) {
+            case 1:
+                history.back().m_move = move_t(0, lsb(checkers), static_cast<Color>(0),pieces[lsb(checkers)], 0, 0, 1, 0);
+                break;
+            case 2:
+                history.back().m_move = move_t(0, lsb(checkers), static_cast<Color>(0),pieces[lsb(checkers)], 0, 0, 1, 1);
+                break;
+        }
     }
 
     char piece_at(int square) const {
@@ -214,21 +229,22 @@ public:
         return oss.str();
     }
 
-    bool in_check() const {
-        if(side == WHITE) {
+    check_type in_check() const {
+        /*if(side == WHITE) {
             return attackers<BLACK>(get_king_square());
         } else {
             return attackers<WHITE>(get_king_square());
-        }
+        }*/
+        return history.back().m_move.gives_check();
     }
 
     template<Color their_color>
     uint64_t attackers(int square) const {
         return     (attacks<Ray::ROOK >(square, occupancy) & (bitboards[their_color][ROOK] | bitboards[their_color][QUEEN]))
-                 | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][BISHOP] | bitboards[their_color][QUEEN]))
-                 | (KING_ATTACKS[square]   & bitboards[their_color][KING])
-                 | (KNIGHT_ATTACKS[square] & bitboards[their_color][KNIGHT])
-                 | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][PAWN]);
+                   | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][BISHOP] | bitboards[their_color][QUEEN]))
+                   | (KING_ATTACKS[square]   & bitboards[their_color][KING])
+                   | (KNIGHT_ATTACKS[square] & bitboards[their_color][KNIGHT])
+                   | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][PAWN]);
     }
 
     template <Color their_color>
@@ -267,7 +283,21 @@ public:
         return attackers_squares;
     }
 
-    uint64_t get_checkmask(uint64_t checkers, int square) {
+    template <Color their_color>
+    uint64_t get_checkmask(int square) {
+        const move_t last_played_move = history.back().m_move;
+        switch (last_played_move.gives_check()) {
+            case NOCHECK:
+                return full_board;
+            case DIRECT_CHECK:
+                return pinmask[square][last_played_move.get_to()];
+            case DISCOVERY_CHECK:
+                return pinmask[square][lsb(get_checkers<their_color>())];
+                break;
+            case DOUBLE_CHECK:
+                return 0ull;
+        }
+        /*
         if(checkers == 0) {
             return full_board;
         }
@@ -276,7 +306,7 @@ public:
             return 0ull;
         }
         return pinmask[square][sq];
-
+        */
 
         /* Probably slower
         unsigned int number_of_checks = popcount(checkers);
@@ -311,6 +341,11 @@ public:
 
     int get_king_square() const {
         return lsb(bitboards[side][KING]);
+    }
+
+    template <Color our_color, Color their_color>
+    std::pair<uint64_t, uint64_t> get_king_bitboards() const {
+        return { bitboards[our_color][KING], bitboards[their_color][KING] };
     }
 
     uint64_t get_occupancy() const {
@@ -365,6 +400,42 @@ public:
         return { horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask };
     }
 
+    // method that finds pieces giving discovery checks to enemy king
+    template<Color our_color, Color their_color>
+    std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_discovering_pieces(int enemy_king) const {
+        uint64_t seen_squares = attacks<Ray::QUEEN>(enemy_king, occupancy);
+        uint64_t possibly_discovering_pieces = seen_squares & side_occupancy[our_color];
+        uint64_t occupied = occupancy ^ possibly_discovering_pieces;
+
+        uint64_t check_hv_pieces = ~seen_squares & (bitboards[our_color][ROOK] | bitboards[our_color][QUEEN]);
+        uint64_t check_ad_pieces = ~seen_squares & (bitboards[our_color][BISHOP] | bitboards[our_color][QUEEN]);
+        uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(enemy_king, occupied)   & check_hv_pieces;
+        uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(enemy_king, occupied)     & check_hv_pieces;
+        uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(enemy_king, occupied) & check_ad_pieces;
+        uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(enemy_king, occupied)     & check_ad_pieces;
+
+        uint64_t horizontal_discover_mask{}, vertical_discover_mask{}, antidiagonal_discover_mask{}, diagonal_discover_mask{};
+        uint64_t discover_pieces = 0ull;
+
+        while (horizontal_pinners) {
+            horizontal_discover_mask |= pinmask[pop_lsb(horizontal_pinners)][enemy_king];
+        }
+
+        while (vertical_pinners) {
+            vertical_discover_mask |= pinmask[pop_lsb(vertical_pinners)][enemy_king];
+        }
+
+        while (antidiagonal_pinners) {
+            antidiagonal_discover_mask |= pinmask[pop_lsb(antidiagonal_pinners)][enemy_king];
+        }
+
+        while (diagonal_pinners) {
+            diagonal_discover_mask |= pinmask[pop_lsb(diagonal_pinners)][enemy_king];
+        }
+
+        return { horizontal_discover_mask, vertical_discover_mask, antidiagonal_discover_mask, diagonal_discover_mask };
+    }
+
     int get_castle_rights() const {
         return castling_rights;
     }
@@ -373,10 +444,10 @@ public:
         return enpassant;
     }
 
-    template<Color their_color>
+    template<Color our_color, Color their_color>
     bool check_legality_of_enpassant (int square_from, int enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
-        int king_square = get_king_square();
+        int king_square = lsb(bitboards[our_color][KING]);
         return !(attacks<Ray::HORIZONTAL>(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (bitboards[their_color][ROOK] | bitboards[their_color][QUEEN]));
     }
 

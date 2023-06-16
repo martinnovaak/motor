@@ -20,9 +20,20 @@ enum MoveType : int {
     QUEEN_PROMOTION_CAPTURE  = 15,
 };
 
+enum check_type : uint32_t {
+    NOCHECK = 0x0ull,
+    DIRECT_CHECK = 0x800000ull,
+    DISCOVERY_CHECK = 0x1000000ull,
+    DOUBLE_CHECK = 0x1800000ull,
+};
+
 struct move_t {
 public:
     move_t() : m_move{} {}
+
+    move_t(int from, int to, Color color, int moving_piece, int type_information, int captured_piece, int gives_check, int discovery) {
+        m_move = from | to << 6 | color << 12 | moving_piece << 13 | type_information << 16 | captured_piece << 20 | gives_check << 23 | discovery << 24;
+    }
 
     move_t(int from, int to, Color color, int moving_piece, int type_information, int captured_piece) {
         m_move = from | to << 6 | color << 12 | moving_piece << 13 | type_information << 16 | captured_piece << 20;
@@ -59,14 +70,6 @@ public:
 
     PieceType get_captured_piece() const {
         return PieceType(m_move >> 20 & 0b111);
-    }
-
-    void print() const {
-        std::cout << get_from() << " " << get_to() << " " << get_color() << " " << get_piece() <<" " << get_move_type() << " " << get_captured_piece();
-    }
-
-    void print_move() const {
-        std::cout << " " << square_to_string[get_from()] << square_to_string[get_to()] << " ";
     }
 
     bool is_promotion() const {
@@ -143,17 +146,20 @@ public:
         }
     }
 
+    check_type gives_check() const {
+        return check_type(m_move & 0x1800000ull);
+    }
+
     bool operator==(const move_t & other_move) const {
         return (this->m_move & 0x7fffffull) == (other_move.m_move & 0x7fffffull);
         //return m_move == other_move.m_move;
     }
 
     void set_score(uint32_t score) {
-        m_move |= (score << 23);
+        m_move |= (score << 25);
     }
 
     uint32_t m_move;
-    //int score;
 };
 
 #endif //MOTOR_MOVE_T_H

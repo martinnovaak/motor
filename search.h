@@ -67,27 +67,25 @@ constexpr static int mvv_lva[6][6] = {
         {0,  0,  0,  0,  0,  0},    // victim NONE
 };
 
-
 static void score_moves(movelist & ml, const search_data & data, move_t tt_move) {
     for(move_t & move : ml) {
         Square from = move.get_from();
         Square to   = move.get_to();
 
         if(tt_move == move) {
-            move.set_score(420);
+            move.set_score(127);
         } else if(move.is_capture()) {
-            move.set_score(320 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             if(to == data.square_of_last_move) {
-                move.set_score(360 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
+                move.set_score(96 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             } else {
-                move.set_score(320 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
+                move.set_score(86 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             }
         } else if (move.is_promotion()) {
-            move.set_score(320);
+            move.set_score(110);
         } else if (data.killer_moves[data.ply][0] == move) {
-            move.set_score(310);
+            move.set_score(109);
         } else if (data.killer_moves[data.ply][1] == move) {
-            move.set_score(300);
+            move.set_score(108);
         } else {
             move.set_score(data.history_moves[from][to]);
         }
@@ -122,17 +120,14 @@ static int quiescence(board & chessboard, int alpha, int beta, search_data & dat
 
     movelist ml;
 
-    /*
-    const uint64_t key = chessboard.get_hash_key();
-    const tt_info & tt_info_t = ttable.probe(key);
-    move_t best_move = {};
-    if (tt_info_t.type != BOUND::INVALID && tt_info_t.hash_key == key) {
-        best_move = tt_info_t.best_move;
-        ml.add(best_move);
+    if (chessboard.in_check()) {
+        generate_moves(chessboard, ml);
+        if(ml.size() == 0) {
+            return INF - data.ply;
+        }
+    } else {
+        generate_captures(chessboard, ml);
     }
-     */
-
-    generate_captures(chessboard, ml);
 
     sort_moves(ml, data, {});
 
@@ -189,7 +184,8 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         }
     }
 
-    bool in_check = chessboard.in_check();
+    //bool in_check = chessboard.in_check();
+    check_type in_check = chessboard.in_check();
 
     BOUND flag = BOUND::UPPER;
     move_t best_move = {};
@@ -261,7 +257,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
     if constexpr (!is_root) {
         if (in_check) {
-            depth++;
+            depth += in_check == DOUBLE_CHECK ? 2 : 1;
         }
     }
 
