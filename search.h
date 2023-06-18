@@ -5,6 +5,7 @@
 #include "stopwatch_t.h"
 #include "transposition_table.h"
 #include "eval.h"
+#include <iostream>
 
 constexpr int MAX_DEPTH = 64;
 constexpr int full_depth_moves = 4;
@@ -23,13 +24,15 @@ struct search_data {
     int ply = 0;
     uint64_t nodes_searched = 0;
     move_t killer_moves[MAX_DEPTH][2] = {};
+    move_t counter_moves[64][64] = {};
+    move_t threat_moves[64][64] = {};
     int history_moves[64][64] = {};
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
     int eval_grandfather;
     int eval_father;
-    //transposition_table ttable;
+    move_t previous_move;
 
     void update_killer(move_t move) {
         killer_moves[ply][0] = killer_moves[ply][1];
@@ -37,7 +40,7 @@ struct search_data {
     }
 
     void update_history(move_t move, int depth) {
-        history_moves[move.get_from()][move.get_to()] = depth;
+        history_moves[move.get_from()][move.get_to()] += depth;
     }
 
     void update_pv(move_t move, int depth) {
@@ -74,22 +77,23 @@ static void score_moves(movelist & ml, const search_data & data, move_t tt_move)
         Square to   = move.get_to();
 
         if(tt_move == move) {
-            move.set_score(420);
+            move.set_score(511);
         } else if(move.is_capture()) {
-            move.set_score(320 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             if(to == data.square_of_last_move) {
-                move.set_score(360 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
+                move.set_score(480 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             } else {
-                move.set_score(320 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
+                move.set_score(450 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             }
         } else if (move.is_promotion()) {
-            move.set_score(320);
+            move.set_score(449);
         } else if (data.killer_moves[data.ply][0] == move) {
-            move.set_score(310);
+            move.set_score(448);
         } else if (data.killer_moves[data.ply][1] == move) {
-            move.set_score(300);
+            move.set_score(447);
+        } else if (data.counter_moves[data.previous_move.get_from()][data.previous_move.get_to()] == move) {
+            move.set_score(446);
         } else {
-            move.set_score(data.history_moves[from][to]);
+            move.set_score(std::min(data.history_moves[from][to], 445));
         }
     }
 }
@@ -121,16 +125,6 @@ static int quiescence(board & chessboard, int alpha, int beta, search_data & dat
     }
 
     movelist ml;
-
-    /*
-    const uint64_t key = chessboard.get_hash_key();
-    const tt_info & tt_info_t = ttable.probe(key);
-    move_t best_move = {};
-    if (tt_info_t.type != BOUND::INVALID && tt_info_t.hash_key == key) {
-        best_move = tt_info_t.best_move;
-        ml.add(best_move);
-    }
-     */
 
     generate_captures(chessboard, ml);
 
@@ -200,8 +194,12 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     const tt_info & tt_info_t = ttable.probe(key);
     if (tt_info_t.type != BOUND::INVALID && tt_info_t.hash_key == key) {
         best_move = tt_info_t.best_move;
-    } else {
-        if(depth >= 5) {
+    } else if(depth >= 4) {
+        // Internal iterative deepening
+        if constexpr (is_pv) {
+            alphabeta<PV_node>(chessboard, alpha, beta, data, stopwatch, depth - 3);
+            best_move = tt_info_t.best_move;
+        } else {
             depth--;
         }
     }
@@ -216,7 +214,6 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
                 }
             }
 
-
             if constexpr (!is_pv) {
                 bool improving = (data.ply >= 2 && eval >= data.eval_grandfather);
 
@@ -228,8 +225,10 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
                 // NULL MOVE PRUNING
                 if (data.ply && depth >= 3 && eval >= beta && !chessboard.pawn_endgame()) {
                     Square enpassant = chessboard.make_null_move();
-                    int R = depth > 5 ? 4 : 3;
+                    int R = 3 + depth / 4;
+                    data.ply++;
                     int nullmove_score = -alphabeta<NON_PV_node>(chessboard, -beta, -beta + 1, data, stopwatch, depth - R);
+                    data.ply--;
                     chessboard.unmake_null_move(enpassant);
                     if (nullmove_score >= beta) {
                         return nullmove_score;
@@ -238,8 +237,6 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             }
         }
     }
-
-
 
     movelist ml;
     generate_moves(chessboard, ml);
@@ -253,13 +250,16 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     }
 
     if constexpr (is_root) {
+        // if we have only one legal move in root search end the search
         if (ml.size() == 1) {
             data.update_pv(ml[0], depth);
             return eval;
+            stopwatch.stop_timer();
         }
     }
 
     if constexpr (!is_root) {
+        // check extension
         if (in_check) {
             depth++;
         }
@@ -270,26 +270,21 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     sort_moves(ml, data,  best_move);
     int moves_searched = 0;
     int grandfather = data.eval_father;
-
+    move_t previous_move = data.previous_move;
     for (const move_t& m : ml) {
         chessboard.make_move(m);
         data.square_of_last_move = m.get_from();
         data.ply++;
         data.eval_grandfather = grandfather;
         data.eval_father = eval;
+        data.previous_move = m;
 
-        /*
-        if constexpr (!is_pv) {
-            if(tt_info_t.best_move == m) {
-                depth++;
-            }
-        }
-        */
-
+        // Principal variation search
         int score;
         if(moves_searched == 0) {
             score = -alphabeta<PV_node>(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
         } else {
+            // late move reduction
             if(moves_searched >= full_depth_moves && depth >= reduction_limit && !is_pv && !in_check && !chessboard.in_check() && m.is_quiet()) {
                 int reduction = data.ply > 7 ? 3 : 2;
                 score = -alphabeta<NON_PV_node>(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - reduction);
@@ -312,11 +307,16 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         if(score > eval) {
             eval = score;
             best_move = m;
+            data.update_pv(m, depth);
         }
 
         if (score >= beta) {
             if (!m.is_capture()) {
                 data.update_killer(m);
+                if constexpr (!is_root) {
+                    data.counter_moves[previous_move.get_from()][previous_move.get_to()] = m;
+                }
+                data.update_history(m, depth);
             }
 
             ttable.insert(key, beta, best_move, depth, BOUND::LOWER);
@@ -324,10 +324,9 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         }
         if (score > alpha) {
             alpha = score;
-            if(!m.is_capture()) {
-                data.update_history(m, depth);
-            }
-            data.update_pv(m, depth);
+            /*if (!m.is_capture()) {
+                data.update_history(m, 1);
+            }*/
             flag = BOUND::EXACT;
         }
     }
@@ -337,21 +336,15 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 }
 
 int aspiration_window(board & chessboard, int score, search_data & data, stopwatch_t & stopwatch, int depth) {
-    int window = 20;
-    int alpha = std::max(-INF, score - window);
-    int beta = std::min(INF, score + window);
+    int alpha = std::max(-INF, score - 20);
+    int beta = std::min(INF, score + 20);
 
     score = alphabeta<ROOT_node>(chessboard, alpha, beta, data, stopwatch, depth);
+
     if(score <= alpha || score >= beta) {
-        //score = alphabeta<ROOT_node>(chessboard, -INF, INF, data, stopwatch, depth);
-        window = 50;
-        alpha = std::max(-INF, score - window);
-        beta = std::min(INF, score + window);
-        score = alphabeta<ROOT_node>(chessboard, alpha, beta, data, stopwatch, depth);
-        if(score <= alpha || score >= beta) {
-            score = alphabeta<ROOT_node>(chessboard, -INF, INF, data, stopwatch, depth);
-        }
+        score = alphabeta<ROOT_node>(chessboard, -INF, INF, data, stopwatch, depth);
     }
+
     return score;
 }
 
@@ -368,7 +361,7 @@ void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & st
         } else {
             score = aspiration_window(chessboard, score, data, stopwatch, current_depth);
         }
-         */
+        */
 
         if(stopwatch.stopped()) {
             break;
