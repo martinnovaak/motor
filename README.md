@@ -7,9 +7,13 @@
 
 ### Search
 * AlphaBeta pruning
+* Principal variation search
 * Quiescence search
+* Aspiration window
 * Iterative deepening
 * Null move pruning
+* Reverse futility pruning
+* Razoring
 * Late move reduction
 
 ### Move ordering
