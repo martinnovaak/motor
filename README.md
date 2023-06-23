@@ -25,3 +25,4 @@
 ### Evaluation
 * Material counting
 * Piece square tables
+* Tapered evaluation
