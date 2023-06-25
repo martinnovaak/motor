@@ -29,8 +29,8 @@ struct search_data {
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
-    //int eval_grandfather;
-    //int eval_father;
+    int eval_grandfather;
+    int eval_father;
     move_t previous_move;
 
     void update_killer(move_t move) {
@@ -39,7 +39,8 @@ struct search_data {
     }
 
     void update_history(move_t move, int depth) {
-        history_moves[move.get_from()][move.get_to()] += depth * depth;
+        //history_moves[move.get_from()][move.get_to()] += depth;
+        history_moves[move.get_from()][move.get_to()] = std::min(history_moves[move.get_from()][move.get_to()] + depth, 440);
     }
 
     void reduce_history(move_t move, int depth) {
@@ -65,48 +66,63 @@ constexpr int MATE = INF - MAX_DEPTH;
 //                      [victim][attacker]
 constexpr static int mvv_lva[6][6] = {
 //attacker:  P, N,  B,  R,  Q,  NONE
-        {8,  4, 3, 2, 1, 26},    // victim PAWN
-        {12, 11, 10, 9, 6, 27},   // victim KNIGHT
-        {16, 15, 14, 13, 7, 28},    // victim BISHOP
-        {20, 19, 18, 17, 8, 29},    // victim ROOK
-        {25, 24, 23, 22, 21, 30},    // victim QUEEN
+        {13,  5, 4, 3, 2, 1},    // victim PAWN
+        {16, 15, 14, 8, 7, 6},   // victim KNIGHT
+        {19, 18, 17, 11, 10, 9},    // victim BISHOP
+        {24, 23, 22, 21, 12, 20},    // victim ROOK
+        {30, 29, 28, 27, 26, 25},    // victim QUEEN
         {0,  0,  0,  0,  0,  0},    // victim NONE
 };
 
-
 static void score_moves(movelist & ml, const search_data & data, move_t tt_move) {
     for(move_t & move : ml) {
-        Square from    = move.get_from();
+        Square from  = move.get_from();
         Square to    = move.get_to();
 
         if(tt_move == move) {
-            move.set_score(100'000);
+            move.set_score(511);
+        } else if (move.is_promotion()) {
+            switch(move.get_move_type()) {
+                case KNIGHT_PROMOTION:
+                    move.set_score(507);
+                    break;
+                case BISHOP_PROMOTION:
+                    move.set_score(0);
+                    break;
+                case ROOK_PROMOTION:
+                    move.set_score(1);
+                    break;
+                case QUEEN_PROMOTION:
+                    move.set_score(508);
+                    break;
+                case KNIGHT_PROMOTION_CAPTURE:
+                    move.set_score(509);
+                    break;
+                case BISHOP_PROMOTION_CAPTURE:
+                    move.set_score(2);
+                    break;
+                case ROOK_PROMOTION_CAPTURE:
+                    move.set_score(3);
+                    break;
+                case QUEEN_PROMOTION_CAPTURE:
+                    move.set_score(510);
+                    break;
+            }
         } else if(move.is_capture()) {
             if(to == data.square_of_last_move) {
-                move.set_score(90'000 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
+                move.set_score(476 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             } else {
-                move.set_score(85'000 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
+                move.set_score(446 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
             }
-        } else if (move.is_promotion()) {
-            move.set_score(80'000);
         } else if (data.killer_moves[data.ply][0] == move) {
-            move.set_score(70'000);
+            move.set_score(445);
         } else if (data.killer_moves[data.ply][1] == move) {
-            move.set_score(60'000);
+            move.set_score(444);
         } else if (data.counter_moves[data.previous_move.get_from()][data.previous_move.get_to()] == move) {
-            move.set_score(50'000);
+            move.set_score(443);
         } else {
-            move.set_score(data.history_moves[from][to]);
+            move.set_score(2 + data.history_moves[from][to]);
         }
-    }
-}
-
-static void sort_moves(movelist& ml, const search_data& data, move_t tt_move) {
-    score_moves(ml, data, tt_move);
-    std::vector<move_t> moves(ml.begin(), ml.end());
-    std::sort(moves.begin(), moves.end(), [](const move_t & a, const move_t & b){return a.m_score > b.m_score;});
-    for(unsigned int i = 0; i < ml.size(); i++) {
-        ml[i] = moves[i];
     }
 }
 
@@ -131,9 +147,14 @@ static int quiescence(board & chessboard, int alpha, int beta, search_data & dat
 
     generate_captures(chessboard, ml);
 
-    sort_moves(ml, data, {});
+    score_moves(ml, data, {});
 
-    for (const move_t& m : ml) {
+    for(int moves_searched = 0; moves_searched < ml.size(); moves_searched++) {
+        const move_t& m = ml[moves_searched];
+        if (!m.is_promotion() && stand_pat + material[m.get_captured_piece()] + 200 < alpha) {
+            continue;
+        }
+
         chessboard.make_move(m);
         data.square_of_last_move = m.get_from();
         data.ply++;
@@ -221,10 +242,10 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             }
 
             if constexpr (!is_pv) {
-                //bool improving = (data.ply >= 2 && eval >= data.eval_grandfather);
+                bool improving = (data.ply >= 2 && eval >= data.eval_grandfather);
 
                 // reverse futility pruning
-                if(depth < 7 && eval - 50 * depth  /*+ improving * 80*/  >= beta) {
+                if(depth < 7 && eval - 50 * depth  + improving * 100  >= beta) {
                     return beta;
                 }
 
@@ -264,8 +285,8 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         }
     }
 
+    // check extension
     if constexpr (!is_root) {
-        // check extension
         if (in_check) {
             depth++;
         }
@@ -273,27 +294,20 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
     eval = -INF;
 
-    sort_moves(ml, data,  best_move);
-    int moves_searched = 0;
-    //int grandfather = data.eval_father;
+    score_moves(ml, data, best_move);
+    int grandfather = data.eval_father;
     move_t previous_move = data.previous_move;
-    for (const move_t& m : ml) {
+    for(unsigned int moves_searched = 0; moves_searched < ml.size(); moves_searched++) {
+        const move_t & m = ml[moves_searched];
         chessboard.make_move(m);
 
-        if constexpr (!is_pv) {
-            if(!in_check && m.is_quiet() && eval > -49'000) {
-                if (depth <= 4 && moves_searched >= 5 + depth * depth ) {
-                    chessboard.undo_move();
-                    continue;
-                }
-            }
-        }
 
-        data.square_of_last_move = m.get_from();
+        data.square_of_last_move = m.get_to();
         data.ply++;
-        //data.eval_grandfather = grandfather;
-        //data.eval_father = eval;
+        data.eval_grandfather = grandfather;
+        data.eval_father = eval;
         data.previous_move = m;
+
 
         // Principal variation search
         int score;
@@ -316,8 +330,11 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             }
         }
 
+        if (stopwatch.stopped()) {
+            return 0;
+        }
+
         chessboard.undo_move();
-        moves_searched++;
         data.ply--;
 
         if(score > eval) {
@@ -375,7 +392,6 @@ void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & st
             score = aspiration_window(chessboard, score, data, stopwatch, current_depth);
         }
 
-
         if(stopwatch.stopped()) {
             break;
         }
@@ -390,6 +406,10 @@ void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & st
         }
         std::cout << "\n";
         best_move = data.best_move();
+
+        if(stopwatch.can_end()) {
+            break;
+        }
     }
     std::cout << "bestmove " << best_move << "\n";
 }
