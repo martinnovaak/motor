@@ -2,40 +2,31 @@
 #define MOVEGEN_MOVELIST_H
 
 #include "move_t.h"
-#include <array>
 
 class movelist {
 private:
-    std::array<move_t, 256> list;
-    size_t count;
+    move_t list[218];
+    unsigned int count;
 public:
-    using const_iterator = typename std::array<move_t, 256>::const_iterator;
-
-    movelist() : count(0) {}
-
-    size_t size() const {
-        return count;
-    }
-
-    void add(move_t m) {
-        list[count] = m;
-        count++;
-    }
-
-    void clear() {
-        count = 0;
-    }
-
+    movelist() : list{}, count(0) {}
+    unsigned int size() const {return count;}
+    void add(move_t && m) {list[count++] = m;}
+    void add(const move_t & m) {list[count++] = m;}
+    void clear() {count = 0;}
     move_t& operator[](uint32_t index) {
+        uint32_t best = index;
+        for(unsigned int i = index + 1; i < count; i++) {
+            if(list[i].m_move > list[best].m_move) {
+                best = i;
+            }
+        }
+        std::swap(list[index], list[best]);
         return list[index];
     }
-
-    const_iterator begin() const {
-        return list.begin();
-    }
-
-    const_iterator end() const {
-        return std::next(list.begin(), count);
-    }
+    move_t * begin() {return std::begin(list);}
+    move_t * end() {return std::next(std::begin(list), count);}
+    //move_t * begin() {return list;}
+    //move_t * end() {return list + count;};
 };
+
 #endif //MOVEGEN_MOVELIST_H
