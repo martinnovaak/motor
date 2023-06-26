@@ -5,8 +5,6 @@ Kindergarten bitboards are used to generate rook attacks and ray attacks, wherea
 
 Therefore, to generate queen attacks, I get a combination of kindergarten rook + magic bishop &rarr; Kindergarten Magic.
 
-This is how motor can find pinners on each ray.
-
 ## Vertical attacks
 
 
