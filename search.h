@@ -44,7 +44,8 @@ struct search_data {
     }
 
     void reduce_history(move_t move, int depth) {
-        history_moves[move.get_from()][move.get_to()] -= depth;
+        //history_moves[move.get_from()][move.get_to()] -= depth;
+        history_moves[move.get_from()][move.get_to()] = std::max(history_moves[move.get_from()][move.get_to()] - depth, 0);
     }
 
     void update_pv(move_t move, int depth) {
@@ -187,6 +188,13 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     int old_alpha = alpha;
     int eval = evaluate(chessboard);
 
+    bool in_check = chessboard.in_check();
+
+    // check extension
+    if (in_check) {
+        depth++;
+    }
+
     if constexpr (!is_root) {
         if (depth <= 0) {
             return quiescence(chessboard, alpha, beta, data, stopwatch);
@@ -208,7 +216,6 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         }
     }
 
-    bool in_check = chessboard.in_check();
 
     BOUND flag = BOUND::UPPER;
     move_t best_move = {};
@@ -221,6 +228,27 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     if (tt_info_t.type != BOUND::INVALID && tt_info_t.hash_key == key) {
         best_move = tt_info_t.best_move;
         tt_hit = true;
+        if constexpr (!is_pv) {
+            if(tt_info_t.depth >= depth) {
+                switch (tt_info_t.type) {
+                    case INVALID:
+                        break;
+                    case EXACT:
+                        return tt_info_t.score;
+                        break;
+                    case LOWER:
+                        if(tt_info_t.score >= beta) {
+                            return tt_info_t.score;
+                        }
+                        break;
+                    case UPPER:
+                        if(tt_info_t.score <= alpha) {
+                            return tt_info_t.score;
+                        }
+                        break;
+                }
+            }
+        }
     } else if(depth >= 4) {
         // Internal iterative deepening
         if constexpr (is_pv) {
@@ -268,6 +296,8 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     movelist ml;
     generate_moves(chessboard, ml);
 
+    //movelist quiets;
+
     if(ml.size() == 0) {
         if(in_check) {
             return -INF + data.ply;
@@ -282,13 +312,6 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             data.update_pv(ml[0], depth);
             return eval;
             stopwatch.stop_timer();
-        }
-    }
-
-    // check extension
-    if constexpr (!is_root) {
-        if (in_check) {
-            depth++;
         }
     }
 
@@ -315,7 +338,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             score = -alphabeta<PV_node>(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
         } else {
             // late move reduction
-            if(moves_searched >= full_depth_moves && depth >= reduction_limit && !is_pv && !in_check && !chessboard.in_check() && m.is_quiet()) {
+            if(moves_searched >= full_depth_moves && depth >= reduction_limit && !is_pv && !in_check && m.is_quiet()) {
                 int reduction = data.ply > 7 ? 3 : 2;
                 score = -alphabeta<NON_PV_node>(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - reduction);
             } else {
@@ -324,7 +347,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 
             if(score > alpha) {
                 score = -alphabeta<NON_PV_node>(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - 1);
-                if(score > alpha && score < beta) {
+            if(score > alpha && score < beta) {
                     score = -alphabeta<PV_node>(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
                 }
             }
@@ -353,6 +376,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             }
 
             ttable.insert(key, beta, best_move, depth, BOUND::LOWER);
+
             return beta;
         }
         if (score > alpha) {
