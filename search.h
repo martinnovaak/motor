@@ -251,12 +251,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         }
     } else if(depth >= 4) {
         // Internal iterative deepening
-        if constexpr (is_pv) {
-            alphabeta<PV_node>(chessboard, alpha, beta, data, stopwatch, depth - 3);
-            best_move = tt_info_t.best_move;
-        } else {
-            depth--;
-        }
+        depth--;
     }
 
     if constexpr (!is_root) {
@@ -339,7 +334,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         } else {
             // late move reduction
             if(moves_searched >= full_depth_moves && depth >= reduction_limit && !is_pv && !in_check && m.is_quiet()) {
-                int reduction = data.ply > 7 ? 3 : 2;
+                int reduction = std::max(1, int(2 + std::log2(depth) * std::log2(moves_searched) / 5.5 - chessboard.in_check()));
                 score = -alphabeta<NON_PV_node>(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - reduction);
             } else {
                 score = alpha + 1;
