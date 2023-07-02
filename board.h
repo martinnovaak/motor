@@ -11,12 +11,24 @@
 #include <bitset>
 #include "zobrist.h"
 
+constexpr int castling_mask[N_SQUARES] = {
+        13,15,15,15,12,15,15,14,
+    15,15,15,15,15,15,15,15,
+    15,15,15,15,15,15,15,15,
+    15,15,15,15,15,15,15,15,
+    15,15,15,15,15,15,15,15,
+    15,15,15,15,15,15,15,15,
+    15,15,15,15,15,15,15,15,
+        7,15,15,15,3,15,15,11,
+};
+
 struct board_info {
     int castling_rights;
     Square enpassant;
     int fifty_move_clock;
     move_t m_move;
     uint64_t hash_key;
+    //int mg, eg, phase;
 };
 
 class board {
@@ -31,6 +43,10 @@ class board {
 
     int fifty_move_clock;
     uint64_t hash_key;
+
+    //int mg_score;
+    //int eg_score;
+    //int phase;
 
     std::vector<board_info> history;
 public:
@@ -50,6 +66,7 @@ public:
         return piece_to_char[color][piece];
     }
 
+    /*
     void print_board() const {
         for (int rank = 7; rank >= 0; rank--) {
             std::cout << rank + 1 << " ";
@@ -76,6 +93,7 @@ public:
 
         std::cout << "\n\n Hash key: " << hash_key << "\n\n\n";
     }
+     */
 
     void fen_to_board(const std::string& fen) {
         // Reset bitboards
@@ -111,7 +129,16 @@ public:
                     int square = rank * 8 + file;
                     set_bit(bitboards[color][piece], square);
                     hash_key ^= piece_keys[color][piece][square];
-                    //std::cout << piece_keys[color][piece][square] << "\n";
+                    /*
+                    phase += game_phase_inc[piece];
+                    if(color == WHITE) {
+                        mg_score += piece_square_table[piece][square^56];
+                        eg_score += eg_piece_square_table[piece][square^56];
+                    } else {
+                        mg_score -= piece_square_table[piece][square];
+                        eg_score -= eg_piece_square_table[piece][square];
+                    }
+                     */
                     pieces[square] = piece;
                     file++;
                 }
@@ -119,7 +146,6 @@ public:
             rank--;
             file = 0;
         }
-        //std::cout << "\n\n\n\n";
 
         // Parse the side to move
         side = (side_str == "w") ? WHITE : BLACK;
@@ -147,7 +173,7 @@ public:
         }
 
         occupancy = (side_occupancy[WHITE] | side_occupancy[BLACK]);
-        history.emplace_back(castling_rights, enpassant, fifty_move_clock, move_t(), hash_key);
+        history.emplace_back(castling_rights, enpassant, fifty_move_clock, move_t(), hash_key);//, mg_score, eg_score, phase);
     }
 
     std::string fen() const {
@@ -181,9 +207,7 @@ public:
             }
         }
 
-        oss << ' ';
-        oss << (get_side() == WHITE ? 'w' : 'b');
-        oss << ' ';
+        oss << ' ' << (get_side() == WHITE ? 'w' : 'b') << ' ';
         if (castling_rights & 1) {
             oss << 'K';
         }
@@ -203,13 +227,11 @@ public:
         oss << ' ';
         if (enpassant == N_SQUARES) {
             oss << '-';
-        }
-        else {
+        } else {
             oss << square_to_string[enpassant];
         }
 
-        oss << ' ';
-        oss << fifty_move_clock;
+        oss << ' ' << fifty_move_clock;
 
         return oss.str();
     }
@@ -225,10 +247,10 @@ public:
     template<Color their_color>
     uint64_t attackers(int square) const {
         return     (attacks<Ray::ROOK >(square, occupancy) & (bitboards[their_color][ROOK] | bitboards[their_color][QUEEN]))
-                 | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][BISHOP] | bitboards[their_color][QUEEN]))
-                 | (KING_ATTACKS[square]   & bitboards[their_color][KING])
-                 | (KNIGHT_ATTACKS[square] & bitboards[their_color][KNIGHT])
-                 | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][PAWN]);
+                   | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][BISHOP] | bitboards[their_color][QUEEN]))
+                   | (KING_ATTACKS[square]   & bitboards[their_color][KING])
+                   | (KNIGHT_ATTACKS[square] & bitboards[their_color][KNIGHT])
+                   | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][PAWN]);
     }
 
     template <Color their_color>
@@ -317,6 +339,11 @@ public:
         return occupancy;
     }
 
+    template <Color color>
+    uint64_t get_side_occupancy() const {
+        return side_occupancy[color];
+    }
+
     template <Color enemy_color>
     uint64_t get_enemy_bitboard() const {
         return side_occupancy[enemy_color];
@@ -332,9 +359,14 @@ public:
     }
 
     template<Color our_color, Color their_color>
-    std::tuple<uint64_t, uint64_t,uint64_t, uint64_t> get_pinners(int king_square) const {
+    [[nodiscard]] std::tuple<uint64_t, uint64_t, uint64_t, uint64_t> get_pinners(int king_square) const {
         uint64_t seen_squares = attacks<Ray::QUEEN>(king_square, occupancy);
         uint64_t possibly_pinned_pieces = seen_squares & side_occupancy[our_color];
+
+        if (possibly_pinned_pieces == 0ull) {
+            return {};
+        }
+
         uint64_t occupied = occupancy ^ possibly_pinned_pieces;
 
         uint64_t seen_enemy_hv_pieces = ~seen_squares & (bitboards[their_color][ROOK] | bitboards[their_color][QUEEN]);
@@ -363,6 +395,42 @@ public:
         }
 
         return { horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask };
+    }
+
+    template<Color our_color, Color their_color>
+    std::tuple<uint64_t, uint64_t, uint64_t, uint64_t> get_discovering_pieces() const {
+        int enemy_king = lsb(bitboards[their_color][KING]);
+        uint64_t seen_squares = attacks<Ray::QUEEN>(enemy_king, occupancy);
+        uint64_t possibly_discovering_pieces = seen_squares & side_occupancy[our_color];
+        uint64_t occupied = occupancy ^ possibly_discovering_pieces;
+
+        uint64_t check_hv_pieces = ~seen_squares & (bitboards[our_color][ROOK] | bitboards[our_color][QUEEN]);
+        uint64_t check_ad_pieces = ~seen_squares & (bitboards[our_color][BISHOP] | bitboards[our_color][QUEEN]);
+        uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(enemy_king, occupied)   & check_hv_pieces;
+        uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(enemy_king, occupied)     & check_hv_pieces;
+        uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(enemy_king, occupied) & check_ad_pieces;
+        uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(enemy_king, occupied)     & check_ad_pieces;
+
+        uint64_t horizontal_discover_mask{}, vertical_discover_mask{}, antidiagonal_discover_mask{}, diagonal_discover_mask{};
+        uint64_t discover_pieces = 0ull;
+
+        while (horizontal_pinners) {
+            horizontal_discover_mask |= pinmask[pop_lsb(horizontal_pinners)][enemy_king];
+        }
+
+        while (vertical_pinners) {
+            vertical_discover_mask |= pinmask[pop_lsb(vertical_pinners)][enemy_king];
+        }
+
+        while (antidiagonal_pinners) {
+            antidiagonal_discover_mask |= pinmask[pop_lsb(antidiagonal_pinners)][enemy_king];
+        }
+
+        while (diagonal_pinners) {
+            diagonal_discover_mask |= pinmask[pop_lsb(diagonal_pinners)][enemy_king];
+        }
+
+        return { horizontal_discover_mask, vertical_discover_mask, antidiagonal_discover_mask, diagonal_discover_mask };
     }
 
     int get_castle_rights() const {
@@ -429,6 +497,17 @@ public:
         side_occupancy[our_color] |= bitboard;
         occupancy |= bitboard;
 
+        /*
+        if constexpr (our_color == WHITE) {
+            mg_score += piece_square_table[piece][square^56];
+            eg_score += eg_piece_square_table[piece][square^56];
+        } else {
+            mg_score -= piece_square_table[piece][square];
+            eg_score -= eg_piece_square_table[piece][square];
+        }
+        phase += game_phase_inc[piece];
+         */
+
         hash_key ^= piece_keys[our_color][piece][square];
     }
 
@@ -441,6 +520,17 @@ public:
         bitboards[our_color][piece] &= bitboard;
         side_occupancy[our_color] &= bitboard;
         occupancy &= bitboard;
+
+        /*
+        if constexpr (our_color == WHITE) {
+            mg_score -= piece_square_table[piece][square^56];
+            eg_score -= eg_piece_square_table[piece][square^56];
+        } else {
+            mg_score += piece_square_table[piece][square];
+            eg_score += eg_piece_square_table[piece][square];
+        }
+        phase -= game_phase_inc[piece];
+         */
 
         hash_key ^= piece_keys[our_color][piece][square];
     }
@@ -459,6 +549,22 @@ public:
         side_occupancy[their_color] &= rem_bitboard;
         side_occupancy[our_color]   |= bitboard;
 
+        /*
+        if constexpr (our_color == WHITE) {
+            mg_score += piece_square_table[piece][square^56];
+            eg_score += eg_piece_square_table[piece][square^56];
+            mg_score += piece_square_table[captured_piece][square];
+            eg_score += eg_piece_square_table[captured_piece][square];
+        } else {
+            mg_score -= piece_square_table[piece][square];
+            eg_score -= eg_piece_square_table[piece][square];
+            mg_score -= piece_square_table[captured_piece][square^56];
+            eg_score -= eg_piece_square_table[captured_piece][square^56];
+        }
+        phase += game_phase_inc[piece];
+        phase -= game_phase_inc[captured_piece];
+         */
+
         hash_key ^= piece_keys[our_color][piece][square];
         hash_key ^= piece_keys[their_color][captured_piece][square];
     }
@@ -474,11 +580,6 @@ public:
 
         constexpr Color their_color = (our_color == WHITE) ? BLACK : WHITE;
         constexpr Direction down  =   (our_color == WHITE) ? SOUTH : NORTH;
-        constexpr int forbid_player_castling = (our_color == WHITE) ? 0b1100 : 0b0011;
-        constexpr int forbid_player_kingside_castling    = (our_color == WHITE) ? 0b1110 : 0b1011;
-        constexpr int forbid_player_queenside_castling   = (our_color == WHITE) ? 0b1101 : 0b0111;
-        constexpr int forbid_opponent_kingside_castling  = (our_color == BLACK) ? 0b1110 : 0b1011;
-        constexpr int forbid_opponent_queenside_castling = (our_color == BLACK) ? 0b1101 : 0b0111;
         constexpr Square our_rook_A_square = (our_color == WHITE) ? A1 : A8;
         constexpr Square our_rook_H_square = (our_color == WHITE) ? H1 : H8;
         constexpr Square opponent_rook_A_square = (our_color == BLACK) ? A1 : A8;
@@ -516,15 +617,9 @@ public:
             case CAPTURE:
                 fifty_move_clock = 0;
                 replace_piece<our_color, their_color, true>(square_to, piece);
-                if(square_to == opponent_rook_H_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_kingside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                } else if (square_to == opponent_rook_A_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_queenside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                }
+                hash_key ^= castling_keys[castling_rights];
+                castling_rights &= castling_mask[square_to];
+                hash_key ^= castling_keys[castling_rights];
                 break;
             case EN_PASSANT:
                 set_piece<our_color>(square_to, piece);
@@ -544,51 +639,27 @@ public:
                 break;
             case KNIGHT_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, KNIGHT);
-                if(square_to == opponent_rook_H_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_kingside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                } else if (square_to == opponent_rook_A_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_queenside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                }
+                hash_key ^= castling_keys[castling_rights];
+                castling_rights &= castling_mask[square_to];
+                hash_key ^= castling_keys[castling_rights];
                 break;
             case BISHOP_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, BISHOP);
-                if(square_to == opponent_rook_H_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_kingside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                } else if (square_to == opponent_rook_A_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_queenside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                }
+                hash_key ^= castling_keys[castling_rights];
+                castling_rights &= castling_mask[square_to];
+                hash_key ^= castling_keys[castling_rights];
                 break;
             case ROOK_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, ROOK);
-                if(square_to == opponent_rook_H_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_kingside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                } else if (square_to == opponent_rook_A_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_queenside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                }
+                hash_key ^= castling_keys[castling_rights];
+                castling_rights &= castling_mask[square_to];
+                hash_key ^= castling_keys[castling_rights];
                 break;
             case QUEEN_PROMOTION_CAPTURE:
                 replace_piece<our_color, their_color, true>(square_to, QUEEN);
-                if(square_to == opponent_rook_H_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_kingside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                } else if (square_to == opponent_rook_A_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_opponent_queenside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                }
+                hash_key ^= castling_keys[castling_rights];
+                castling_rights &= castling_mask[square_to];
+                hash_key ^= castling_keys[castling_rights];
                 break;
         }
 
@@ -597,19 +668,9 @@ public:
                 fifty_move_clock = 0;
                 break;
             case ROOK:
-                if (square_from == our_rook_A_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_player_queenside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                } else if (square_from == our_rook_H_square) {
-                    hash_key ^= castling_keys[castling_rights];
-                    castling_rights &= forbid_player_kingside_castling;
-                    hash_key ^= castling_keys[castling_rights];
-                }
-                break;
             case KING:
                 hash_key ^= castling_keys[castling_rights];
-                castling_rights &= forbid_player_castling;
+                castling_rights &= castling_mask[square_from];
                 hash_key ^= castling_keys[castling_rights];
                 break;
         }
@@ -694,6 +755,9 @@ public:
         fifty_move_clock  = b_info.fifty_move_clock;
         castling_rights   = b_info.castling_rights;
         hash_key = b_info.hash_key;
+        //mg_score = b_info.mg;
+        //eg_score = b_info.eg;
+        //phase    = b_info.phase;
     }
 
     void undo_move() {
@@ -703,6 +767,14 @@ public:
     uint64_t get_hash_key() const {
         return hash_key;
     }
+
+    /*
+    int get_score() const {
+        int game_phase = std::min(phase, 24);
+        int score = (game_phase * mg_score + (24 - game_phase) * eg_score) / 24;
+        return (side == WHITE) ? score : -score;
+    }
+     */
 };
 
 #endif //MOTOR_BOARD_H
