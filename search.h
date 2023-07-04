@@ -345,7 +345,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             score = -alphabeta<PV_node, false>(chessboard, -beta, -alpha, data, stopwatch, depth - 1);
         } else {
             // late move reduction
-            if(moves_searched >= full_depth_moves && depth >= reduction_limit && !is_pv && !in_check && m.is_quiet()) {
+            if(moves_searched >= full_depth_moves && depth >= reduction_limit && m.is_quiet()) {
                 int reduction = std::max(1, int(2 + std::log2(depth) * std::log2(moves_searched) / 5.5 - chessboard.in_check()));
                 score = -alphabeta<NON_PV_node, true>(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - reduction);
             } else {
