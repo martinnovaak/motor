@@ -15,6 +15,7 @@
 * Reverse futility pruning
 * Razoring
 * Late move reduction
+* Transposition table pruning
 
 ### Move ordering
 * Transposition Table move ordering
@@ -23,6 +24,6 @@
 * History moves
 
 ### Evaluation
-* Material counting
 * Piece square tables
 * Tapered evaluation
+* Bishop pair
