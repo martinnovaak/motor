@@ -24,8 +24,8 @@ struct search_data {
     int ply = 0;
     uint64_t nodes_searched = 0;
     move_t killer_moves[MAX_DEPTH][2] = {};
-    move_t counter_moves[64][64] = {};
-    int history_moves[64][64] = {};
+    move_t counter_moves[2][6][64] = {};
+    int history_moves[2][6][64] = {};
     int pv_length[MAX_DEPTH] = {};
     move_t pv_table[MAX_DEPTH][MAX_DEPTH] = {};
     int square_of_last_move = N_SQUARES;
@@ -40,12 +40,12 @@ struct search_data {
 
     void update_history(move_t move, int depth) {
         //history_moves[move.get_from()][move.get_to()] += depth;
-        history_moves[move.get_from()][move.get_to()] = std::min(history_moves[move.get_from()][move.get_to()] + depth, 440);
+        history_moves[move.get_color()][move.get_piece()][move.get_to()] = std::min(history_moves[move.get_color()][move.get_piece()][move.get_to()] + depth, 440);
     }
 
     void reduce_history(move_t move, int depth) {
         //history_moves[move.get_from()][move.get_to()] -= depth;
-        history_moves[move.get_from()][move.get_to()] = std::max(history_moves[move.get_from()][move.get_to()] - depth, 0);
+        history_moves[move.get_color()][move.get_piece()][move.get_to()] = std::max(history_moves[move.get_color()][move.get_piece()][move.get_to()] - depth, 0);
     }
 
     void update_pv(move_t move, int depth) {
@@ -64,8 +64,7 @@ struct search_data {
 constexpr int INF = 50'000;
 constexpr int MATE = INF - MAX_DEPTH;
 
-//                      [victim][attacker]
-constexpr static int mvv_lva[6][6] = {
+ constexpr static int mvv_lva[6][6] = {
 //attacker:  P, N,  B,  R,  Q,  NONE
         {13,  5, 4, 3, 2, 1},    // victim PAWN
         {16, 15, 14, 8, 7, 6},   // victim KNIGHT
@@ -77,7 +76,8 @@ constexpr static int mvv_lva[6][6] = {
 
 static void score_moves(movelist & ml, const search_data & data, move_t tt_move) {
     for(move_t & move : ml) {
-        Square from  = move.get_from();
+        Color color  = move.get_color();
+        PieceType piece = move.get_piece();
         Square to    = move.get_to();
 
         if(tt_move == move) {
@@ -110,20 +110,25 @@ static void score_moves(movelist & ml, const search_data & data, move_t tt_move)
                     break;
             }
         } else if(move.is_capture()) {
-            if(to == data.square_of_last_move) {
-                move.set_score(476 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
-            } else {
-                move.set_score(446 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
-            }
+            move.set_score(446 + mvv_lva[move.get_captured_piece()][move.get_piece()]);
         } else if (data.killer_moves[data.ply][0] == move) {
             move.set_score(445);
         } else if (data.killer_moves[data.ply][1] == move) {
             move.set_score(444);
-        } else if (data.counter_moves[data.previous_move.get_from()][data.previous_move.get_to()] == move) {
+        } else if (data.counter_moves[data.previous_move.get_color()][data.previous_move.get_piece()][data.previous_move.get_to()] == move) {
             move.set_score(443);
         } else {
-            move.set_score(2 + data.history_moves[from][to]);
+            move.set_score(2 + data.history_moves[color][piece][to]);
         }
+    }
+}
+
+static void sort_moves(movelist& ml, const search_data& data, move_t tt_move) {
+    score_moves(ml, data, tt_move);
+    std::vector<move_t> moves(ml.begin(), ml.end());
+    std::sort(moves.begin(), moves.end(), [](const move_t & a, const move_t & b){return a.m_move > b.m_move;});
+    for(unsigned int i = 0; i < ml.size(); i++) {
+        ml[i] = moves[i];
     }
 }
 
@@ -258,7 +263,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     if constexpr (!is_root) {
         if(!in_check && !tt_hit) {
             // razoring
-            if (depth <= 2 && eval + 200 * depth <= alpha) {
+            if (depth <= 3 && eval + 150 * depth <= alpha) {
                 eval = quiescence(chessboard, alpha, beta, data, stopwatch);
                 if(eval <= alpha) {
                     return eval;
@@ -296,7 +301,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     movelist ml;
     generate_moves(chessboard, ml);
 
-    //movelist quiets;
+    movelist quiets;
 
     if(ml.size() == 0) {
         if(in_check) {
@@ -323,15 +328,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
     for(unsigned int moves_searched = 0; moves_searched < ml.size(); moves_searched++) {
         const move_t & m = ml[moves_searched];
 
-        /*
-        if constexpr (!is_pv) {
-            if(!in_check && m.is_quiet() && eval > -49'000 && depth <= 7 && moves_searched >= 2 * (1 + improving) + depth * depth) {
-                continue;
-            }
-        }*/
-
         chessboard.make_move(m);
-
 
         data.square_of_last_move = m.get_to();
         data.ply++;
@@ -346,7 +343,9 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         } else {
             // late move reduction
             if(moves_searched >= full_depth_moves && depth >= reduction_limit && m.is_quiet()) {
-                int reduction = std::max(1, int(2 + std::log2(depth) * std::log2(moves_searched) / 5.5 - chessboard.in_check()));
+                int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / 5.5;
+                reduction -= chessboard.in_check();
+                reduction = std::max(1, reduction);
                 score = -alphabeta<NON_PV_node, true>(chessboard, -alpha - 1, -alpha, data, stopwatch, depth - reduction);
             } else {
                 score = alpha + 1;
@@ -377,9 +376,13 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
             if (m.is_quiet()) {
                 data.update_killer(m);
                 if constexpr (!is_root) {
-                    data.counter_moves[previous_move.get_from()][previous_move.get_to()] = m;
+                    data.counter_moves[previous_move.get_color()][previous_move.get_piece()][previous_move.get_to()] = m;
                 }
                 data.update_history(m, depth);
+
+                for (auto quiet_move : quiets) {
+                    data.reduce_history(quiet_move, depth);
+                }
             }
 
             ttable.insert(key, beta, best_move, depth, BOUND::LOWER);
@@ -389,6 +392,10 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
         if (score > alpha) {
             alpha = score;
             flag = BOUND::EXACT;
+        }
+
+        if(m.is_quiet()) {
+            quiets.add(m);
         }
     }
 
@@ -415,13 +422,13 @@ void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & st
     for(int current_depth = 1; current_depth <= MAX_DEPTH; current_depth++) {
         data.ply = 0;
         data.nodes_searched = 0;
-        //score = alphabeta<ROOT_node>(chessboard, -INF, INF, data, stopwatch, current_depth);
 
         if(current_depth < 6) {
             score = alphabeta<ROOT_node, false>(chessboard, -INF, INF, data, stopwatch, current_depth);
         } else {
             score = aspiration_window(chessboard, score, data, stopwatch, current_depth);
         }
+
 
         if(stopwatch.stopped()) {
             break;
@@ -432,9 +439,11 @@ void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & st
                   << " nodes " << data.nodes_searched
                   << " nps "   << stopwatch.NPS(data.nodes_searched)
                   << " pv ";
+
         for(int i = 0; i < data.pv_length[0]; i++) {
             std::cout << data.pv_table[0][i].to_string() << " ";
         }
+
         std::cout << "\n";
         best_move = data.best_move();
 
