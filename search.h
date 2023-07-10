@@ -38,9 +38,9 @@ struct search_data {
         killer_moves[ply][1] = move;
     }
 
-    void update_history(move_t move, int depth) {
+    void update_history(move_t move, int depth, int iteration) {
         //history_moves[move.get_from()][move.get_to()] += depth;
-        history_moves[move.get_color()][move.get_piece()][move.get_to()] = std::min(history_moves[move.get_color()][move.get_piece()][move.get_to()] + depth, 440);
+        history_moves[move.get_color()][move.get_piece()][move.get_to()] = std::min(history_moves[move.get_color()][move.get_piece()][move.get_to()] + depth + iteration / 3, 440);
     }
 
     void reduce_history(move_t move, int depth) {
@@ -378,7 +378,7 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
                 if constexpr (!is_root) {
                     data.counter_moves[previous_move.get_color()][previous_move.get_piece()][previous_move.get_to()] = m;
                 }
-                data.update_history(m, depth);
+                data.update_history(m, depth, quiets.size() + 1);
 
                 for (auto quiet_move : quiets) {
                     data.reduce_history(quiet_move, depth);
@@ -404,13 +404,21 @@ int alphabeta(board& chessboard, int alpha, int beta, search_data & data, stopwa
 }
 
 int aspiration_window(board & chessboard, int score, search_data & data, stopwatch_t & stopwatch, int depth) {
-    int alpha = std::max(-INF, score - 50);
-    int beta = std::min(INF, score + 50);
+    int alpha_window = 15, beta_window = 15;
+    int alpha, beta;
 
-    score = alphabeta<ROOT_node, false>(chessboard, alpha, beta, data, stopwatch, depth);
+    while(!stopwatch.stopped()) {
+        alpha = std::max(-INF, score - alpha_window);
+        beta = std::min(INF, score + beta_window);
 
-    if(score <= alpha || score >= beta) {
-        score = alphabeta<ROOT_node, false>(chessboard, -INF, INF, data, stopwatch, depth);
+        score = alphabeta<ROOT_node, false>(chessboard, alpha, beta, data, stopwatch, depth);
+        if (score <= alpha) {
+            alpha_window *= 3;
+        } else if (score >= beta) {
+            beta_window *= 3;
+        } else {
+            break;
+        }
     }
 
     return score;
@@ -427,6 +435,7 @@ void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & st
             score = alphabeta<ROOT_node, false>(chessboard, -INF, INF, data, stopwatch, current_depth);
         } else {
             score = aspiration_window(chessboard, score, data, stopwatch, current_depth);
+            //score = fuzzy_aspiration(chessboard, score, data, stopwatch, current_depth);
         }
 
 
@@ -456,6 +465,7 @@ void iterative_deepening(board& chessboard, search_data & data, stopwatch_t & st
 
 void find_best_move(board & chessboard, search_info & info) {
     search_data data;
+    std::fill_n(&data.history_moves[0][0][0], sizeof(data.history_moves) / sizeof(int), 100);
     stopwatch_t stopwatch;
     if(chessboard.get_side() == WHITE) {
         stopwatch.reset(info.wtime, info.winc, info.movestogo, info.movetime);
