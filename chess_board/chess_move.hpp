@@ -24,6 +24,8 @@ enum MoveType : std::uint16_t {
 
 class chess_move {
 public:
+    chess_move() : move_data{} {}
+
     chess_move(Square from, Square to, MoveType move_type) {
         from | to << 6 | move_type << 12;
     }
@@ -42,5 +44,7 @@ public:
 private:
     std::uint16_t move_data = 0;
 };
+
+constexpr chess_move null_move();
 
 #endif //MOTOR_CHESS_MOVE_HPP

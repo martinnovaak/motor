@@ -28,6 +28,10 @@ public:
         return hash_key;
     }
 
+    bool operator==(const zobrist & zobrist_key) const{
+        return zobrist_key.hash_key == hash_key;
+    }
+
 private:
     std::uint64_t hash_key;
 };

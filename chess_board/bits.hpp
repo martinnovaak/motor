@@ -11,16 +11,16 @@ static void pop_bit(std::uint64_t& bitboard, std::uint8_t square) {
     bitboard &= ~(1ull << square);
 }
 
-static int lsb(std::uint64_t bitboard)
+static Square lsb(std::uint64_t bitboard)
 {
 #if defined(__GNUC__) // GCC, Clang, ICC
-    return __builtin_ctzll(bitboard);
+    return static_cast<Square>(__builtin_ctzll(bitboard));
 #elif defined(_MSC_VER) // MSVC
     #ifdef _WIN64 // MSVC, WIN64
 #include <intrin.h>
     unsigned long idx;
     _BitScanForward64(&idx, b);
-    return idx;
+    return static_cast<Square>(idx);
 #endif
 #else
 #error "Compiler not supported."

@@ -1,7 +1,7 @@
 #ifndef MOTOR_ATTACKS_HPP
 #define MOTOR_ATTACKS_HPP
 
-#include "kindergarten.hpp"
+#include "slider_attacks/kindergarten.hpp"
 
 constexpr std::uint64_t PAWN_ATTACKS_TABLE[2][64] = {
     {       // white pawn attacks

@@ -14,11 +14,11 @@ enum Square : std::uint8_t {
     A6, B6, C6, D6, E6, F6, G6, H6,
     A7, B7, C7, D7, E7, F7, G7, H7,
     A8, B8, C8, D8, E8, F8, G8, H8,
-    EMPTY = 64, NUMBER_OF_SQUARES = 64
+    Null_Square
 };
 
 enum Color : std::uint8_t {
-    WHITE = 0, BLACK = 1,
+    White = 0, Black = 1,
 };
 
 enum Direction : std::int8_t {
@@ -35,7 +35,7 @@ enum Direction : std::int8_t {
 };
 
 enum Piece : uint8_t {
-    PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
+    Pawn, Knight, Bishop, Rook, Queen, King, Null_Piece
 };
 
 enum Rank : std::uint8_t {
@@ -90,7 +90,8 @@ enum CastlingRight : std::uint8_t {
     CASTLE_WHITE_QUEENSIDE = 2,
     CASTLE_BLACK_KINGSIDE  = 4,
     CASTLE_BLACK_QUEENSIDE = 8,
-    NONE = 0
 };
+
+
 
 #endif //MOTOR_TYPES_HPP
