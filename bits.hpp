@@ -1,7 +1,3 @@
-//
-// Created by Martin on 01.09.2023.
-//
-
 #ifndef MOTOR_BITS_HPP
 #define MOTOR_BITS_HPP
 

@@ -1,7 +1,3 @@
-//
-// Created by Martin on 01.09.2023.
-//
-
 #ifndef MOTOR_ATTACKS_HPP
 #define MOTOR_ATTACKS_HPP
 
@@ -45,7 +41,7 @@ constexpr std::uint64_t PAWN_ATTACKS_TABLE[2][64] = {
     }
 };
 
-// pre calculated lookup table for knight attacks
+// precalculated lookup table for knight attacks
 constexpr std::uint64_t KNIGHT_ATTACKS[] {
     0x0000000000020400ull, 0x0000000000050800ull, 0x00000000000a1100ull, 0x0000000000142200ull,
     0x0000000000284400ull, 0x0000000000508800ull, 0x0000000000a01000ull, 0x0000000000402000ull,
@@ -65,7 +61,7 @@ constexpr std::uint64_t KNIGHT_ATTACKS[] {
     0x0044280000000000ull, 0x0088500000000000ull, 0x0010a00000000000ull, 0x0020400000000000ull,
 };
 
-// pre calculated lookup table for king attacks
+// precalculated lookup table for king attacks
 constexpr std::uint64_t KING_ATTACKS[] {
     0x0000000000000302ull, 0x0000000000000705ull, 0x0000000000000e0aull, 0x0000000000001c14ull,
     0x0000000000003828ull, 0x0000000000007050ull, 0x000000000000e0a0ull, 0x000000000000c040ull,

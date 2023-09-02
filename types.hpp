@@ -1,7 +1,3 @@
-//
-// Created by Martin on 01.09.2023.
-//
-
 #ifndef MOTOR_TYPES_HPP
 #define MOTOR_TYPES_HPP
 
@@ -36,6 +32,10 @@ enum Direction : std::int8_t {
     SOUTH      = - 8,
     SOUTH_WEST = - 9,
     SOUTH_2    = -16,
+};
+
+enum Piece : uint8_t {
+    PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
 };
 
 enum Rank : std::uint8_t {

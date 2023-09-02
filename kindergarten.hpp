@@ -1,7 +1,3 @@
-//
-// Created by Martin on 01.09.2023.
-//
-
 #ifndef MOTOR_KINDERGARTEN_HPP
 #define MOTOR_KINDERGARTEN_HPP
 
