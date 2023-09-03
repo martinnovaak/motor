@@ -42,6 +42,10 @@ public:
         move_data = from | to << 6 | move_type << 12;
     }
 
+    chess_move(Square from, Square to, MoveType move_type, bool discovery) {
+        move_data = from | to << 6 | move_type << 12 | discovery << 16;
+    }
+
     [[nodiscard]] Square get_from() const {
         return static_cast<Square>((move_data) & 0b111111);
     }
@@ -82,7 +86,7 @@ public:
         }
     }
 private:
-    std::uint16_t move_data = 0;
+    std::uint32_t move_data = 0;
 };
 
 #endif //MOTOR_CHESS_MOVE_HPP

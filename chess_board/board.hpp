@@ -62,47 +62,37 @@ public:
 
     void fen_to_board(const std::string& fen) {
         // Reset bitboards
-        for(auto & color_bitboard : bitboards) {
-            for (auto & bitboard: color_bitboard) {
-                bitboard = 0ull;
-            }
-        }
+        bitboards = {};
+
         for (auto & piece : pieces) {
             piece = Piece::Null_Piece;
         }
+
         side_occupancy[Color::White] = side_occupancy[Color::Black] = occupancy = 0ull;
         history.clear();
         hash_key = zobrist();
 
-        // FEN fields
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
 
-        // Split the FEN string into fields
         std::stringstream ss(fen);
         ss >> board_str >> side_str >> castling_str >> enpassant_str >> fifty_move_clock ;//>> full_move_counter;
 
-        // Parse the board state
-        std::int8_t rank = 7, file = 0;
-        std::string rank_str;
-        std::stringstream rank_ss(board_str);
-        while (std::getline(rank_ss, rank_str, '/')) {
-            for (char fen_char : rank_str) {
-                if (std::isdigit(fen_char)) {
-                    file += fen_char - '0';
-                } else {
-                    auto [color, piece] = get_color_and_piece(fen_char);
-                    auto square = static_cast<Square>(rank * 8 + file);
-                    set_bit(bitboards[color][piece], square);
-                    hash_key.update_psqt_hash(color, piece, square);
-                    pieces[square] = piece;
-                    file++;
-                }
+        int square = Square::A8;
+        for (char fen_char : board_str) {
+            if (std::isdigit(fen_char)) {
+                square += fen_char  - '0';
+            } else if (fen_char == '/') {
+                square -= 16;
+            } else {
+                auto [color, piece] = get_color_and_piece(fen_char);
+                auto piece_square = static_cast<Square>(square);
+                set_bit(bitboards[color][piece], square);
+                hash_key.update_psqt_hash(color, piece, piece_square);
+                pieces[square] = piece;
+                square += 1;
             }
-            rank--;
-            file = 0;
         }
 
-        // Parse the side to move
         if (side_str == "w") {
             side = Color::White;
         } else {
@@ -110,14 +100,12 @@ public:
             hash_key.update_side_hash();
         }
 
-        // Parse the castling rights
         castling_rights = 0;
-        for(char fen_right : castling_str) {
+        for (char fen_right : castling_str) {
             castling_rights |= char_to_castling_right(fen_right);
         }
         hash_key.update_castling_hash(castling_rights);
 
-        // Parse the en passant square
         enpassant = square_from_string(enpassant_str);
         hash_key.update_enpassant_hash(enpassant);
 
@@ -300,7 +288,6 @@ public:
         return enpassant;
     }
 
-
     template<Color their_color>// TODO: do removing using 3ull << some_square
     [[nodiscard]] bool check_legality_of_enpassant (Square square_from, Square enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
@@ -309,12 +296,12 @@ public:
         return !(attacks<Ray::HORIZONTAL>(king_square, occupancy_after_enpassant) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]));
     }
 
-    bool pawn_endgame() const {
+    [[nodiscard]] bool pawn_endgame() const {
         return side_occupancy[side] == (bitboards[side][Pawn] | bitboards[side][King]);
     }
 
-    bool is_draw() const {
-        if (fifty_move_clock == 100) {
+    [[nodiscard]] bool is_draw() const {
+        if (fifty_move_clock >= 100) {
             return true;
         }
 
