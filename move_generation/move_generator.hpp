@@ -9,11 +9,14 @@ std::uint64_t get_checkmask(std::uint64_t checkers, Square square)
     if(checkers == 0) {
         return full_board;
     }
-    int sq = pop_lsb(checkers);
+
+    Square square_of_checker = pop_lsb(checkers);
+
     if(checkers) {
         return 0ull;
     }
-    return pinmask[square][sq];
+
+    return pinmask[square][square_of_checker];
 }
 
 template <Color our_color, bool captures_only>
@@ -102,7 +105,7 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
         movelist.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, CAPTURE));
     }
 
-    while(bitboard_right_capture) {
+    while (bitboard_right_capture) {
         Square pawn_square = pop_lsb(bitboard_right_capture);
         movelist.add(chess_move(pawn_square - diagonal_capture, pawn_square, CAPTURE));
     }
@@ -228,7 +231,7 @@ constexpr bool generate_all_moves(board & b, move_list & ml) {
     const std::uint64_t enemy_pieces = b.get_enemy_bitboard<enemy_color>();
     const std::uint64_t occupancy = b.get_occupancy();
     const std::uint64_t empty = ~occupancy;
-    const std::uint64_t checkers = b.get_checkers<enemy_color>();
+    const std::uint64_t checkers = b.attackers<enemy_color>(king_square);
 
     const std::uint64_t safe_squares = b.get_safe_squares<enemy_color>(king_square);
 

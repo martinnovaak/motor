@@ -203,22 +203,17 @@ public:
     }
 
     template <Color color>
-    std::uint64_t get_side_occupancy() const {
+    [[nodiscard]] std::uint64_t get_side_occupancy() const {
         return side_occupancy[color];
     }
 
-    std::uint64_t get_side_occupancy(Color color) const {
+    [[nodiscard]] std::uint64_t get_side_occupancy(Color color) const {
         return side_occupancy[color];
     }
 
     template <Color enemy_color>
-    std::uint64_t get_enemy_bitboard() const {
+    [[nodiscard]] std::uint64_t get_enemy_bitboard() const {
         return side_occupancy[enemy_color];
-    }
-
-    template <Color enemy_color>
-    std::uint64_t get_checkers() const {
-        return attackers<enemy_color>(get_king_square());
     }
 
     std::uint64_t get_pieces (int color, int piece) const {
