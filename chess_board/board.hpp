@@ -216,7 +216,7 @@ public:
         return side_occupancy[enemy_color];
     }
 
-    std::uint64_t get_pieces (int color, int piece) const {
+    [[nodiscard]] std::uint64_t get_pieces (int color, int piece) const {
         return bitboards[color][piece];
     }
 
@@ -292,7 +292,7 @@ public:
         return { horizontal_discover_mask, vertical_discover_mask, antidiagonal_discover_mask, diagonal_discover_mask };
     }
 
-    int get_castle_rights() const {
+    [[nodiscard]] int get_castle_rights() const {
         return castling_rights;
     }
 
@@ -302,10 +302,11 @@ public:
 
     // TODO: do removing using 3ull << some_square
     template<Color their_color>
-    bool check_legality_of_enpassant (int square_from, int enpassant_pawn) const {
+    [[nodiscard]] bool check_legality_of_enpassant (Square square_from, Square enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
         int king_square = get_king_square();
-        return !(attacks<Ray::HORIZONTAL>(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]));
+        std::uint64_t occupancy_after_enpassant = ~((1ULL << (square_from)) | (1ULL << (enpassant_pawn))) & occupancy;
+        return !(attacks<Ray::HORIZONTAL>(king_square, occupancy_after_enpassant) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]));
     }
 
     bool pawn_endgame() const {
@@ -410,7 +411,7 @@ public:
                 break;
             case DOUBLE_PAWN_PUSH:
                 set_piece<our_color>(square_to, Pawn);
-                enpassant = (Square) (square_to + down);
+                enpassant = square_to + down;
                 hash_key.update_enpassant_hash(enpassant);
                 break;
             case KING_CASTLE:
@@ -495,7 +496,6 @@ public:
         const MoveType movetype = played_move.get_move_type();
         const Piece piece = pieces[square_to];
 
-        //set_piece<our_color>(square_from, piece);
         switch (movetype) {
             case QUIET:
             case DOUBLE_PAWN_PUSH:

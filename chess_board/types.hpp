@@ -38,6 +38,10 @@ Square operator-(Square square, Direction direction) {
     return static_cast<Square>(square - static_cast<Square>(direction));
 }
 
+Square operator+(Square square, Direction direction) {
+    return static_cast<Square>(square + static_cast<Square>(direction));
+}
+
 enum Piece : uint8_t {
     Pawn, Knight, Bishop, Rook, Queen, King, Null_Piece
 };
