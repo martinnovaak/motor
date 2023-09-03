@@ -300,8 +300,8 @@ public:
         return enpassant;
     }
 
-    // TODO: do removing using 3ull << some_square
-    template<Color their_color>
+
+    template<Color their_color>// TODO: do removing using 3ull << some_square
     [[nodiscard]] bool check_legality_of_enpassant (Square square_from, Square enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
         int king_square = get_king_square();
