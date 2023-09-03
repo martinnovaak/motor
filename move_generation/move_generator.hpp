@@ -4,7 +4,8 @@
 #include "move_list.hpp"
 #include "../chess_board/board.hpp"
 
-std::uint64_t get_checkmask(std::uint64_t checkers, Square square) {
+std::uint64_t get_checkmask(std::uint64_t checkers, Square square)
+{
     if(checkers == 0) {
         return full_board;
     }
@@ -16,7 +17,9 @@ std::uint64_t get_checkmask(std::uint64_t checkers, Square square) {
 }
 
 template <Color our_color, bool captures_only>
-void generate_pawn_moves(const board & b, move_list & ml, std::uint64_t pawn_bitboard, std::uint64_t checkmask, std::uint64_t move_v, std::uint64_t move_a, std::uint64_t move_d, std::uint64_t enemy, std::uint64_t empty) {
+void generate_pawn_moves(const board & chessboard, move_list & movelist, std::uint64_t pawn_bitboard, std::uint64_t checkmask,
+                         std::uint64_t move_v, std::uint64_t move_a, std::uint64_t move_d, std::uint64_t enemy, std::uint64_t empty)
+{
     constexpr Color their_color = (our_color == White) ? Black : White;
     constexpr std::uint64_t penultimate_rank = (our_color == White ? ranks[RANK_7] : ranks[RANK_2]);
     constexpr std::uint64_t not_penultimate_rank = (our_color == White) ? 0xFF00FFFFFFFFFFFFull : 0xFFFFFFFFFFFF00FFull;
@@ -43,12 +46,12 @@ void generate_pawn_moves(const board & b, move_list & ml, std::uint64_t pawn_bit
 
         while (bitboard_push_1) {
             Square pawn_square = pop_lsb(bitboard_push_1);
-            ml.add(chess_move(pawn_square - up, pawn_square, MoveType::QUIET));
+            movelist.add(chess_move(pawn_square - up, pawn_square, MoveType::QUIET));
         }
 
         while (bitboard_push_2) {
             Square pawn_square = pop_lsb(bitboard_push_2);
-            ml.add(chess_move(pawn_square - up_2, pawn_square, MoveType::DOUBLE_PAWN_PUSH));
+            movelist.add(chess_move(pawn_square - up_2, pawn_square, MoveType::DOUBLE_PAWN_PUSH));
         }
     }
 
@@ -61,31 +64,31 @@ void generate_pawn_moves(const board & b, move_list & ml, std::uint64_t pawn_bit
 
         while (bitboard_promote_push) {
             Square pawn_square = pop_lsb(bitboard_promote_push);
-            ml.add(chess_move(static_cast<Square>(pawn_square - up), pawn_square, QUEEN_PROMOTION));
+            movelist.add(chess_move(static_cast<Square>(pawn_square - up), pawn_square, QUEEN_PROMOTION));
             if constexpr (!captures_only) {
-                ml.add(chess_move(pawn_square - up, pawn_square, ROOK_PROMOTION));
-                ml.add(chess_move(pawn_square - up, pawn_square, BISHOP_PROMOTION));
-                ml.add(chess_move(pawn_square - up, pawn_square, KNIGHT_PROMOTION));
+                movelist.add(chess_move(pawn_square - up, pawn_square, ROOK_PROMOTION));
+                movelist.add(chess_move(pawn_square - up, pawn_square, BISHOP_PROMOTION));
+                movelist.add(chess_move(pawn_square - up, pawn_square, KNIGHT_PROMOTION));
             }
         }
 
         while (bitboard_promote_antidiagonal) {
             Square pawn_square = pop_lsb(bitboard_promote_antidiagonal);
-            ml.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, QUEEN_PROMOTION_CAPTURE));
+            movelist.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, QUEEN_PROMOTION_CAPTURE));
             if constexpr (!captures_only) {
-                ml.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, ROOK_PROMOTION_CAPTURE));
-                ml.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, BISHOP_PROMOTION_CAPTURE));
-                ml.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, KNIGHT_PROMOTION_CAPTURE));
+                movelist.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, ROOK_PROMOTION_CAPTURE));
+                movelist.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, BISHOP_PROMOTION_CAPTURE));
+                movelist.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, KNIGHT_PROMOTION_CAPTURE));
             }
         }
 
         while (bitboard_promote_diagonal) {
             Square pawn_square = pop_lsb(bitboard_promote_diagonal);
-            ml.add(chess_move(pawn_square - diagonal_capture, pawn_square, QUEEN_PROMOTION_CAPTURE));
+            movelist.add(chess_move(pawn_square - diagonal_capture, pawn_square, QUEEN_PROMOTION_CAPTURE));
             if constexpr (!captures_only) {
-                ml.add(chess_move(pawn_square - diagonal_capture, pawn_square, ROOK_PROMOTION_CAPTURE));
-                ml.add(chess_move(pawn_square - diagonal_capture, pawn_square, BISHOP_PROMOTION_CAPTURE));
-                ml.add(chess_move(pawn_square - diagonal_capture, pawn_square, KNIGHT_PROMOTION_CAPTURE));
+                movelist.add(chess_move(pawn_square - diagonal_capture, pawn_square, ROOK_PROMOTION_CAPTURE));
+                movelist.add(chess_move(pawn_square - diagonal_capture, pawn_square, BISHOP_PROMOTION_CAPTURE));
+                movelist.add(chess_move(pawn_square - diagonal_capture, pawn_square, KNIGHT_PROMOTION_CAPTURE));
             }
         }
     }
@@ -96,32 +99,32 @@ void generate_pawn_moves(const board & b, move_list & ml, std::uint64_t pawn_bit
 
     while(bitboard_left_capture) {
         Square pawn_square = pop_lsb(bitboard_left_capture);
-        ml.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, CAPTURE));
+        movelist.add(chess_move(pawn_square - antidiagonal_capture, pawn_square, CAPTURE));
     }
 
     while(bitboard_right_capture) {
         Square pawn_square = pop_lsb(bitboard_right_capture);
-        ml.add(chess_move(pawn_square - diagonal_capture, pawn_square, CAPTURE));
+        movelist.add(chess_move(pawn_square - diagonal_capture, pawn_square, CAPTURE));
     }
 
     // EN PASSANT
-    Square enpassant_square = b.enpassant_square();
+    Square enpassant_square = chessboard.enpassant_square();
     if (enpassant_square != Square::Null_Square)
     {
         std::uint64_t enpassant_bitboard = (1ull << enpassant_square);
         std::uint64_t enpassant_antidiagonal = shift<antidiagonal_capture>(pawns_not_penultimate & move_a) & enpassant_bitboard;
-        if(enpassant_antidiagonal && b.check_legality_of_enpassant<their_color>(enpassant_square - antidiagonal_capture, enpassant_square - up)) {
-            ml.add(chess_move(enpassant_square - antidiagonal_capture, enpassant_square, EN_PASSANT));
+        if(enpassant_antidiagonal && chessboard.check_legality_of_enpassant<their_color>(enpassant_square - antidiagonal_capture, enpassant_square - up)) {
+            movelist.add(chess_move(enpassant_square - antidiagonal_capture, enpassant_square, EN_PASSANT));
         }
         std::uint64_t enpassant_diagonal = shift<diagonal_capture>(pawns_not_penultimate & move_d) & enpassant_bitboard;
-        if(enpassant_diagonal && b.check_legality_of_enpassant<their_color>(enpassant_square - diagonal_capture, enpassant_square - up)) {
-            ml.add(chess_move(enpassant_square - diagonal_capture, enpassant_square, EN_PASSANT));
+        if(enpassant_diagonal && chessboard.check_legality_of_enpassant<their_color>(enpassant_square - diagonal_capture, enpassant_square - up)) {
+            movelist.add(chess_move(enpassant_square - diagonal_capture, enpassant_square, EN_PASSANT));
         }
     }
 }
 
-template <Color our_color, bool captures_only>
-void generate_knight_moves(const board & b, move_list & ml, std::uint64_t knight_bitboard, std::uint64_t target, std::uint64_t enemy, std::uint64_t empty, std::uint64_t occupancy)
+template <bool captures_only>
+constexpr void generate_knight_moves(const board & b, move_list & ml, std::uint64_t knight_bitboard, std::uint64_t target, std::uint64_t enemy, std::uint64_t empty, std::uint64_t occupancy)
 {
     while(knight_bitboard) {
         Square square = pop_lsb(knight_bitboard);
@@ -144,7 +147,7 @@ void generate_knight_moves(const board & b, move_list & ml, std::uint64_t knight
 }
 
 template <Color our_color, bool captures_only>
-void generate_king_moves(const board & b, move_list & ml, Square king_square, std::uint64_t safe_squares, std::uint64_t empty, std::uint64_t enemy)
+constexpr void generate_king_moves(const board & b, move_list & ml, Square king_square, std::uint64_t safe_squares, std::uint64_t empty, std::uint64_t enemy)
 {
     std::uint64_t king_moves = KING_ATTACKS[king_square] & safe_squares;
 
@@ -164,7 +167,7 @@ void generate_king_moves(const board & b, move_list & ml, Square king_square, st
 }
 
 template <Color our_color>
-void generate_castle_moves(move_list & ml, int castling_right, std::uint64_t safe_squares, std::uint64_t empty) {
+constexpr void generate_castle_moves(move_list & ml, int castling_right, std::uint64_t safe_squares, std::uint64_t empty) {
     constexpr Square king_e_square = our_color == White ? E1 : E8;
     constexpr Square king_g_square = our_color == White ? G1 : G8;
     constexpr Square king_c_square = our_color == White ? C1 : C8;
@@ -192,8 +195,8 @@ void generate_castle_moves(move_list & ml, int castling_right, std::uint64_t saf
     }
 }
 
-template <Color our_color, Ray ray, Piece piece, bool captures_only>
-void generate_slider_moves(const board & b, move_list& ml, std::uint64_t piece_bitboard, std::uint64_t checkmask, std::uint64_t enemy, std::uint64_t empty, std::uint64_t occupancy)
+template <Ray ray, bool captures_only>
+constexpr void generate_slider_moves(const board & b, move_list& ml, std::uint64_t piece_bitboard, std::uint64_t checkmask, std::uint64_t enemy, std::uint64_t empty, std::uint64_t occupancy)
 {
     while (piece_bitboard) {
         Square square = pop_lsb(piece_bitboard);
@@ -218,7 +221,7 @@ void generate_slider_moves(const board & b, move_list& ml, std::uint64_t piece_b
 
 
 template <Color our_color, bool captures_only>
-bool generate_all_moves(board & b, move_list & ml) {
+constexpr bool generate_all_moves(board & b, move_list & ml) {
     constexpr Color enemy_color = our_color == White ? Black : White;
 
     Square king_square = b.get_king_square();
@@ -256,23 +259,23 @@ bool generate_all_moves(board & b, move_list & ml) {
     std::uint64_t d_checkmask = checkmask & pin_d;
 
     // non-pinned rooks
-    generate_slider_moves<our_color, Ray::ROOK, Rook, captures_only>(b, ml, rook_bitboard & ~pin_hv, checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::ROOK, captures_only>(b, ml, rook_bitboard & ~pin_hv, checkmask,enemy_pieces, empty, occupancy);
     // horizontally/vertically pinned rooks
-    generate_slider_moves<our_color, Ray::HORIZONTAL, Rook, captures_only>(b, ml, rook_bitboard & pin_h, h_checkmask,enemy_pieces, empty, occupancy);
-    generate_slider_moves<our_color, Ray::VERTICAL, Rook, captures_only>(b, ml, rook_bitboard & pin_v, v_checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::HORIZONTAL, captures_only>(b, ml, rook_bitboard & pin_h, h_checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::VERTICAL, captures_only>(b, ml, rook_bitboard & pin_v, v_checkmask,enemy_pieces, empty, occupancy);
     // non-pinned bishops
-    generate_slider_moves<our_color, Ray::BISHOP, Bishop, captures_only>(b, ml, bishop_bitboard & ~pin_ad, checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::BISHOP, captures_only>(b, ml, bishop_bitboard & ~pin_ad, checkmask,enemy_pieces, empty, occupancy);
     // antidiagonally/diagonally pinned bishops
-    generate_slider_moves<our_color, Ray::ANTIDIAGONAL, Bishop, captures_only>(b, ml, bishop_bitboard & pin_a,a_checkmask, enemy_pieces, empty,occupancy);
-    generate_slider_moves<our_color, Ray::DIAGONAL, Bishop, captures_only>(b, ml, bishop_bitboard & pin_d, d_checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::ANTIDIAGONAL, captures_only>(b, ml, bishop_bitboard & pin_a,a_checkmask, enemy_pieces, empty,occupancy);
+    generate_slider_moves<Ray::DIAGONAL, captures_only>(b, ml, bishop_bitboard & pin_d, d_checkmask,enemy_pieces, empty, occupancy);
     // non-pinned queens
-    generate_slider_moves<our_color, Ray::QUEEN, Queen, captures_only>(b, ml, queen_bitboard & non_pinned_pieces,checkmask, enemy_pieces, empty, occupancy);
-    generate_slider_moves<our_color, Ray::HORIZONTAL, Queen, captures_only>(b, ml, queen_bitboard & pin_h, h_checkmask,enemy_pieces, empty, occupancy);
-    generate_slider_moves<our_color, Ray::VERTICAL, Queen, captures_only>(b, ml, queen_bitboard & pin_v, v_checkmask,enemy_pieces, empty, occupancy);
-    generate_slider_moves<our_color, Ray::ANTIDIAGONAL, Queen, captures_only>(b, ml, queen_bitboard & pin_a,a_checkmask, enemy_pieces, empty,occupancy);
-    generate_slider_moves<our_color, Ray::DIAGONAL, Queen, captures_only>(b, ml, queen_bitboard & pin_d, d_checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::QUEEN,  captures_only>(b, ml, queen_bitboard & non_pinned_pieces,checkmask, enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::HORIZONTAL, captures_only>(b, ml, queen_bitboard & pin_h, h_checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::VERTICAL, captures_only>(b, ml, queen_bitboard & pin_v, v_checkmask,enemy_pieces, empty, occupancy);
+    generate_slider_moves<Ray::ANTIDIAGONAL, captures_only>(b, ml, queen_bitboard & pin_a,a_checkmask, enemy_pieces, empty,occupancy);
+    generate_slider_moves<Ray::DIAGONAL, captures_only>(b, ml, queen_bitboard & pin_d, d_checkmask,enemy_pieces, empty, occupancy);
 
-    generate_knight_moves<our_color, captures_only>(b, ml, knight_bitboard, checkmask, enemy_pieces, empty, occupancy);
+    generate_knight_moves<captures_only>(b, ml, knight_bitboard, checkmask, enemy_pieces, empty, occupancy);
     generate_pawn_moves<our_color, captures_only>(b, ml, pawn_bitboard, checkmask, ~pin_ad, ~(pin_d | pin_v),~(pin_a | pin_v), enemy_pieces, empty);
     if constexpr (!captures_only) {
         generate_castle_moves<our_color>(ml, b.get_castle_rights(), safe_squares, empty);
