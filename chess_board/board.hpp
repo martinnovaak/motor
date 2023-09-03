@@ -121,14 +121,15 @@ public:
         enpassant = square_from_string(enpassant_str);
         hash_key.update_enpassant_hash(enpassant);
 
-        for (auto piece : {Pawn, Knight, Bishop, Rook, Queen}) {
+        for (auto piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
             side_occupancy[White] |= bitboards[White][piece];
             side_occupancy[Black] |= bitboards[Black][piece];
         }
         occupancy = side_occupancy[White] | side_occupancy[Black];
 
-        //chess_move nullmove;
-        history.push_back({castling_rights, enpassant, fifty_move_clock, chess_move(), hash_key, Piece::Null_Piece});
+        chess_move move;
+        board_info binfo{castling_rights, enpassant, fifty_move_clock, move, hash_key, Piece::Null_Piece};
+        history.push_back(binfo);
     }
 
     [[nodiscard]] bool in_check() const {
@@ -183,17 +184,6 @@ public:
         std::uint64_t attackers_squares = ~get_attacked_squares<their_color>();
         set_bit(occupancy, square);
         return attackers_squares;
-    }
-
-    std::uint64_t get_checkmask(std::uint64_t checkers, Square square) {
-        if(checkers == 0) {
-            return full_board;
-        }
-        int sq = pop_lsb(checkers);
-        if(checkers) {
-            return 0ull;
-        }
-        return pinmask[square][sq];
     }
 
     [[nodiscard]] Piece get_piece(int square) const {
@@ -311,7 +301,7 @@ public:
         return castling_rights;
     }
 
-    int enpassant_square() const {
+    [[nodiscard]] Square enpassant_square() const {
         return enpassant;
     }
 
@@ -319,9 +309,8 @@ public:
     template<Color their_color>
     bool check_legality_of_enpassant (int square_from, int enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
-        Square king_square = get_king_square();
-        std::uint64_t occupancy_after_enpassant = occupancy & ~(1ull << (square_from) | 1ULL << (enpassant_pawn));
-        return !(attacks<Ray::HORIZONTAL>(king_square, occupancy_after_enpassant & (bitboards[their_color][Rook] | bitboards[their_color][Queen])));
+        int king_square = get_king_square();
+        return !(attacks<Ray::HORIZONTAL>(king_square, pop_bits(occupancy, square_from, enpassant_pawn)) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]));
     }
 
     bool pawn_endgame() const {
@@ -377,7 +366,7 @@ public:
         hash_key.update_psqt_hash(our_color, piece, square);
     }
 
-    template<Color our_color, Color their_color, bool make_move>
+    template<Color our_color, Color their_color>
     void replace_piece(Square square, Piece piece, Piece captured_piece) {
         pieces[square] = piece;
 
@@ -394,7 +383,7 @@ public:
     }
 
     template<Color our_color>
-    void make_move(chess_move move) {
+    void make_move(const chess_move move) {
         fifty_move_clock++;
 
         hash_key.update_enpassant_hash(enpassant);
@@ -441,7 +430,7 @@ public:
                 break;
             case CAPTURE:
                 fifty_move_clock = 0;
-                replace_piece<our_color, their_color, true>(square_to, piece);
+                replace_piece<our_color, their_color>(square_to, piece, captured_piece);
                 update_castling_rights(square_to);
                 break;
             case EN_PASSANT:
@@ -461,19 +450,19 @@ public:
                 set_piece<our_color>(square_to, Queen);
                 break;
             case KNIGHT_PROMOTION_CAPTURE:
-                replace_piece<our_color, their_color, true>(square_to, Knight);
+                replace_piece<our_color, their_color>(square_to, Knight, captured_piece);
                 update_castling_rights(square_to);
                 break;
             case BISHOP_PROMOTION_CAPTURE:
-                replace_piece<our_color, their_color, true>(square_to, Bishop);
+                replace_piece<our_color, their_color>(square_to, Bishop, captured_piece);
                 update_castling_rights(square_to);
                 break;
             case ROOK_PROMOTION_CAPTURE:
-                replace_piece<our_color, their_color, true>(square_to, Rook);
+                replace_piece<our_color, their_color>(square_to, Rook, captured_piece);
                 update_castling_rights(square_to);
                 break;
             case QUEEN_PROMOTION_CAPTURE:
-                replace_piece<our_color, their_color, true>(square_to, Queen);
+                replace_piece<our_color, their_color>(square_to, Queen, captured_piece);
                 update_castling_rights(square_to);
                 break;
         }
@@ -511,46 +500,56 @@ public:
         const MoveType movetype = played_move.get_move_type();
         const Piece piece = pieces[square_to];
 
-        set_piece<our_color>(square_from, piece);
+        //set_piece<our_color>(square_from, piece);
         switch (movetype) {
             case QUIET:
             case DOUBLE_PAWN_PUSH:
+                set_piece<our_color>(square_from, piece);
                 unset_piece<our_color>(square_to, piece);
                 break;
             case KING_CASTLE:
+                set_piece<our_color>(square_from, piece);
                 set_piece<our_color>(our_rook_H_square,Rook);
                 unset_piece<our_color>(our_F_square, Rook);
                 unset_piece<our_color>(our_G_square, King);
                 break;
             case QUEEN_CASTLE:
+                set_piece<our_color>(square_from, piece);
                 set_piece<our_color>(our_rook_A_square,Rook);
                 unset_piece<our_color>(our_D_square, Rook);
                 unset_piece<our_color>(our_C_square, King);
                 break;
             case CAPTURE:
-                replace_piece<their_color, our_color, false>(square_to, captured_piece, piece);
+                set_piece<our_color>(square_from, piece);
+                replace_piece<their_color, our_color>(square_to, captured_piece, piece);
                 break;
             case EN_PASSANT:
+                set_piece<our_color>(square_from, Pawn);
                 unset_piece<our_color>(square_to, Pawn);
                 set_piece<their_color>(static_cast<Square>(square_to + down), Pawn);
                 break;
             case KNIGHT_PROMOTION:
+                set_piece<our_color>(square_from, Pawn);
                 unset_piece<our_color>(square_to, Knight);
                 break;
             case BISHOP_PROMOTION:
+                set_piece<our_color>(square_from, Pawn);
                 unset_piece<our_color>(square_to, Bishop);
                 break;
             case ROOK_PROMOTION:
+                set_piece<our_color>(square_from, Pawn);
                 unset_piece<our_color>(square_to, Rook);
                 break;
             case QUEEN_PROMOTION:
+                set_piece<our_color>(square_from, Pawn);
                 unset_piece<our_color>(square_to, Queen);
                 break;
             case KNIGHT_PROMOTION_CAPTURE:
             case BISHOP_PROMOTION_CAPTURE:
             case ROOK_PROMOTION_CAPTURE:
             case QUEEN_PROMOTION_CAPTURE:
-                replace_piece<their_color, our_color, false>(square_to, captured_piece, piece);
+                set_piece<our_color>(square_from, Pawn);
+                replace_piece<their_color, our_color>(square_to, captured_piece, piece);
                 break;
         }
 

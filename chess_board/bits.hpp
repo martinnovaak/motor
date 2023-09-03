@@ -36,10 +36,15 @@ static uint8_t popcount(std::uint64_t mask)
 #endif
 }
 
-static int pop_lsb(std::uint64_t & bitboard) {
-    const int index = lsb(bitboard);
+static Square pop_lsb(std::uint64_t & bitboard) {
+    const Square index = lsb(bitboard);
     bitboard &= bitboard - 1;
     return index;
+}
+
+static uint64_t pop_bits(uint64_t bitboard, int square1, int square2) {
+    bitboard &= ~(1ULL << (square1));
+    return bitboard & ~(1ULL << (square2));
 }
 
 #endif //MOTOR_BITS_HPP
