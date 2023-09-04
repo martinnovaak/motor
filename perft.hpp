@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <algorithm>
 
 #include "chess_board/board.hpp"
 #include "move_generation/move_generator.hpp"
@@ -42,14 +43,21 @@ std::uint64_t perft_debug(board & b, int depth) {
     move_list ml;
     generate_all_moves<side, false>(b, ml);
     std::uint64_t total_nodes = 0;
+    std::vector<std::string> moves;
     for (const auto & m : ml) {
-        std::cout << m.to_string() << " ";
+        std::string move_string = m.to_string();
+        move_string += " ";
         b.make_move<side>(m);
         std::uint64_t nodes = perft<next_side>(b, depth - 1);
-        std::cout << " " << nodes << "\n";
+        moves.push_back(move_string += std::to_string(nodes));
         total_nodes += nodes;
         b.undo_move<side>();
     }
+    std::sort(moves.begin(), moves.end());
+    for (auto m : moves) {
+        std::cout << m << "\n";
+    }
+
     return total_nodes;
 }
 
@@ -74,6 +82,10 @@ void bench() {
     std::cout << "Main position\n";
     perft_loop(chessboard, 1, 7);
 
+    chessboard.fen_to_board("rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 2"); // main position
+    std::cout << "\nMain position e2e4 f7f5\n";
+    perft_loop(chessboard, 1, 6);
+
     chessboard.fen_to_board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "); // KIWIPETE
     std::cout << "\nKIWIPETE\n";
     perft_loop(chessboard, 1, 6);
@@ -92,6 +104,10 @@ void bench() {
 
     chessboard.fen_to_board("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 ");
     std::cout << "\nPosition 6\n";
+    perft_loop(chessboard, 1, 6);
+
+    chessboard.fen_to_board("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1");
+    std::cout << "\nPosition for promotion bugs\n";
     perft_loop(chessboard, 1, 6);
 }
 

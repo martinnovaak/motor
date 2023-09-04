@@ -120,14 +120,29 @@ public:
         history.push_back(binfo);
     }
 
-    [[nodiscard]] bool in_check() const {
-        if(side == White) {
-            return attackers<Black>(get_king_square());
-        } else {
-            return attackers<White>(get_king_square());
+    [[nodiscard]] Check_type in_check() const {
+        return history.back().move.get_check_type();
+    }
+
+    template <Color enemy_color>
+    uint64_t get_checkmask(Square square) {
+        constexpr Color our_color = enemy_color == Black ? White : Black;
+        constexpr Square rook_square_f = our_color == White ? F1 : F8;
+        constexpr Square rook_square_d = our_color == White ? D1 : D8;
+        const chess_move last_played_move = history.back().move;
+        switch (last_played_move.get_check_type()) {
+            case NOCHECK:
+                return full_board;
+            case DIRECT_CHECK:
+                return pinmask[square][last_played_move.get_to()];
+            case DISCOVERY_CHECK:
+                return pinmask[square][lsb(discovery_attackers<enemy_color>(square))];
+            case DOUBLE_CHECK:
+                return 0ull;
         }
     }
 
+    /*
     template<Color their_color>
     [[nodiscard]] std::uint64_t attackers(Square square) const {
         return    (attacks<Ray::ROOK>(square, occupancy) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
@@ -135,6 +150,13 @@ public:
                 | (KING_ATTACKS[square]   & bitboards[their_color][King])
                 | (KNIGHT_ATTACKS[square] & bitboards[their_color][Knight])
                 | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][Pawn]);
+    }
+     */
+
+    template<Color their_color>
+    [[nodiscard]] std::uint64_t discovery_attackers(Square square) const {
+        return    (attacks<Ray::ROOK>(square, occupancy) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
+                  | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]));
     }
 
     // TODO: REFACTOR
@@ -246,8 +268,7 @@ public:
     }
 
     template<Color our_color, Color their_color>
-    [[nodiscard]] std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, std::uint64_t> get_discovering_pieces() const {
-        int enemy_king = lsb(bitboards[King][their_color]);
+    [[nodiscard]] std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, std::uint64_t> get_discovering_pieces(Square enemy_king) const {
         std::uint64_t seen_squares = attacks<Ray::QUEEN>(enemy_king, occupancy);
         std::uint64_t possibly_discovering_pieces = seen_squares & side_occupancy[our_color];
 
@@ -288,7 +309,7 @@ public:
         return enpassant;
     }
 
-    template<Color their_color>// TODO: do removing using 3ull << some_square
+    template<Color their_color>
     [[nodiscard]] bool check_legality_of_enpassant (Square square_from, Square enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
         int king_square = get_king_square();
