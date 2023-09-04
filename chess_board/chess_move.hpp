@@ -34,12 +34,23 @@ enum MoveType : std::uint16_t {
     QUEEN_PROMOTION_CAPTURE  = 15,
 };
 
+enum Check_type : uint8_t {
+    NOCHECK         = 0b00,
+    DIRECT_CHECK    = 0b01,
+    DISCOVERY_CHECK = 0b10,
+    DOUBLE_CHECK    = 0b11,
+};
+
 class chess_move {
 public:
     chess_move() : move_data{} {}
 
     chess_move(Square from, Square to, MoveType move_type) {
         move_data = from | to << 6 | move_type << 12;
+    }
+
+    chess_move(Square from, Square to, MoveType move_type, bool direct_check, bool discovery) {
+        move_data = from | to << 6 | move_type << 12 | direct_check << 16 | discovery << 17;
     }
 
     [[nodiscard]] Square get_from() const {
@@ -52,6 +63,10 @@ public:
 
     [[nodiscard]] MoveType get_move_type() const {
         return static_cast<MoveType>((move_data >> 12) & 0b1111);
+    }
+
+    [[nodiscard]] Check_type get_check_type() const {
+        return static_cast<Check_type>((move_data >> 16) & 0b11);
     }
 
     [[nodiscard]] std::string to_string() const {
@@ -82,7 +97,7 @@ public:
         }
     }
 private:
-    std::uint16_t move_data = 0;
+    std::uint32_t move_data = 0;
 };
 
 #endif //MOTOR_CHESS_MOVE_HPP

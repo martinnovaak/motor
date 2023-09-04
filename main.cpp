@@ -9,5 +9,8 @@ int main () {
     std::cout << "id author Martin Novak" << std::endl;
     std::cout << "uciok" << std::endl;
 
+    int a;
+    std::cin >> a;
+
     return 0;
 }

@@ -34,6 +34,11 @@ enum Direction : std::int8_t {
     SOUTH_2    = -16,
 };
 
+
+Square operator+(Square square, Direction direction) {
+    return static_cast<Square>(square + static_cast<Square>(direction));
+}
+
 Square operator-(Square square, Direction direction) {
     return static_cast<Square>(square - static_cast<Square>(direction));
 }
