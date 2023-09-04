@@ -9,10 +9,7 @@
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
 #include "../move_generation/move_generator.hpp"
-
-struct search_info {
-    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0;
-};
+#include "../search/time_keeper.hpp"
 
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
@@ -69,7 +66,7 @@ void uci_go(board& b, const std::string& command) {
         tokens.push_back(token);
     }
 
-    search_info info;
+    time_info info;
 
     for (unsigned int i = 0; i < tokens.size(); i += 2) {
         if (tokens[i] == "wtime") {
@@ -91,7 +88,7 @@ void uci_go(board& b, const std::string& command) {
         }
     }
 
-    // find_best_move(b, info);
+    find_best_move(b, info);
 }
 
 void uci_process(board& b, const std::string& line) {
