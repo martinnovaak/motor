@@ -1,7 +1,7 @@
 #ifndef MOTOR_ATTACKS_HPP
 #define MOTOR_ATTACKS_HPP
 
-#include "slider_attacks/kindergarten.hpp"
+#include "slider_attacks/split_pext.hpp"
 
 constexpr std::uint64_t PAWN_ATTACKS_TABLE[2][64] = {
     {       // white pawn attacks
@@ -89,19 +89,19 @@ template <Ray ray>
 constexpr std::uint64_t attacks(int square, uint64_t occupancy)
 {
     if constexpr (ray == Ray::HORIZONTAL) {
-        return kindergarten::rook_horizontal(square, occupancy);
+        return split_pext::rook_horizontal(square, occupancy);
     } else if constexpr (ray == Ray::VERTICAL) {
-        return kindergarten::rook_vertical(square, occupancy);
+        return split_pext::rook_vertical(square, occupancy);
     } else if constexpr (ray == Ray::ANTIDIAGONAL) {
-        return kindergarten::bishop_antidiagonal(square, occupancy);
+        return split_pext::bishop_antidiagonal(square, occupancy);
     } else if constexpr (ray == Ray::DIAGONAL) {
-        return kindergarten::bishop_diagonal(square, occupancy);
+        return split_pext::bishop_diagonal(square, occupancy);
     } else if constexpr (ray == Ray::ROOK) {
-        return kindergarten::rook(square, occupancy);
+        return split_pext::rook(square, occupancy);
     } else if constexpr (ray == Ray::BISHOP) {
-        return kindergarten::bishop(square, occupancy);
+        return split_pext::bishop(square, occupancy);
     } else if constexpr (ray == Ray::QUEEN) {
-        return kindergarten::queen(square, occupancy);
+        return split_pext::queen(square, occupancy);
     }
 }
 
