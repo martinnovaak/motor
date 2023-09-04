@@ -86,7 +86,7 @@ enum class Ray : std::uint8_t {
 };
 
 template <Ray ray>
-constexpr std::uint64_t attacks(int square, uint64_t occupancy)
+constexpr std::uint64_t attacks(int square, std::uint64_t occupancy)
 {
     if constexpr (ray == Ray::HORIZONTAL) {
         return split_pext::rook_horizontal(square, occupancy);

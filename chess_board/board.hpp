@@ -142,17 +142,6 @@ public:
         }
     }
 
-    /*
-    template<Color their_color>
-    [[nodiscard]] std::uint64_t attackers(Square square) const {
-        return    (attacks<Ray::ROOK>(square, occupancy) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
-                | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]))
-                | (KING_ATTACKS[square]   & bitboards[their_color][King])
-                | (KNIGHT_ATTACKS[square] & bitboards[their_color][Knight])
-                | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][Pawn]);
-    }
-     */
-
     template<Color their_color>
     [[nodiscard]] std::uint64_t discovery_attackers(Square square) const {
         return    (attacks<Ray::ROOK>(square, occupancy) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
