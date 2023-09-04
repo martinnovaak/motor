@@ -5,7 +5,6 @@
 
 #include "pv_table.hpp"
 #include "time_keeper.hpp"
-#include "../chess_board/chess_move.hpp"
 
 class search_data {
 public:
