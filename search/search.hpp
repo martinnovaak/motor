@@ -9,6 +9,10 @@
 #include "../move_generation/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
 
+enum class NodeType : std::uint8_t {
+    Root, PV, Non_PV, Null
+};
+
 enum class Bound : std::uint8_t {
     EXACT, // Type 1 - score is exact
     LOWER, // Type 2 - score is bigger than beta (fail-high) - Beta node
@@ -25,9 +29,11 @@ struct TT_entry {
 
 transposition_table<TT_entry> tt(32 * 1024 * 1024);
 
-template <Color color>
+template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
     constexpr Color enemy_color = color == White ? Black : White;
+    constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
+    constexpr bool is_root = node_type == NodeType::Root;
 
     if(data.should_end()) {
         return alpha;
@@ -48,6 +54,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     std::uint64_t zobrist_key = chessboard.get_hash_key();
     const TT_entry & tt_entry = tt[zobrist_key];
     chess_move best_move;
+
     if (tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
     }
@@ -71,7 +78,15 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         chessboard.make_move<color>(chessmove);
         data.augment_ply();
 
-        std::int16_t score = -alpha_beta<enemy_color>(chessboard, data, -beta, -alpha, depth - 1);
+        std::int16_t score;
+        if (moves_searched == 0) {
+            score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
+        } else {
+            score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1);
+            if (score > alpha && score < beta) {
+                score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
+            }
+        }
 
         chessboard.undo_move<color>();
         data.reduce_ply();
@@ -101,7 +116,7 @@ void iterative_deepening(board & chessboard, search_data & data) {
     std::string best_move;
     int score;
     for (int depth = 1; depth < MAX_DEPTH; depth++) {
-        score = alpha_beta<color>(chessboard, data, -10'000, 10'000, depth);
+        score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth);
 
         if (data.time_is_up()) {
             break;
