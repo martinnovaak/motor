@@ -9,7 +9,7 @@ private:
     std::array<chess_move, 256> list;
     std::uint8_t count;
 public:
-    using const_iterator = typename std::array<chess_move, 256>::const_iterator;
+    using iterator = typename std::array<chess_move, 256>::iterator;
 
     move_list() : list{}, count{} {}
 
@@ -22,15 +22,23 @@ public:
         count++;
     }
 
-    chess_move & operator[](uint32_t index) {
+    // partial insertion sort
+    chess_move & get_next_move(const std::uint8_t index) {
+        uint8_t best = index;
+        for(unsigned int i = index + 1; i < count; i++) {
+            if(list[i] > list[best]) {
+                best = i;
+            }
+        }
+        std::swap(list[index], list[best]);
         return list[index];
     }
 
-    const_iterator begin() const {
+    [[nodiscard]] iterator begin() {
         return list.begin();
     }
-    const_iterator end() const {
-        return std::next(list.begin(), count);
+    [[nodiscard]] iterator end() {
+        return list.begin() + count;
     }
 };
 

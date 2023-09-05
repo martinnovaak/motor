@@ -29,22 +29,22 @@ struct board_info {
     uint8_t castling_rights;
     Square enpassant;
     uint8_t fifty_move_clock;
+    Piece captured_piece;
     chess_move move;
     zobrist hash_key;
-    Piece captured_piece;
 };
 
 class board {
     Color  side; // side to move
     Square enpassant;
-    uint8_t castling_rights;
+    std::uint8_t castling_rights;
+    std::uint8_t  fifty_move_clock;
 
     std::array<Piece, 64> pieces;
     std::array<std::array<uint64_t, 6>, 2> bitboards;
     std::array<uint64_t, 2>  side_occupancy; // occupancy bitboards
     std::uint64_t occupancy;
 
-    std::uint8_t  fifty_move_clock;
     zobrist hash_key;
 
     std::vector<board_info> history;
@@ -116,7 +116,7 @@ public:
         occupancy = side_occupancy[White] | side_occupancy[Black];
 
         chess_move move;
-        board_info binfo{castling_rights, enpassant, fifty_move_clock, move, hash_key, Piece::Null_Piece};
+        board_info binfo{castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key};
         history.push_back(binfo);
     }
 
@@ -467,7 +467,7 @@ public:
         update_castling_rights(square_from);
 
         side = their_color;
-        history.emplace_back(castling_rights, enpassant, fifty_move_clock, move, hash_key, captured_piece);
+        history.emplace_back(castling_rights, enpassant, fifty_move_clock, captured_piece, move, hash_key);
     }
 
     template <Color our_color>

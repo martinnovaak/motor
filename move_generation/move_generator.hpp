@@ -405,7 +405,7 @@ constexpr void generate_slider_moves(const board & b, move_list& ml, std::uint64
 
 
 template <Color our_color, bool captures_only>
-constexpr bool generate_all_moves(board & b, move_list & ml) {
+constexpr void generate_all_moves(board & b, move_list & ml) {
     constexpr Color enemy_color = our_color == White ? Black : White;
 
     Square king_square = b.get_king_square();
@@ -413,7 +413,6 @@ constexpr bool generate_all_moves(board & b, move_list & ml) {
     const std::uint64_t enemy_pieces = b.get_enemy_bitboard<enemy_color>();
     const std::uint64_t occupancy = b.get_occupancy();
     const std::uint64_t empty = ~occupancy;
-    //const std::uint64_t checkers = b.attackers<enemy_color>(king_square);
 
     const std::uint64_t safe_squares = b.get_safe_squares<enemy_color>(king_square);
 
@@ -501,7 +500,7 @@ constexpr bool generate_all_moves(board & b, move_list & ml) {
         generate_castle_moves<our_color>(ml, b.get_castle_rights(), safe_squares, empty, rook_check_squares);
     }
 
-    return checkmask == full_board;
+    return;
 }
 
 #endif //MOTOR_MOVE_GENERATOR_HPP
