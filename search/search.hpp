@@ -4,6 +4,7 @@
 #include "search_data.hpp"
 #include "transposition_table.hpp"
 #include "move_ordering/move_ordering.hpp"
+#include "quiescence_search.hpp"
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
 #include "../move_generation/move_generator.hpp"
@@ -46,7 +47,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     if (depth <= 0) {
-        return evaluate<color>(chessboard);
+        //return evaluate<color>(chessboard);
+        return quiescence_search<color>(chessboard, data, alpha, beta);
     }
 
     Bound flag = Bound::UPPER;
