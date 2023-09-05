@@ -20,6 +20,10 @@ public:
         return timekeeper.should_end(nodes_searched);
     }
 
+    bool time_is_up() {
+        return timekeeper.stopped();
+    }
+
     void update_pv_length() {
         principal_variation_table.set_length(ply);
         nodes_searched++;

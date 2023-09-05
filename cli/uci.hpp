@@ -112,7 +112,7 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "readyok" << std::endl;
     }
     else if (command == "uci") {
-        std::cout << "id name Motor " << 0 << "." << 0 << "." << 0 << std::endl;
+        std::cout << "id name Motor"<< std::endl;
         std::cout << "id author Martin Novak" << std::endl;
         std::cout << "uciok" << std::endl;
     }
@@ -144,9 +144,6 @@ void uci_mainloop() {
     std::string line{};
 
     while (std::getline(std::cin, line)) {
-        std::ofstream outputFile("output.txt");
-        outputFile << line << std::endl;
-        outputFile.close();
         uci_process(chessboard, line);
     }
 }

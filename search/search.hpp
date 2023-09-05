@@ -62,19 +62,31 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     return best_score;
 }
 
+template <Color color>
+void iterative_deepening(board & chessboard, search_data & data) {
+    std::string best_move;
+    int score;
+    for (int depth = 1; depth < MAX_DEPTH; depth++) {
+        score = alpha_beta<color>(chessboard, data, -10'000, 10'000, depth);
+
+        if (data.time_is_up()) {
+            break;
+        }
+
+        best_move = data.get_best_move();
+    }
+    std::cout << "bestmove " << best_move << "\n";
+}
+
 void find_best_move(board & chessboard, time_info & info) {
     search_data data;
-    int score;
     if(chessboard.get_side() == White) {
         data.set_timekeeper(info.wtime, info.winc, info.movestogo);
-        score = alpha_beta<White>(chessboard, data, -10'000, 10'000, 5);
+        iterative_deepening<White>(chessboard, data);
     } else {
         data.set_timekeeper(info.btime, info.binc, info.movestogo);
-        score = alpha_beta<Black>(chessboard, data, -10'000, 10'000, 5);
+        iterative_deepening<Black>(chessboard, data);
     }
-
-    std::cout << " info score cp " << score << "\n";
-    std::cout << "bestmove " << data.get_best_move() << "\n";
 }
 
 #endif //MOTOR_SEARCH_HPP
