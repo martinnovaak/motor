@@ -26,10 +26,22 @@ public:
         return list[index];
     }
 
-    const_iterator begin() const {
+    // partial insertion sort
+    chess_move & get_next_move(const std::uint8_t index) {
+        uint8_t best = index;
+        for(unsigned int i = index + 1; i < count; i++) {
+            if(list[i] > list[best]) {
+                best = i;
+            }
+        }
+        std::swap(list[index], list[best]);
+        return list[index];
+    }
+
+    [[nodiscard]] const_iterator begin() const {
         return list.begin();
     }
-    const_iterator end() const {
+    [[nodiscard]] const_iterator end() const {
         return std::next(list.begin(), count);
     }
 };
