@@ -5,11 +5,13 @@
 #include <iomanip>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
 #include "../move_generation/move_generator.hpp"
 #include "../search/time_keeper.hpp"
+#include "../search/search.hpp"
 
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
@@ -116,7 +118,7 @@ void uci_process(board& b, const std::string& line) {
     }
     else if (command == "ucinewgame") {
         // Todo clear TT (not yet implemented)
-        position_uci(b, "startpos");
+        // position_uci(b, "startpos");
     }
     else if (command == "setoption") {
         // Todo later
@@ -142,6 +144,9 @@ void uci_mainloop() {
     std::string line{};
 
     while (std::getline(std::cin, line)) {
+        std::ofstream outputFile("output.txt");
+        outputFile << line << std::endl;
+        outputFile.close();
         uci_process(chessboard, line);
     }
 }

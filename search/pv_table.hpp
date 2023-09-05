@@ -31,6 +31,11 @@ public:
     [[nodiscard]] chess_move get_best_move() const {
         return triangular_pv_table[0][0];
     }
+
+    void set_length(std::uint8_t length) {
+        pv_length[length] = length;
+    }
+
 private:
     std::uint8_t pv_length[MAX_DEPTH];
     chess_move triangular_pv_table[MAX_DEPTH][MAX_DEPTH];
