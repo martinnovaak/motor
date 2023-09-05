@@ -9,7 +9,7 @@ private:
     std::array<chess_move, 256> list;
     std::uint8_t count;
 public:
-    using const_iterator = typename std::array<chess_move, 256>::const_iterator;
+    using iterator = typename std::array<chess_move, 256>::iterator;
 
     move_list() : list{}, count{} {}
 
@@ -20,10 +20,6 @@ public:
     void add(chess_move m) {
         list[count] = m;
         count++;
-    }
-
-    chess_move & operator[](uint32_t index) {
-        return list[index];
     }
 
     // partial insertion sort
@@ -38,11 +34,11 @@ public:
         return list[index];
     }
 
-    [[nodiscard]] const_iterator begin() const {
+    [[nodiscard]] iterator begin() {
         return list.begin();
     }
-    [[nodiscard]] const_iterator end() const {
-        return std::next(list.begin(), count);
+    [[nodiscard]] iterator end() {
+        return list.begin() + count;
     }
 };
 
