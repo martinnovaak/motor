@@ -1,0 +1,50 @@
+#ifndef MOTOR_QUIESCENCE_SEARCH_HPP
+#define MOTOR_QUIESCENCE_SEARCH_HPP
+
+#include "search_data.hpp"
+#include "transposition_table.hpp"
+#include "move_ordering/move_ordering.hpp"
+#include "../chess_board/board.hpp"
+#include "../move_generation/move_list.hpp"
+#include "../move_generation/move_generator.hpp"
+#include "../evaluation/evaluation.hpp"
+
+template <Color color>
+std::int16_t quiescence_search(board & chessboard, search_data & data, std::int16_t alpha, std::int16_t beta) {
+    constexpr Color enemy_color = (color == White) ? Black : White;
+
+    if(data.should_end()) {
+        return 0;
+    }
+
+    std::int16_t eval = evaluate<color>(chessboard);
+
+    if (eval >= beta) {
+        return beta;
+    }
+
+    if (eval > alpha) {
+        alpha = eval;
+    }
+
+    move_list movelist;
+    generate_all_moves<color, true>(chessboard, movelist);
+
+    for (const auto & move : movelist) {
+        chessboard.make_move<color>(move);
+        std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha);
+        chessboard.undo_move<color>();
+
+        if (score > eval) {
+            eval = score;
+        }
+        if (eval >= beta) {
+            break;
+        }
+        alpha = std::max(eval, alpha);
+    }
+
+    return eval;
+}
+
+#endif //MOTOR_QUIESCENCE_SEARCH_HPP
