@@ -69,6 +69,14 @@ public:
         return static_cast<Check_type>((move_data >> 16) & 0b11);
     }
 
+    void set_score(std::uint16_t score) {
+        this->move_data |= (score << 18);
+    }
+
+    bool operator==(const chess_move & other_move) const {
+        return (other_move.move_data & 0xffff) == (move_data & 0xffff);
+    }
+
     [[nodiscard]] std::string to_string() const {
         std::string move_string;
         move_string.append(square_to_string[get_from()]);
