@@ -77,6 +77,10 @@ public:
         return (other_move.move_data & 0xffff) == (move_data & 0xffff);
     }
 
+    bool operator>(const chess_move & other_move) const {
+        return move_data > other_move.move_data;
+    }
+
     [[nodiscard]] std::string to_string() const {
         std::string move_string;
         move_string.append(square_to_string[get_from()]);
