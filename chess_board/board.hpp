@@ -315,7 +315,7 @@ public:
             return true;
         }
 
-        const std::size_t end = std::max(0, static_cast<int>(history.size()) - 1 - fifty_move_clock);
+        int end = std::max(0, static_cast<int>(history.size()) - 1 - fifty_move_clock);
         int repetitions = 0;
 
         for (int i = history.size() - 3; i >= end; i -= 2) {
