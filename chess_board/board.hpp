@@ -116,6 +116,14 @@ public:
         occupancy = side_occupancy[White] | side_occupancy[Black];
 
         chess_move move;
+        std::uint64_t checks = attackers(lsb(bitboards[side][King]));
+        int number_of_checks = popcount(checks);
+        if (number_of_checks == 2) {
+            move = chess_move(Null_Square, Null_Square, QUIET, true, true);
+        } else if (number_of_checks == 1) {
+            move = chess_move(Null_Square, lsb(checks), QUIET, true, false);
+        }
+
         board_info binfo{castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key};
         history.push_back(binfo);
     }
@@ -138,6 +146,15 @@ public:
             case DOUBLE_CHECK:
                 return 0ull;
         }
+    }
+
+    [[nodiscard]] std::uint64_t attackers(Square square) const {
+        Color their_color = side == White ? Black : White;
+        return    (attacks<Ray::ROOK>(square, occupancy) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
+                  | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]))
+                  | (KING_ATTACKS[square]   & bitboards[their_color][King])
+                  | (KNIGHT_ATTACKS[square] & bitboards[their_color][Knight])
+                  | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][Pawn]);
     }
 
     template<Color their_color>
