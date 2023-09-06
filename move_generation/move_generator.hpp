@@ -4,21 +4,6 @@
 #include "move_list.hpp"
 #include "../chess_board/board.hpp"
 
-std::uint64_t get_checkmask(std::uint64_t checkers, Square square)
-{
-    if(checkers == 0) {
-        return full_board;
-    }
-
-    Square square_of_checker = pop_lsb(checkers);
-
-    if(checkers) {
-        return 0ull;
-    }
-
-    return pinmask[square][square_of_checker];
-}
-
 template <Color our_color, bool captures_only, bool vertical_discovery, bool nonvertical_discovery>
 void generate_pawn_moves(const board & chessboard, move_list & movelist, std::uint64_t pawn_bitboard, std::uint64_t checkmask,
                          std::uint64_t move_v, std::uint64_t move_a, std::uint64_t move_d, std::uint64_t enemy, std::uint64_t empty, std::uint64_t check_squares)
@@ -129,10 +114,10 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
             bool promote_rook_check = attacks<Ray::ROOK>(pawn_square, occupancy) & enemy_king;
             bool promote_bishop_check = attacks<Ray::BISHOP>(pawn_square, occupancy) & enemy_king;
             bool promote_queen_check = promote_bishop_check | promote_rook_check;
-            bool promote_knight_check = KNIGHT_ATTACKS[pawn_square] & enemy_king;
             set_bit(occupancy, pawn_square_from);
             movelist.add(chess_move(pawn_square_from, pawn_square, QUEEN_PROMOTION_CAPTURE, promote_queen_check, discovery));
             if constexpr (!captures_only) {
+                bool promote_knight_check = KNIGHT_ATTACKS[pawn_square] & enemy_king;
                 movelist.add(chess_move(pawn_square_from, pawn_square, ROOK_PROMOTION_CAPTURE, promote_rook_check, discovery));
                 movelist.add(chess_move(pawn_square_from, pawn_square, BISHOP_PROMOTION_CAPTURE, promote_bishop_check, discovery));
                 movelist.add(chess_move(pawn_square_from, pawn_square, KNIGHT_PROMOTION_CAPTURE, promote_knight_check, discovery));
