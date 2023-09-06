@@ -316,7 +316,7 @@ constexpr void generate_king_moves(const board & b, move_list & ml, Square king_
 }
 
 template <Color our_color>
-constexpr void generate_castle_moves(move_list & ml, int castling_right, std::uint64_t safe_squares, std::uint64_t empty, std::uint64_t check_squares) {
+constexpr void generate_castle_moves(move_list & ml, int castling_right, std::uint64_t safe_squares, std::uint64_t empty, std::uint64_t check_squares, std::uint64_t horizontal_discovery) {
     constexpr Square king_e_square = our_color == White ? E1 : E8;
     constexpr Square king_g_square = our_color == White ? G1 : G8;
     constexpr Square king_c_square = our_color == White ? C1 : C8;
@@ -329,6 +329,7 @@ constexpr void generate_castle_moves(move_list & ml, int castling_right, std::ui
     constexpr std::uint64_t kingside_castle_fg_mask   = our_color == White ? 0x60ull : 0x6000000000000000ull;
     constexpr std::uint64_t queenside_castle_cde_mask = our_color == White ? 0x1cull : 0x1c00000000000000ull;
     constexpr std::uint64_t queenside_castle_bcd_mask = our_color == White ? 0xeull  : 0xe00000000000000ull;
+    constexpr std::uint64_t king_e_mask = our_color == White ? 0x10ull : 0x1000000000000000ull;
 
     constexpr int kingside_castle_right  = our_color == White ? CASTLE_WHITE_KINGSIDE  : CASTLE_BLACK_KINGSIDE;
     constexpr int queenside_castle_right = our_color == White ? CASTLE_WHITE_QUEENSIDE : CASTLE_BLACK_QUEENSIDE;
@@ -340,14 +341,16 @@ constexpr void generate_castle_moves(move_list & ml, int castling_right, std::ui
        && (safe_squares & kingside_castle_efg_mask) == kingside_castle_efg_mask
        && (empty & kingside_castle_fg_mask) == kingside_castle_fg_mask)
     {
-        ml.add(chess_move(rook_h_square, rook_f_square, KING_CASTLE, kingside_check_square & check_squares, false));
+        bool direct_check = kingside_check_square & check_squares | king_e_mask & horizontal_discovery;
+        ml.add(chess_move(rook_h_square, rook_f_square, KING_CASTLE, direct_check, false));
     }
 
     if(castling_right & queenside_castle_right
        && (safe_squares & queenside_castle_cde_mask) == queenside_castle_cde_mask
        && (empty & queenside_castle_bcd_mask) == queenside_castle_bcd_mask)
     {
-        ml.add(chess_move(rook_a_square, rook_d_square, QUEEN_CASTLE, queenside_check_square & check_squares, false));
+        bool direct_check = queenside_check_square & check_squares | king_e_mask & horizontal_discovery;
+        ml.add(chess_move(rook_a_square, rook_d_square, QUEEN_CASTLE, direct_check, false));
     }
 }
 
@@ -487,7 +490,7 @@ constexpr void generate_all_moves(board & b, move_list & ml) {
     generate_pawn_moves<our_color, captures_only, false, true>(b, ml, pawn_bitboard & (discover_h | discover_ad), checkmask, ~pin_ad, ~(pin_d | pin_v),~(pin_a | pin_v), enemy_pieces, empty, pawn_check_squares);
 
     if constexpr (!captures_only) {
-        generate_castle_moves<our_color>(ml, b.get_castle_rights(), safe_squares, empty, rook_check_squares);
+        generate_castle_moves<our_color>(ml, b.get_castle_rights(), safe_squares, empty, rook_check_squares, discover_h);
     }
 }
 
