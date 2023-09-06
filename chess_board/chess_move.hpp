@@ -88,6 +88,16 @@ public:
         MoveType mt = get_move_type();
         switch (mt)
         {
+            case KING_CASTLE:
+                move_string = "";
+                move_string.append(square_to_string[get_from() - 3]);
+                move_string.append(square_to_string[get_to()   + 1]);
+                return move_string;
+            case QUEEN_CASTLE:
+                move_string = "";
+                move_string.append(square_to_string[get_from() + 4]);
+                move_string.append(square_to_string[get_to()   - 1]);
+                return move_string;
             case KNIGHT_PROMOTION:
                 return move_string + "n";
             case BISHOP_PROMOTION:
