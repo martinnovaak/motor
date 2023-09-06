@@ -6,10 +6,10 @@
 
 class move_list {
 private:
-    std::array<chess_move, 218> list;
+    std::array<chess_move, 256> list;
     std::uint8_t count;
 public:
-    using iterator = typename std::array<chess_move, 218>::iterator;
+    using iterator = typename std::array<chess_move, 256>::iterator;
 
     move_list() : list{}, count{} {}
 
