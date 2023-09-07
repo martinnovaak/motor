@@ -47,9 +47,10 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     if (depth <= 0) {
-        //return evaluate<color>(chessboard);
         return quiescence_search<color>(chessboard, data, alpha, beta);
     }
+
+    bool in_check = chessboard.in_check();
 
     Bound flag = Bound::UPPER;
 
@@ -65,7 +66,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     generate_all_moves<color, false>(chessboard, movelist);
 
     if (movelist.size() == 0) {
-        if (chessboard.in_check()) {
+        if (in_check) {
             return data.mate_value();
         } else {
             return 0;
@@ -73,7 +74,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     std::int16_t best_score = -INF;
-    score_moves(movelist, best_move);
+    score_moves(chessboard, movelist, data, best_move);
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         const chess_move & chessmove = movelist.get_next_move(moves_searched);
@@ -105,6 +106,11 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
         if (alpha >= beta) {
             flag = Bound::LOWER;
+            if (chessmove.is_quiet()) {
+                data.update_killer(chessmove);
+
+                data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
+            }
             break;
         }
     }
