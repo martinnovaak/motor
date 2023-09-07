@@ -46,11 +46,14 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         return 0;
     }
 
+    bool in_check = chessboard.in_check();
+    if (in_check) {
+        depth++;
+    }
+
     if (depth <= 0) {
         return quiescence_search<color>(chessboard, data, alpha, beta);
     }
-
-    bool in_check = chessboard.in_check();
 
     Bound flag = Bound::UPPER;
 
