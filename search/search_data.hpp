@@ -48,6 +48,24 @@ public:
     void augment_ply() {
         ply++;
     }
+
+    void update_killer(chess_move move) {
+        killer_moves[ply][0] = killer_moves[ply][1];
+        killer_moves[ply][1] = move;
+    }
+
+    chess_move get_killer(int index) {
+        return killer_moves[ply][index];
+    }
+
+    void update_history(std::uint8_t from, std::uint8_t to, std::int8_t depth) {
+        history_moves[from][to] += depth * depth;
+    }
+
+    std::uint16_t get_history(std::uint8_t from, std::uint8_t to) {
+        return history_moves[from][to];
+    }
+
 private:
     std::int16_t ply;
 
@@ -56,6 +74,8 @@ private:
     time_keeper timekeeper;
 
     std::uint64_t nodes_searched;
+    chess_move killer_moves[MAX_DEPTH][2] = {};
+    std::uint16_t history_moves[64][64] = {};
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP

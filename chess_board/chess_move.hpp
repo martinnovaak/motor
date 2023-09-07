@@ -81,6 +81,27 @@ public:
         return move_data > other_move.move_data;
     }
 
+    [[nodiscard]] bool is_quiet() const {
+        switch (get_move_type()) {
+            case QUIET:
+            case DOUBLE_PAWN_PUSH:
+            case KING_CASTLE:
+            case QUEEN_CASTLE:
+                return true;
+            case CAPTURE:
+            case EN_PASSANT:
+            case KNIGHT_PROMOTION:
+            case BISHOP_PROMOTION:
+            case ROOK_PROMOTION:
+            case QUEEN_PROMOTION:
+            case KNIGHT_PROMOTION_CAPTURE:
+            case BISHOP_PROMOTION_CAPTURE:
+            case ROOK_PROMOTION_CAPTURE:
+            case QUEEN_PROMOTION_CAPTURE:
+                return false;
+        }
+    }
+
     [[nodiscard]] std::string to_string() const {
         std::string move_string;
         move_string.append(square_to_string[get_from()]);
