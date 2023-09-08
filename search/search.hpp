@@ -65,12 +65,31 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     if (tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
         tt_hit = true;
+        std::int16_t tt_eval = tt_entry.score;
+        if constexpr (!is_pv) {
+            if (tt_entry.depth >= depth) {
+                switch (tt_entry.bound) {
+                    case Bound::EXACT:
+                        return tt_eval;
+                    case Bound::LOWER:
+                        if (tt_eval >= beta) {
+                            return tt_eval;
+                        }
+                        break;
+                    case Bound::UPPER:
+                        if (tt_eval <= alpha) {
+                            return tt_eval;
+                        }
+                        break;
+                }
+            }
+        }
     }
 
     if constexpr (!is_pv) {
         std::int16_t eval = evaluate<color>(chessboard);
+        // reverse futility pruning
         if (!in_check && !tt_hit && depth < 7 && eval - 100 * depth >= beta) {
-            // reverse futility pruning
             return beta;
         }
     }
@@ -110,21 +129,20 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         if (score > best_score) {
             best_score = score;
             data.update_pv(chessmove);
-        }
 
-        if (score > alpha) {
-            alpha = score;
-            flag = Bound::EXACT;
-        }
+            if (score > alpha) {
+                alpha = score;
+                flag = Bound::EXACT;
 
-        if (alpha >= beta) {
-            flag = Bound::LOWER;
-            if (chessmove.is_quiet()) {
-                data.update_killer(chessmove);
-
-                data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
+                if (alpha >= beta) {
+                    flag = Bound::LOWER;
+                    if (chessmove.is_quiet()) {
+                        data.update_killer(chessmove);
+                        data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
+                    }
+                    break;
+                }
             }
-            break;
         }
     }
 
