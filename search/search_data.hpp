@@ -10,7 +10,13 @@ constexpr std::int16_t INF = 20'000;
 
 class search_data {
 public:
-    search_data() : principal_variation_table(), timekeeper(), ply(0), nodes_searched(0) {}
+    search_data() : principal_variation_table(), timekeeper(), ply(0), nodes_searched(0) {
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                history_moves[i][j] = 1500;
+            }
+        }
+    }
 
     void set_timekeeper(int time, int bonus, int movestogo) {
         timekeeper.reset(time, bonus, movestogo);
@@ -75,7 +81,7 @@ private:
 
     std::uint64_t nodes_searched;
     chess_move killer_moves[MAX_DEPTH][2] = {};
-    std::uint16_t history_moves[64][64] = {};
+    std::uint16_t history_moves[64][64];
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP

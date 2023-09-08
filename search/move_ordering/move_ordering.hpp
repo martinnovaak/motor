@@ -1,6 +1,7 @@
 #ifndef MOTOR_MOVE_ORDERING_HPP
 #define MOTOR_MOVE_ORDERING_HPP
 
+#include "see.hpp"
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
 
@@ -15,6 +16,7 @@ constexpr static int mvv_lva[7][6] = {
         {25, 0, 0, 0, 0, 0}
 };
 
+template <Color color>
 void score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
     for (chess_move & move : movelist) {
         const std::uint8_t from = move.get_from();
@@ -22,7 +24,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         if (move == tt_move) {
             move.set_score(16383);
         } else if (!move.is_quiet()) {
-            move.set_score(15000 + mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
+            move.set_score(15000 * see<color>(chessboard, move) + mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
         } else if (data.get_killer(0) == move){
             move.set_score(14999);
         } else if (data.get_killer(1) == move){
