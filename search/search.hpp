@@ -77,7 +77,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     std::int16_t best_score = -INF;
-    score_moves(chessboard, movelist, data, best_move);
+    score_moves<color>(chessboard, movelist, data, best_move);
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         const chess_move & chessmove = movelist.get_next_move(moves_searched);
