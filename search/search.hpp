@@ -61,8 +61,18 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     const TT_entry & tt_entry = tt[zobrist_key];
     chess_move best_move;
 
+    bool tt_hit = false;
     if (tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
+        tt_hit = true;
+    }
+
+    if constexpr (!is_pv) {
+        std::int16_t eval = evaluate<color>(chessboard);
+        if (!in_check && !tt_hit && depth < 7 && eval - 100 * depth >= beta) {
+            // reverse futility pruning
+            return beta;
+        }
     }
 
     move_list movelist;
