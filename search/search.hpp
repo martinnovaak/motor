@@ -160,11 +160,40 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 }
 
 template <Color color>
+std::int16_t aspiration_window(board & chessboard, search_data & data, std::int16_t score, int depth) {
+    std::int16_t alpha_window = 15, beta_window = 15;
+    std::int16_t alpha, beta;
+
+    while(!data.time_is_up()) {
+        alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(score  - alpha_window));
+        beta  = std::min( INF, static_cast<std::int16_t>(score  + beta_window));
+
+        score = alpha_beta<color, NodeType::Root>(chessboard, data, alpha, beta, depth);
+        if (score <= alpha) {
+            alpha_window *= 3;
+            beta_window *= 2;
+        } else if (score >= beta) {
+            alpha_window *= 2;
+            beta_window *= 3;
+            depth = std::max(1, depth - 1);
+        } else {
+            break;
+        }
+    }
+
+    return score;
+}
+
+template <Color color>
 void iterative_deepening(board & chessboard, search_data & data) {
     std::string best_move;
     int score;
     for (int depth = 1; depth < MAX_DEPTH; depth++) {
-        score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth);
+        if (depth < 6) {
+            score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth);
+        } else {
+            score = aspiration_window<color>(chessboard, data, score, depth);
+        }
 
         if (data.time_is_up()) {
             break;
