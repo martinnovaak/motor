@@ -35,11 +35,12 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
     }
 }
 
+template <Color color>
 static void qs_score_moves(board & chessboard, move_list & movelist) {
     for(chess_move & move : movelist) {
         const std::uint8_t from = move.get_from();
         const std::uint8_t to   = move.get_to();
-        move.set_score(mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
+        move.set_score(see<color>(chessboard, move) * mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
     }
 }
 
