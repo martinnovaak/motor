@@ -117,9 +117,17 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         if (moves_searched == 0) {
             score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
         } else {
-            score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1);
-            if (score > alpha && score < beta) {
-                score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
+            // late move reduction
+            score = alpha + 1;
+            if(moves_searched >= 5 && depth >= 3 && chessmove.is_quiet()) {
+                int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / 5.5 - chessboard.in_check();
+                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction);
+            }
+            if (score > alpha) {
+                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1);
+                if (score > alpha && score < beta) {
+                    score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
+                }
             }
         }
 
