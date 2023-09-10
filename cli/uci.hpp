@@ -118,6 +118,7 @@ void uci_process(board& b, const std::string& line) {
     }
     else if (command == "ucinewgame") {
         // Todo clear TT (not yet implemented)
+        tt.clear();
         // position_uci(b, "startpos");
     }
     else if (command == "setoption") {
