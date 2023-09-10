@@ -415,8 +415,7 @@ public:
         hash_key = hist.hash_key;
         enpassant = hist.enpassant;
         castling_rights = hist.castling_rights;
-        hash_key.update_enpassant_hash(enpassant);
-        fifty_move_clock--;
+        fifty_move_clock = hist.fifty_move_clock;
     }
 
     template<Color our_color>
