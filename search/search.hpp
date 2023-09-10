@@ -87,10 +87,26 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     if constexpr (!is_pv) {
-        std::int16_t eval = evaluate<color>(chessboard);
-        // reverse futility pruning
-        if (!in_check && !tt_hit && depth < 7 && eval - 100 * depth >= beta) {
-            return beta;
+        if (!in_check && !tt_hit) {
+            std::int16_t eval = evaluate<color>(chessboard);
+            // reverse futility pruning
+            if (depth < 7 && eval - 100 * depth >= beta) {
+                return beta;
+            }
+
+
+            // NULL MOVE PRUNING
+            if (node_type != NodeType::Null && depth >= 3 && eval >= beta && !chessboard.pawn_endgame()) {
+                chessboard.make_null_move<color>();
+                int R = 3 + depth / 3 + (eval - beta) / 200;
+                data.augment_ply();
+                std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha,depth - R);
+                data.reduce_ply();
+                chessboard.undo_null_move<color>();
+                if (nullmove_score >= beta) {
+                    return nullmove_score;
+                }
+            }
         }
     }
 
