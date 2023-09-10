@@ -93,6 +93,12 @@ public:
             }
         }
 
+        for (auto piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
+            side_occupancy[White] |= bitboards[White][piece];
+            side_occupancy[Black] |= bitboards[Black][piece];
+        }
+        occupancy = side_occupancy[White] | side_occupancy[Black];
+
         std::uint64_t checks;
         if (side_str == "w") {
             side = Color::White;
@@ -111,12 +117,6 @@ public:
 
         enpassant = square_from_string(enpassant_str);
         hash_key.update_enpassant_hash(enpassant);
-
-        for (auto piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
-            side_occupancy[White] |= bitboards[White][piece];
-            side_occupancy[Black] |= bitboards[Black][piece];
-        }
-        occupancy = side_occupancy[White] | side_occupancy[Black];
 
         chess_move move;
         int number_of_checks = popcount(checks);
