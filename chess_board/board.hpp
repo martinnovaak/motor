@@ -327,7 +327,7 @@ public:
         int end = std::max(0, static_cast<int>(history.size()) - 1 - fifty_move_clock);
         int repetitions = 0;
 
-        for (int i = history.size() - 3; i >= end; i -= 2) {
+        for (int i = static_cast<int>(history.size()) - 3; i >= end; i -= 2) {
             if (history[i].hash_key == hash_key) {
                 repetitions++;
             }
@@ -388,6 +388,35 @@ public:
             hash_key.update_psqt_hash(our_color, piece, square);
             hash_key.update_psqt_hash(our_color, captured_piece, square);
         }
+    }
+
+    template<Color color>
+    void make_null_move()
+    {
+        constexpr Color their_color = (color == Black) ? White : Black;
+
+        side = their_color;
+        hash_key.update_side_hash();
+        hash_key.update_enpassant_hash(enpassant);
+        enpassant = Square::Null_Square;
+        fifty_move_clock++;
+
+        chess_move move;
+        history.emplace_back(castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key);
+    }
+
+    template<Color color>
+    void undo_null_move()
+    {
+        history.pop_back();
+        const auto & hist = history.back();
+
+        side = color;
+        hash_key = hist.hash_key;
+        enpassant = hist.enpassant;
+        castling_rights = hist.castling_rights;
+        hash_key.update_enpassant_hash(enpassant);
+        fifty_move_clock--;
     }
 
     template<Color our_color>
