@@ -87,6 +87,19 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     std::int16_t eval = evaluate<color>(chessboard);
+
+    if constexpr (!is_root) {
+        if(!in_check && !tt_hit) {
+            // razoring
+            if (depth <= 3 && eval + 150 * depth <= alpha) {
+                eval = quiescence_search<color>(chessboard, data, alpha, beta);
+                if(eval <= alpha) {
+                    return eval;
+                }
+            }
+        }
+    }
+
     if constexpr (!is_pv) {
         if (!in_check) {
             // reverse futility pruning
@@ -122,14 +135,12 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
-    chess_move previous = data.previous_move;
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         const chess_move & chessmove = movelist.get_next_move(moves_searched);
 
         chessboard.make_move<color>(chessmove);
         data.augment_ply();
-        data.previous_move = chessmove;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -167,9 +178,6 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                     if (chessmove.is_quiet()) {
                         data.update_killer(chessmove);
                         data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
-                        if constexpr (!is_root) {
-                            data.counter_moves[previous.get_from()][previous.get_to()] = chessmove;
-                        }
                     }
                     break;
                 }
@@ -183,7 +191,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
 template <Color color>
 std::int16_t aspiration_window(board & chessboard, search_data & data, std::int16_t score, int depth) {
-    std::int16_t alpha_window = 15, beta_window = 15;
+    std::int16_t alpha_window = 20, beta_window = 20;
     std::int16_t alpha, beta;
 
     while(!data.time_is_up()) {
