@@ -29,13 +29,13 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
 
     move_list movelist;
     generate_all_moves<color, true>(chessboard, movelist);
-    qs_score_moves<color>(chessboard, movelist);
+    qs_score_moves(chessboard, movelist);
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
-        const chess_move & chessmove = movelist.get_next_move(moves_searched);
+        chess_move & chessmove = movelist.get_next_move(moves_searched);
 
-        if (chessmove.get_score() == 0) {
-            break;
+        if (!see<color>(chessboard, chessmove)) {
+            continue;
         }
 
         chessboard.make_move<color>(chessmove);
