@@ -72,6 +72,14 @@ public:
         return history_moves[from][to];
     }
 
+    [[nodiscard]] std::int16_t get_ply() const {
+        return ply;
+    }
+
+    chess_move previous_move;
+    chess_move counter_moves[64][64] = {};
+    std::int16_t eval_grandfather{};
+    std::int16_t eval_father{};
 private:
     std::int16_t ply;
 

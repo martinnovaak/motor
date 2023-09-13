@@ -87,6 +87,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     std::int16_t eval = evaluate<color>(chessboard);
+    int improving = 1;
 
     if constexpr (!is_root) {
         if(!in_check && !tt_hit) {
@@ -101,7 +102,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     }
 
     if constexpr (!is_pv) {
-        if (!in_check) {
+        improving = (data.get_ply() >= 2 && eval >= data.eval_grandfather) ? 2 : 1;
+        if (!in_check && std::abs(beta) < 9'000) {
             // reverse futility pruning
             if (depth < 7 && eval - 100 * depth >= beta) {
                 return beta;
@@ -135,6 +137,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
+    chess_move previous_move = data.previous_move;
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
@@ -149,6 +152,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
         chessboard.make_move<color>(chessmove);
         data.augment_ply();
+        data.previous_move = chessmove;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -190,6 +194,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                     if (chessmove.is_quiet()) {
                         data.update_killer(chessmove);
                         data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
+                        data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                     }
                     break;
                 }
