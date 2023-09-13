@@ -23,8 +23,8 @@ public:
     }
 
     bool should_end() {
-        return timekeeper.should_end(nodes_searched);
         nodes_searched++;
+        return timekeeper.should_end(nodes_searched);
     }
 
     bool time_is_up() {

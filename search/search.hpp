@@ -140,8 +140,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         chess_move & chessmove = movelist.get_next_move(moves_searched);
 
         if constexpr (!is_root) {
-            if (best_score > -9'000) {
-                if (chessmove.get_score() < 15'000 && moves_searched > 3 * depth * depth) {
+            if (best_score > -9'000 && chessmove.get_score() < 15'000) {
+                if (moves_searched > 3 * depth * depth) {
                     break;
                 }
             }
@@ -168,6 +168,10 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                     score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
                 }
             }
+        }
+
+        if (data.time_is_up()) {
+            return 0;
         }
 
         chessboard.undo_move<color>();
