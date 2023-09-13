@@ -137,7 +137,15 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     score_moves<color>(chessboard, movelist, data, best_move);
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
-        const chess_move & chessmove = movelist.get_next_move(moves_searched);
+        chess_move & chessmove = movelist.get_next_move(moves_searched);
+
+        if constexpr (!is_root) {
+            if (best_score > -9'000) {
+                if (chessmove.get_score() < 15'000 && moves_searched > 3 * depth * depth) {
+                    break;
+                }
+            }
+        }
 
         chessboard.make_move<color>(chessmove);
         data.augment_ply();
@@ -148,7 +156,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         } else {
             // late move reduction
             score = alpha + 1;
-            if(moves_searched >= 5 && depth >= 3 && chessmove.is_quiet()) {
+            if(moves_searched >= 4 && depth >= 3 && chessmove.get_score() < 15'000) {
                 int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / 5.5;
                 reduction -=  (chessboard.in_check() > Check_type::NOCHECK);
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction);
