@@ -21,16 +21,20 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
     for (chess_move & move : movelist) {
         const std::uint8_t from = move.get_from();
         const std::uint8_t to   = move.get_to();
+        const chess_move previous_move = chessboard.get_last_played_move();
+        const chess_move counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
         if (move == tt_move) {
             move.set_score(16383);
         } else if (!move.is_quiet()) {
-            move.set_score(15000 * see<color>(chessboard, move) + mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
+            move.set_score(15003 * see<color>(chessboard, move) + mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
         } else if (data.get_killer(0) == move){
-            move.set_score(14999);
+            move.set_score(15002);
         } else if (data.get_killer(1) == move){
-            move.set_score(14998);
+            move.set_score(15001);
+        } else if (counter_move == move) {
+            move.set_score(15'000);
         } else {
-             move.set_score(data.get_history(from, to));
+            move.set_score(data.get_history(from, to));
         }
     }
 }
