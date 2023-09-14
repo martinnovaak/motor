@@ -84,6 +84,11 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                 }
             }
         }
+    } else if (depth >= 4) {
+        depth--;
+        if constexpr (is_pv) {
+            depth--;
+        }
     }
 
     std::int16_t eval = evaluate<color>(chessboard);
