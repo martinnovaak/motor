@@ -178,27 +178,16 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
         if(enpassant_antidiagonal && chessboard.check_legality_of_enpassant<their_color>(square_from, pawn_to_capture)) {
             if constexpr (vertical_discovery) {
                 movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, vertical_discovery));
-            }
-
-            if constexpr (nonvertical_discovery) {
-                pop_bit(occupancy, square_from);
-                bool discovers_attack = attacks<Ray::ANTIDIAGONAL>(enemy_king_square, occupancy) & enpassant_bitboard;
-                set_bit(occupancy, square_from);
-                movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, discovers_attack));
-            }
-
-            if constexpr (!discovery) {
-                // even if it isn't on discovery square it still can give horizontal discovery check
+            } else {
                 pop_bit(occupancy, pawn_to_capture);
                 pop_bit(occupancy, square_from);
                 std::uint64_t queen_bitboard = chessboard.get_pieces(our_color, Queen);
                 std::uint64_t bitboard_hv = chessboard.get_pieces(our_color, Rook)   | queen_bitboard;
                 std::uint64_t bitboard_ad = chessboard.get_pieces(our_color, Bishop) | queen_bitboard;
                 bool discovers_attack = bitboard_hv & attacks<Ray::HORIZONTAL>(enemy_king_square, occupancy);
+                discovers_attack = discovers_attack || bitboard_ad & attacks<Ray::BISHOP>(enemy_king_square, occupancy);
                 set_bit(occupancy, square_from);
-                discovers_attack = discovers_attack || bitboard_ad & attacks<Ray::DIAGONAL>(enemy_king_square, occupancy);
                 set_bit(occupancy, pawn_to_capture);
-
                 movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, discovers_attack));
             }
         }
@@ -208,25 +197,16 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
         if(enpassant_diagonal && chessboard.check_legality_of_enpassant<their_color>(square_from, pawn_to_capture)) {
             if constexpr (vertical_discovery) {
                 movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, vertical_discovery));
-            }
-
-            if constexpr (nonvertical_discovery) {
-                pop_bit(occupancy, square_from);
-                bool discovers_attack = attacks<Ray::BISHOP>(enemy_king_square, occupancy) & enpassant_bitboard;
-                set_bit(occupancy, square_from);
-                movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, discovers_attack));
-            }
-
-            if constexpr (!discovery) {
-                // even if it isn't on discovery square it still can give horizontal discovery check
+            } else {
                 pop_bit(occupancy, pawn_to_capture);
                 pop_bit(occupancy, square_from);
                 std::uint64_t queen_bitboard = chessboard.get_pieces(our_color, Queen);
                 std::uint64_t bitboard_hv = chessboard.get_pieces(our_color, Rook)   | queen_bitboard;
                 std::uint64_t bitboard_ad = chessboard.get_pieces(our_color, Bishop) | queen_bitboard;
                 bool discovers_attack = bitboard_hv & attacks<Ray::HORIZONTAL>(enemy_king_square, occupancy);
-                set_bit(occupancy, square_from);
                 discovers_attack = discovers_attack || bitboard_ad & attacks<Ray::BISHOP>(enemy_king_square, occupancy);
+                set_bit(occupancy, square_from);
+
 
                 movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, discovers_attack));
             }
