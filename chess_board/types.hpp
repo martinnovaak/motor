@@ -77,30 +77,11 @@ constexpr static std::uint64_t ranks[] {
         0xff00000000000000ull
 };
 
-// TODO move shift function into movegen
-template<Direction direction>
-constexpr std::uint64_t shift(std::uint64_t bitboard) {
-    switch (direction) {
-        case NORTH: return bitboard << 8;
-        case SOUTH: return bitboard >> 8;
-        case NORTH_2: return bitboard << 16;
-        case SOUTH_2: return bitboard >> 16;
-        case NORTH_EAST: return (bitboard & ~files[FILE_H]) << 9;
-        case NORTH_WEST: return (bitboard & ~files[FILE_A]) << 7;
-        case SOUTH_EAST: return (bitboard & ~files[FILE_H]) >> 7;
-        case SOUTH_WEST: return (bitboard & ~files[FILE_A]) >> 9;
-        case EAST: return (bitboard & ~files[FILE_H]) << 1;
-        case WEST: return (bitboard & ~files[FILE_A]) >> 1;
-    }
-}
-
 enum CastlingRight : std::uint8_t {
     CASTLE_WHITE_KINGSIDE  = 1,
     CASTLE_WHITE_QUEENSIDE = 2,
     CASTLE_BLACK_KINGSIDE  = 4,
     CASTLE_BLACK_QUEENSIDE = 8,
 };
-
-
 
 #endif //MOTOR_TYPES_HPP

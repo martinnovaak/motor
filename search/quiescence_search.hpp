@@ -2,7 +2,7 @@
 #define MOTOR_QUIESCENCE_SEARCH_HPP
 
 #include "search_data.hpp"
-#include "transposition_table.hpp"
+#include "tables/transposition_table.hpp"
 #include "move_ordering/move_ordering.hpp"
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"

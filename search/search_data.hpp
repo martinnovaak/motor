@@ -5,18 +5,15 @@
 
 #include "pv_table.hpp"
 #include "time_keeper.hpp"
+#include "tables/butterfly_table.hpp"
 
 constexpr std::int16_t INF = 20'000;
 
+butterfly_table<std::uint16_t> history_table(5'000);
+
 class search_data {
 public:
-    search_data() : principal_variation_table(), timekeeper(), ply(0), nodes_searched(0) {
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                history_moves[i][j] = 1500;
-            }
-        }
-    }
+    search_data() : principal_variation_table(), timekeeper(), ply(0), nodes_searched(0)  {}
 
     void set_timekeeper(int time, int bonus, int movestogo) {
         timekeeper.reset(time, bonus, movestogo);
@@ -64,22 +61,23 @@ public:
         return killer_moves[ply][index];
     }
 
-    void update_history(std::uint8_t from, std::uint8_t to, std::int8_t depth) {
-        history_moves[from][to] += depth * depth;
+    void update_history(std::uint8_t from, std::uint8_t to, std::int8_t depth, std::int8_t sequence){
+        history_table.increase_value(from, to, (depth + sequence / 3) * depth);
+    }
+
+    void reduce_history(std::uint8_t from, std::uint8_t to, std::int8_t depth, std::int8_t sequence){
+        history_table.reduce_value(from, to, (depth + sequence / 3) * depth);
     }
 
     std::uint16_t get_history(std::uint8_t from, std::uint8_t to) {
-        return history_moves[from][to];
+        return history_table.get_value(from, to);
     }
 
     [[nodiscard]] std::int16_t get_ply() const {
         return ply;
     }
 
-    chess_move previous_move;
     chess_move counter_moves[64][64] = {};
-    std::int16_t eval_grandfather{};
-    std::int16_t eval_father{};
 private:
     std::int16_t ply;
 
@@ -89,7 +87,6 @@ private:
 
     std::uint64_t nodes_searched;
     chess_move killer_moves[MAX_DEPTH][2] = {};
-    std::uint16_t history_moves[64][64];
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP
