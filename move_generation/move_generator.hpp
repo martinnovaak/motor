@@ -4,6 +4,22 @@
 #include "move_list.hpp"
 #include "../chess_board/board.hpp"
 
+template<Direction direction>
+constexpr std::uint64_t shift(std::uint64_t bitboard) {
+    switch (direction) {
+        case NORTH: return bitboard << 8;
+        case SOUTH: return bitboard >> 8;
+        case NORTH_2: return bitboard << 16;
+        case SOUTH_2: return bitboard >> 16;
+        case NORTH_EAST: return (bitboard & ~files[FILE_H]) << 9;
+        case NORTH_WEST: return (bitboard & ~files[FILE_A]) << 7;
+        case SOUTH_EAST: return (bitboard & ~files[FILE_H]) >> 7;
+        case SOUTH_WEST: return (bitboard & ~files[FILE_A]) >> 9;
+        case EAST: return (bitboard & ~files[FILE_H]) << 1;
+        case WEST: return (bitboard & ~files[FILE_A]) >> 1;
+    }
+}
+
 template <Color our_color, bool captures_only, bool vertical_discovery, bool nonvertical_discovery>
 void generate_pawn_moves(const board & chessboard, move_list & movelist, std::uint64_t pawn_bitboard, std::uint64_t checkmask,
                          std::uint64_t move_v, std::uint64_t move_a, std::uint64_t move_d, std::uint64_t enemy, std::uint64_t empty, std::uint64_t check_squares)
