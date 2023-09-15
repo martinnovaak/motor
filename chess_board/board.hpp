@@ -121,9 +121,9 @@ public:
         chess_move move;
         int number_of_checks = popcount(checks);
         if (number_of_checks == 2) {
-            move = chess_move(Null_Square, Null_Square, QUIET, true, true);
+            move = chess_move(A1, Null_Square, QUIET, true, true);
         } else if (number_of_checks == 1) {
-            move = chess_move(Null_Square, lsb(checks), QUIET, true, false);
+            move = chess_move(A1, lsb(checks), QUIET, true, false);
         }
 
         board_info binfo{castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key};
@@ -607,6 +607,10 @@ public:
 
     [[nodiscard]] std::uint64_t get_hash_key() const {
         return hash_key.get_key();
+    }
+
+    [[nodiscard]] chess_move get_last_played_move() const {
+        return history.back().move;
     }
 };
 
