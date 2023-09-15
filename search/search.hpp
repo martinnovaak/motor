@@ -2,7 +2,7 @@
 #define MOTOR_SEARCH_HPP
 
 #include "search_data.hpp"
-#include "transposition_table.hpp"
+#include "tables/transposition_table.hpp"
 #include "move_ordering/move_ordering.hpp"
 #include "quiescence_search.hpp"
 #include "../chess_board/board.hpp"
@@ -98,10 +98,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         }
     }
 
-    int improving = 0;
-
     if constexpr (!is_root) {
-        improving = (data.get_ply() >= 2 && eval >= data.eval_grandfather) ? 1 : 0;
         if (!in_check && std::abs(beta) < 9'000) {
             // reverse futility pruning
             if (depth < 7 && eval - 100 * depth>= beta) {
@@ -131,7 +128,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         }
     }
 
-    move_list movelist;
+    move_list movelist, quiets;
     generate_all_moves<color, false>(chessboard, movelist);
 
     if (movelist.size() == 0) {
@@ -144,7 +141,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
-    chess_move previous_move = data.previous_move;
+    const chess_move previous_move = chessboard.get_last_played_move();
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
@@ -159,9 +156,6 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
         chessboard.make_move<color>(chessmove);
         data.augment_ply();
-        data.previous_move = chessmove;
-        data.eval_grandfather = data.eval_father;
-        data.eval_father = eval;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -202,12 +196,21 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                     flag = Bound::LOWER;
                     if (chessmove.is_quiet()) {
                         data.update_killer(chessmove);
-                        data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
+                        data.update_history(chessmove.get_from(), chessmove.get_to(), depth, quiets.size());
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
+
+                        int i = 0;
+                        for (const auto & quiet : quiets) {
+                            data.reduce_history(quiet.get_from(), quiet.get_to(), depth, quiets.size() - i);
+                            i++;
+                        }
                     }
                     break;
                 }
             }
+        }
+        if (chessmove.is_quiet()) {
+            quiets.add(chessmove);
         }
     }
 
@@ -262,6 +265,7 @@ void iterative_deepening(board & chessboard, search_data & data) {
 
 void find_best_move(board & chessboard, time_info & info) {
     search_data data;
+    history_table.centralize_whole_table();
     if(chessboard.get_side() == White) {
         data.set_timekeeper(info.wtime, info.winc, info.movestogo);
         iterative_deepening<White>(chessboard, data);
