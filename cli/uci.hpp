@@ -117,9 +117,8 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "uciok" << std::endl;
     }
     else if (command == "ucinewgame") {
-        // Todo clear TT (not yet implemented)
+        history_table.clear();
         tt.clear();
-        // position_uci(b, "startpos");
     }
     else if (command == "setoption") {
         // Todo later
