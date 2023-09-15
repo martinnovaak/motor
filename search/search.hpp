@@ -106,7 +106,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             }
 
             // razoring
-            if (depth <= 6 && eval + 150 * depth <= alpha) {
+            if (!tt_hit && depth <= 6 && eval + 150 * depth <= alpha) {
                 eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if(eval <= alpha) {
                     return eval;
