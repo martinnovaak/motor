@@ -4,7 +4,7 @@
 #include <cstdint>
 #include "../../chess_board/board.hpp"
 
-constexpr std::int32_t SEE_VALUES[6] = {100, 450, 450, 650, 1250, 30'000};
+constexpr std::int32_t SEE_VALUES[7] = {100, 450, 450, 650, 1250, 30'000, 0};
 
 template <Color color>
 static bool see(board & chessboard, chess_move & capture, int threshold = 0)  {
