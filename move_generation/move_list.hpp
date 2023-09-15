@@ -34,6 +34,10 @@ public:
         return list[index];
     }
 
+    const chess_move & operator[](int index) {
+        return list[index];
+    }
+
     [[nodiscard]] iterator begin() {
         return list.begin();
     }

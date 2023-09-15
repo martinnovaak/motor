@@ -106,6 +106,27 @@ public:
         }
     }
 
+    [[nodiscard]] bool is_promotion() const {
+        switch (get_move_type()) {
+            case QUIET:
+            case DOUBLE_PAWN_PUSH:
+            case KING_CASTLE:
+            case QUEEN_CASTLE:
+            case CAPTURE:
+            case EN_PASSANT:
+            case KNIGHT_PROMOTION:
+            case BISHOP_PROMOTION:
+            case ROOK_PROMOTION:
+            case KNIGHT_PROMOTION_CAPTURE:
+            case BISHOP_PROMOTION_CAPTURE:
+            case ROOK_PROMOTION_CAPTURE:
+                return false;
+            case QUEEN_PROMOTION:
+            case QUEEN_PROMOTION_CAPTURE:
+                return true;
+        }
+    }
+
     [[nodiscard]] std::string to_string() const {
         std::string move_string;
         move_string.append(square_to_string[get_from()]);

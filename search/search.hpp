@@ -22,7 +22,7 @@ enum class Bound : std::uint8_t {
 
 struct TT_entry {
     Bound bound;            // 8 bits
-    std::int8_t depth;     // 8 bits
+    std::int8_t depth;      // 8 bits
     std::int16_t score;     // 16 bits
     chess_move tt_move;     // 32 bits
     std::uint64_t zobrist;  // 64 bits
@@ -42,13 +42,16 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
     data.update_pv_length();
 
-    if (chessboard.is_draw()) {
-        return 0;
-    }
+    bool in_check = false;
+    if constexpr (!is_root) {
+        if (chessboard.is_draw()) {
+            return 0;
+        }
 
-    bool in_check = chessboard.in_check();
-    if (in_check) {
-        depth++;
+        in_check = chessboard.in_check();
+        if (in_check) {
+            depth++;
+        }
     }
 
     if (depth <= 0) {
@@ -60,6 +63,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     std::uint64_t zobrist_key = chessboard.get_hash_key();
     const TT_entry & tt_entry = tt[zobrist_key];
     chess_move best_move;
+
+    std::int16_t eval = evaluate<color>(chessboard);;
 
     bool tt_hit = false;
     if (tt_entry.zobrist == zobrist_key) {
@@ -84,40 +89,37 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                 }
             }
         }
-    } else if (depth >= 4) {
-        depth--;
-        if constexpr (is_pv) {
+    } else {
+        if (depth >= 4) {
             depth--;
+            if constexpr (is_pv) {
+                depth--;
+            }
         }
     }
 
-    std::int16_t eval = evaluate<color>(chessboard);
-    int improving = 1;
+    int improving = 0;
 
     if constexpr (!is_root) {
-        if(!in_check && !tt_hit) {
+        improving = (data.get_ply() >= 2 && eval >= data.eval_grandfather) ? 1 : 0;
+        if (!in_check && std::abs(beta) < 9'000) {
+            // reverse futility pruning
+            if (depth < 7 && eval - 100 * depth>= beta) {
+                return beta;
+            }
+
             // razoring
-            if (depth <= 3 && eval + 150 * depth <= alpha) {
+            if (depth <= 6 && eval + 150 * depth <= alpha) {
                 eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if(eval <= alpha) {
                     return eval;
                 }
             }
-        }
-    }
-
-    if constexpr (!is_pv) {
-        improving = (data.get_ply() >= 2 && eval >= data.eval_grandfather) ? 2 : 1;
-        if (!in_check && std::abs(beta) < 9'000) {
-            // reverse futility pruning
-            if (depth < 7 && eval - 100 * depth >= beta) {
-                return beta;
-            }
 
             // NULL MOVE PRUNING
             if (node_type != NodeType::Null && depth >= 3 && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
-                int R = 3 + depth / 3;
+                int R = 3 + depth / 3 + std::min(3, (eval - beta) / 300);
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha,depth - R);
                 data.reduce_ply();
@@ -158,6 +160,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         chessboard.make_move<color>(chessmove);
         data.augment_ply();
         data.previous_move = chessmove;
+        data.eval_grandfather = data.eval_father;
+        data.eval_father = eval;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -165,9 +169,9 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         } else {
             // late move reduction
             score = alpha + 1;
-            if(moves_searched >= 4 && depth >= 3 && chessmove.get_score() < 15'000) {
+            if(moves_searched >= 4 && depth >= 3 && chessmove.get_score() < 15'000 ) {
                 int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / 5.5;
-                reduction -=  (chessboard.in_check() > Check_type::NOCHECK);
+                reduction--;
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction);
             }
 
