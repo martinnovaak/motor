@@ -102,12 +102,12 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     if constexpr (!is_root) {
         if (!in_check && std::abs(beta) < 9'000) {
             // reverse futility pruning
-            if (depth < 7 && eval - 100 * depth >= beta) {
+            if (depth < 7 && eval - 150 * depth >= beta) {
                 return beta;
             }
 
             // razoring
-            if (depth <= 6 && eval + 150 * depth <= alpha) {
+            if (depth <= 6 && eval + 200 * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if(razor_eval <= alpha) {
                     return razor_eval;
@@ -117,7 +117,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             // NULL MOVE PRUNING
             if (node_type != NodeType::Null && depth >= 3 && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
-                int R = 3 + depth / 3 + std::min(3, (eval - beta) / 300);
+                int R = 3 + depth / 3;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha,depth - R);
                 data.reduce_ply();
@@ -147,9 +147,9 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
 
-        if constexpr (!is_root) {
+        if constexpr (!is_pv) {
             if (best_score > -9'000 && !in_check && chessmove.get_score() < 15'000) {
-                if (moves_searched > 3 * depth * depth) {
+                if (moves_searched > 3 + 2 * depth * depth / improving) {
                     break;
                 }
             }
@@ -157,6 +157,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
         chessboard.make_move<color>(chessmove);
         data.augment_ply();
+        data.eval_grandfather = data.eval_father;
+        data.eval_father = eval;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -164,9 +166,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         } else {
             // late move reduction
             score = alpha + 1;
-            if(moves_searched >= 4 && depth >= 3 && chessmove.get_score() < 15'000 ) {
+            if(depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == Check_type::NOCHECK) {
                 int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / 5.5;
-                reduction -= bool(chessboard.in_check());
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction);
             }
 
@@ -235,7 +236,7 @@ std::int16_t aspiration_window(board & chessboard, search_data & data, std::int1
         } else if (score >= beta) {
             alpha_window *= 2;
             beta_window *= 3;
-            depth = std::max(1, depth - 1);
+            //depth = std::max(1, depth - 1);
         } else {
             break;
         }

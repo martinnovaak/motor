@@ -77,7 +77,13 @@ public:
         return ply;
     }
 
+    std::int16_t improving(std::int16_t eval) const {
+        return (ply >= 2 && eval >= eval_grandfather);
+    }
+
     chess_move counter_moves[64][64] = {};
+    std::int16_t eval_grandfather{};
+    std::int16_t eval_father{};
 private:
     std::int16_t ply;
 
