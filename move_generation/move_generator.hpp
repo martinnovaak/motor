@@ -183,6 +183,9 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
     if (enpassant_square != Square::Null_Square)
     {
         std::uint64_t enpassant_bitboard = (1ull << enpassant_square);
+        if ((enpassant_bitboard & checkmask) == 0ull && (1ull << pawn_to_capture) != checkmask) {
+            return;
+        }
         bool direct_check = enpassant_bitboard & check_squares; // Direct check
 
         std::uint64_t enemy_king = chessboard.get_pieces(their_color, King);
@@ -406,11 +409,11 @@ constexpr void generate_all_moves(board & b, move_list & ml) {
 
     const std::uint64_t checkmask = b.get_checkmask<enemy_color>(king_square);
 
-    std::uint64_t rook_check_squares  = attacks<Ray::ROOK>(enemy_king_square, occupancy);
+    std::uint64_t rook_check_squares   = attacks<Ray::ROOK>(enemy_king_square, occupancy);
     std::uint64_t bishop_check_squares = attacks<Ray::BISHOP>(enemy_king_square, occupancy);
     std::uint64_t knight_check_squares = KNIGHT_ATTACKS[enemy_king_square];
-    std::uint64_t pawn_check_squares  = PAWN_ATTACKS_TABLE[enemy_color][enemy_king_square];
-    std::uint64_t queen_check_squares = rook_check_squares | bishop_check_squares;
+    std::uint64_t pawn_check_squares   = PAWN_ATTACKS_TABLE[enemy_color][enemy_king_square];
+    std::uint64_t queen_check_squares  = rook_check_squares | bishop_check_squares;
 
     auto [discover_h, discover_v, discover_a, discover_d] = b.get_discovering_pieces<our_color>(enemy_king_square, queen_check_squares);
 
