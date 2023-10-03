@@ -30,6 +30,13 @@ Motor uses Kindergarten Bitboards for generating sliding moves.
  . a . . . . . .     . 1 . . . . . .     . . . . . . . .            . . . . . . . .
  . . . . . . . .     . . . . . . . .     . . . . . . . .            a b c d e f . .
 ```
+```
+constexpr std::uint64_t file_b2_b7 = 0x0002020202020200ull;
+
+std::uint64_t bishop_diagonal(std::uint8_t square, std::uint64_t occupancy) {
+    return diagonal_subset[square][(((occupancy & diagonal_mask[square]) * file_b2_b7) >> 58)];
+}
+```
 
 ## Antidiagonal attacks
 ```

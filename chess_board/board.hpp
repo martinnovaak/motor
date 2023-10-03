@@ -229,7 +229,7 @@ public:
     }
 
     template<Color our_color, Color their_color>
-    [[nodiscard]] std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, std::uint64_t> get_pinners(int king_square) const {
+    [[nodiscard]] std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, std::uint64_t> get_pinners(Square king_square) const {
         std::uint64_t seen_squares = attacks<Ray::QUEEN>(king_square, occupancy);
         std::uint64_t possibly_pinned_pieces = seen_squares & side_occupancy[our_color];
 
@@ -310,8 +310,8 @@ public:
     template<Color their_color>
     [[nodiscard]] bool check_legality_of_enpassant (Square square_from, Square enpassant_pawn) const {
         // CHECK if king will get horizontal check after removing both pawns after enpassant
-        int king_square = get_king_square();
-        std::uint64_t occupancy_after_enpassant = ~((1ULL << (square_from)) | (1ULL << (enpassant_pawn))) & occupancy;
+        Square king_square = get_king_square();
+        std::uint64_t occupancy_after_enpassant = ~((1ull << (square_from)) | (1ull << (enpassant_pawn))) & occupancy;
         return !(attacks<Ray::HORIZONTAL>(king_square, occupancy_after_enpassant) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]));
     }
 
