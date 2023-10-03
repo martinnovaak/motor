@@ -330,32 +330,32 @@ namespace split_pext {
 
     static constexpr uint64_t Size = (64 * 64 * 4 + 64 * 3) * sizeof(std::uint64_t) + 64 * sizeof(std::uint32_t);
 
-    std::uint64_t rook_horizontal(int square, std::uint64_t occupancy) {
+    std::uint64_t rook_horizontal(Square square, std::uint64_t occupancy) {
         return horizontal_subset[square][(occupancy >> horizontal_shift_table[square]) & 63]; // tests needed
         //return horizontal_subset[square][_pext_u64(occupancy, horizontal_mask[square])];    // horizontal pext is probably slower than kindergarten horizontal
     }
 
-    std::uint64_t rook_vertical(int square, std::uint64_t occupancy) {
+    std::uint64_t rook_vertical(Square square, std::uint64_t occupancy) {
         return vertical_subset[square][_pext_u64(occupancy, vertical_mask[square])];
     }
 
-    std::uint64_t bishop_antidiagonal(int square, std::uint64_t occupancy) {
+    std::uint64_t bishop_antidiagonal(Square square, std::uint64_t occupancy) {
         return antidiagonal_subset[square][_pext_u64(occupancy, antidiagonal_mask[square])];
     }
 
-    std::uint64_t bishop_diagonal(int square, std::uint64_t occupancy) {
+    std::uint64_t bishop_diagonal(Square square, std::uint64_t occupancy) {
         return diagonal_subset[square][_pext_u64(occupancy, diagonal_mask[square])];
     }
 
-    std::uint64_t rook(int square, std::uint64_t occupancy) {
+    std::uint64_t rook(Square square, std::uint64_t occupancy) {
         return rook_horizontal(square, occupancy) | rook_vertical(square, occupancy);
     }
 
-    std::uint64_t bishop(int square, std::uint64_t occupancy) {
+    std::uint64_t bishop(Square square, std::uint64_t occupancy) {
         return bishop_antidiagonal(square, occupancy) | bishop_diagonal(square, occupancy);
     }
 
-    std::uint64_t queen(int square, std::uint64_t occupancy) {
+    std::uint64_t queen(Square square, std::uint64_t occupancy) {
         return bishop(square, occupancy) | rook(square, occupancy);
     }
 }

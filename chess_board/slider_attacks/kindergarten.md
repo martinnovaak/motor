@@ -17,6 +17,11 @@ Motor uses Kindergarten Bitboards for generating sliding moves.
  a . . . . . . .     . . . . . . . 1     . . . . . . . .            . . . . . . . .
  . . . . . . . .     . . . . . . . .     . . . . . . . .            a b c d e f . .
 ```
+```
+std::uint64_t rook_vertical(Square square, std::uint64_t occupancy) {
+    return vertical_subset[square][(((occupancy & vertical_mask[square]) * vertical_multiplier[square]) >> 58)];
+}
+```
 
 ## Diagonal attacks
 ```
@@ -30,6 +35,13 @@ Motor uses Kindergarten Bitboards for generating sliding moves.
  . a . . . . . .     . 1 . . . . . .     . . . . . . . .            . . . . . . . .
  . . . . . . . .     . . . . . . . .     . . . . . . . .            a b c d e f . .
 ```
+```
+constexpr std::uint64_t file_b2_b7 = 0x0002020202020200ull;
+
+std::uint64_t bishop_diagonal(std::uint8_t square, std::uint64_t occupancy) {
+    return diagonal_subset[square][(((occupancy & diagonal_mask[square]) * file_b2_b7) >> 58)];
+}
+```
 
 ## Antidiagonal attacks
 ```
@@ -42,4 +54,10 @@ Motor uses Kindergarten Bitboards for generating sliding moves.
  . . . . . b . .     . 1 . . . . . .     . . . . . . . a            . . . . . . . .
  . . . . . . a .     . 1 . . . . . .     . . . . . . . .            . . . . . . . .
  . . . . . . . .     . . . . . . . .     . . . . . . . .            f e d c b a . .
+```
+
+```
+std::uint64_t bishop_antidiagonal(Square square, std::uint64_t occupancy) {
+    return antidiagonal_subset[square][(((occupancy & antidiagonal_mask[square]) * file_b2_b7) >> 58)];
+}
 ```

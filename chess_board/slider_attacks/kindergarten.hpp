@@ -1,6 +1,7 @@
 #ifndef MOTOR_KINDERGARTEN_HPP
 #define MOTOR_KINDERGARTEN_HPP
 
+#include "../types.hpp"
 #include <cstdint>
 
 namespace kindergarten {
@@ -381,31 +382,31 @@ namespace kindergarten {
 
     constexpr std::uint64_t file_b2_b7 = 0x0002020202020200ull;
 
-    std::uint64_t bishop_diagonal(std::uint8_t square, std::uint64_t occupancy) {
+    std::uint64_t bishop_diagonal(Square square, std::uint64_t occupancy) {
         return diagonal_subset[square][(((occupancy & diagonal_mask[square]) * file_b2_b7) >> 58)];
     }
 
-    std::uint64_t bishop_antidiagonal(std::uint8_t square, std::uint64_t occupancy) {
+    std::uint64_t bishop_antidiagonal(Square square, std::uint64_t occupancy) {
         return antidiagonal_subset[square][(((occupancy & antidiagonal_mask[square]) * file_b2_b7) >> 58)];
     }
 
-    std::uint64_t rook_horizontal(std::uint8_t square, std::uint64_t occupancy) {
+    std::uint64_t rook_horizontal(Square square, std::uint64_t occupancy) {
         return horizontal_subset[square][(occupancy >> horizontal_shift_table[square]) & 63];
     }
 
-    std::uint64_t rook_vertical(std::uint8_t square, std::uint64_t occupancy) {
+    std::uint64_t rook_vertical(Square square, std::uint64_t occupancy) {
         return vertical_subset[square][(((occupancy & vertical_mask[square]) * vertical_multiplier[square]) >> 58)];
     }
 
-    std::uint64_t bishop(std::uint8_t square, std::uint64_t occupancy) {
+    std::uint64_t bishop(Square square, std::uint64_t occupancy) {
         return bishop_diagonal(square, occupancy) | bishop_antidiagonal(square, occupancy);
     }
 
-    std::uint64_t rook(std::uint8_t square, std::uint64_t occupancy) {
+    std::uint64_t rook(Square square, std::uint64_t occupancy) {
         return rook_horizontal(square, occupancy) | rook_vertical(square, occupancy);
     }
 
-    std::uint64_t queen(std::uint8_t square, std::uint64_t occupancy) {
+    std::uint64_t queen(Square square, std::uint64_t occupancy) {
         return rook(square, occupancy) | bishop(square, occupancy);
     }
 }
