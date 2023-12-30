@@ -49,7 +49,7 @@ class board {
 
     std::vector<board_info> history;
 public:
-    board(const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    board (const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             : bitboards{}, side_occupancy{}, occupancy{}, enpassant(Square::Null_Square) {
         castling_rights = fifty_move_clock;
         hash_key = zobrist();
@@ -78,14 +78,14 @@ public:
         ss >> board_str >> side_str >> castling_str >> enpassant_str >> fifty_move_clock ;//>> full_move_counter;
 
         int square = Square::A8;
-        for (char fen_char : board_str) {
+        for (const char fen_char : board_str) {
             if (std::isdigit(fen_char)) {
                 square += fen_char  - '0';
             } else if (fen_char == '/') {
                 square -= 16;
             } else {
                 auto [color, piece] = get_color_and_piece(fen_char);
-                auto piece_square = static_cast<Square>(square);
+                const auto piece_square = static_cast<Square>(square);
                 set_bit(bitboards[color][piece], square);
                 hash_key.update_psqt_hash(color, piece, piece_square);
                 pieces[square] = piece;
@@ -93,7 +93,7 @@ public:
             }
         }
 
-        for (auto piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
+        for (const auto piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
             side_occupancy[White] |= bitboards[White][piece];
             side_occupancy[Black] |= bitboards[Black][piece];
         }
@@ -110,7 +110,7 @@ public:
         }
 
         castling_rights = 0;
-        for (char fen_right : castling_str) {
+        for (const char fen_right : castling_str) {
             castling_rights |= char_to_castling_right(fen_right);
         }
         hash_key.update_castling_hash(castling_rights);
@@ -126,7 +126,7 @@ public:
             move = chess_move(A1, lsb(checks), QUIET, true, false);
         }
 
-        board_info binfo{castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key};
+        board_info binfo {castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key};
         history.push_back(binfo);
     }
 
@@ -136,7 +136,6 @@ public:
 
     template <Color enemy_color>
     uint64_t get_checkmask(Square square) {
-        constexpr Color our_color = enemy_color == Black ? White : Black;
         const chess_move last_played_move = history.back().move;
         switch (last_played_move.get_check_type()) {
             case NOCHECK:
@@ -151,7 +150,7 @@ public:
     }
 
     template <Color color>
-    [[nodiscard]] std::uint64_t attackers(Square square) const {
+    [[nodiscard]] std::uint64_t attackers(const Square square) const {
         constexpr Color their_color = color == White ? Black : White;
         return    (attacks<Ray::ROOK>(square, occupancy) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
                   | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]))
@@ -161,14 +160,13 @@ public:
     }
 
     template<Color their_color>
-    [[nodiscard]] std::uint64_t discovery_attackers(Square square) const {
+    [[nodiscard]] std::uint64_t discovery_attackers(const Square square) const {
         return    (attacks<Ray::ROOK>(square, occupancy)   & (bitboards[their_color][Rook]   | bitboards[their_color][Queen]))
                   | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]));
     }
 
-    // TODO: REFACTOR
     template <Color their_color>
-    std::uint64_t get_attacked_squares() {
+    std::uint64_t get_attacked_squares() const {
         std::uint64_t attacked_squares = 0ull;
 
         std::uint64_t pawns = bitboards[their_color][Pawn];
@@ -196,14 +194,14 @@ public:
     }
 
     template <Color their_color>
-    std::uint64_t get_safe_squares(Square square) {
+    std::uint64_t get_safe_squares(const Square square) {
         pop_bit(occupancy, square);
-        std::uint64_t attackers_squares = ~get_attacked_squares<their_color>();
+        const std::uint64_t attackers_squares = ~get_attacked_squares<their_color>();
         set_bit(occupancy, square);
         return attackers_squares;
     }
 
-    [[nodiscard]] Piece get_piece(int square) const {
+    [[nodiscard]] Piece get_piece(const int square) const {
         return pieces[square];
     }
 
@@ -268,7 +266,7 @@ public:
     template<Color our_color>
     [[nodiscard]] std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, std::uint64_t> get_discovering_pieces(Square enemy_king, std::uint64_t seen_squares) const {
         //std::uint64_t seen_squares = attacks<Ray::QUEEN>(enemy_king, occupancy);
-        std::uint64_t possibly_discovering_pieces = seen_squares & side_occupancy[our_color];
+        const std::uint64_t possibly_discovering_pieces = seen_squares & side_occupancy[our_color];
 
         if (possibly_discovering_pieces == 0ull) {
             return {};
@@ -324,7 +322,7 @@ public:
             return true;
         }
 
-        int end = std::max(0, static_cast<int>(history.size()) - 1 - fifty_move_clock);
+        const int end = std::max(0, static_cast<int>(history.size()) - 1 - fifty_move_clock);
         int repetitions = 0;
 
         for (int i = static_cast<int>(history.size()) - 3; i >= end; i -= 2) {
@@ -343,7 +341,7 @@ public:
     }
 
     template<Color our_color, bool make>
-    void set_piece(Square square, Piece piece) {
+    void set_piece(const Square square, const Piece piece) {
         pieces[square] = piece;
 
         const std::uint64_t bitboard = (1ull << square);
@@ -358,7 +356,7 @@ public:
     }
 
     template<Color our_color, bool make>
-    void unset_piece(Square square, Piece piece) {
+    void unset_piece(const Square square, const Piece piece) {
         pieces[square] = Piece::Null_Piece;
 
         const std::uint64_t bitboard = ~(1ull << square);
@@ -373,7 +371,7 @@ public:
     }
 
     template<Color our_color, Color their_color, bool make>
-    void replace_piece(Square square, Piece piece, Piece captured_piece) {
+    void replace_piece(const Square square, const Piece piece, const Piece captured_piece) {
         pieces[square] = piece;
 
         const std::uint64_t bitboard = (1ull << square);
@@ -429,8 +427,6 @@ public:
 
         constexpr Color their_color = (our_color == White) ? Black : White;
         constexpr Direction down  =   (our_color == White) ? SOUTH : NORTH;
-        constexpr Square our_rook_A_square = (our_color == White) ? A1 : A8;
-        constexpr Square our_rook_H_square = (our_color == White) ? H1 : H8;
         constexpr Square our_C_square = (our_color == White) ? C1 : C8;
         constexpr Square our_D_square = (our_color == White) ? D1 : D8;
         constexpr Square our_F_square = (our_color == White) ? F1 : F8;

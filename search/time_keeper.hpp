@@ -37,7 +37,9 @@ public:
     bool can_end() { // called in iterative deepening
         if (stop) {
             return true;
-        } else if (elapsed() >= optimal_time_limit) {
+        }
+
+        if (elapsed() >= optimal_time_limit) {
             stop = true;
         }
         return stop;
@@ -46,7 +48,9 @@ public:
     bool should_end(std::uint64_t nodes = 0) { // called in alphabeta
         if (stop) {
             return true;
-        } else if((nodes & 1023) == 0) {
+        }
+
+        if((nodes & 1023) == 0) {
             stop = elapsed() >= time_limit || total_nodes >= max_nodes;
         }
         return stop;
@@ -60,11 +64,12 @@ public:
     std::uint64_t NPS(uint64_t nodes){
         total_nodes += nodes;
         std::uint64_t elapsed_time = elapsed();
+
         if(elapsed_time > 0) {
             return (total_nodes / elapsed_time) * 1000;
-        } else {
-            return 0;
         }
+
+        return 0;
     }
 
     void stop_timer() {
