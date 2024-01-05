@@ -38,9 +38,9 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             continue;
         }
 
-        chessboard.make_move<color>(chessmove);
+        make_move<color>(chessboard, chessmove);
         std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha);
-        chessboard.undo_move<color>();
+        undo_move<color>(chessboard);
 
         eval = std::max(eval, score);
         if (eval >= beta) {

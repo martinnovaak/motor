@@ -24,9 +24,9 @@ bool parse_move(board & b, const std::string& move_string) {
     for (const chess_move & m : ml) {
         if (m.to_string() == move_string) {
             if (b.get_side() == White) {
-                b.make_move<White>(m);
+                make_move<White>(b, m);
             } else {
-                b.make_move<Black>(m);
+                make_move<Black>(b, m);
             }
             return true;
         }
@@ -58,6 +58,8 @@ void position_uci(board & b, const std::string & command) {
     for (const std::string& m : moves) {
         if (!parse_move(b, m)) return;
     }
+
+    set_position(b);
 }
 
 void uci_go(board& b, const std::string& command) {
@@ -130,8 +132,24 @@ void uci_process(board& b, const std::string& line) {
 
         // Not yet supported
         if (tokens.size() >= 4) {
-            if (tokens[1] == "Param") {
-                //PARAM = std::stoi(tokens[3]);
+            if (tokens[1] == "rfp") {
+                rfp = (int)std::stod(tokens[3]);
+                //std::cout << rfp << std::endl;
+            }
+            else if (tokens[1] == "iid") {
+                iid = (int)std::stod(tokens[3]);
+            }
+            else if (tokens[1] == "razoring") {
+                razoring = (int)std::stod(tokens[3]);
+            } 
+            else if (tokens[1] == "lmr") {
+                lmr = std::stod(tokens[3]);
+            }
+            else if (tokens[1] == "nmp_num") {
+                nmp_numerator = (int)std::stod(tokens[3]);
+            }
+            else if (tokens[1] == "nmp_den") {
+                nmp_denominator = (int)std::stod(tokens[3]);
             }
         } else {
             std::cout << "Command not found." << std::endl;
