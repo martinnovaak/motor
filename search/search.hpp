@@ -10,6 +10,13 @@
 #include "../move_generation/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
 
+int rfp = 150;
+int razoring = 200;
+int iid = 6;
+double lmr = 5.5;
+int nmp_numerator = 2;
+int nmp_denominator = 6;
+
 enum class NodeType : std::uint8_t {
     Root, PV, Non_PV, Null
 };
@@ -102,12 +109,12 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     if constexpr (!is_root) {
         if (!in_check && std::abs(beta) < 9'000) {
             // reverse futility pruning
-            if (depth < 7 && eval - 150 * depth >= beta) {
+            if (depth < 7 && eval - rfp * depth >= beta) {
                 return beta;
             }
 
             // razoring
-            if (depth <= 6 && eval + 200 * depth <= alpha) {
+            if (depth <= 6 && eval + razoring * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if(razor_eval <= alpha) {
                     return razor_eval;
@@ -117,7 +124,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             // NULL MOVE PRUNING
             if (node_type != NodeType::Null && depth >= 3 && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
-                int R = 3 + depth / 3;
+                int R = 3 + depth * nmp_numerator / nmp_denominator;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha,depth - R);
                 data.reduce_ply();
@@ -155,7 +162,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             }
         }
 
-        chessboard.make_move<color>(chessmove);
+        make_move<color>(chessboard, chessmove);
         data.augment_ply();
         data.eval_grandfather = data.eval_father;
         data.eval_father = eval;
@@ -167,7 +174,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             // late move reduction
             score = alpha + 1;
             if(depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == Check_type::NOCHECK) {
-                int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / 5.5;
+                int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / lmr;
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction);
             }
 
@@ -183,7 +190,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             return 0;
         }
 
-        chessboard.undo_move<color>();
+        undo_move<color>(chessboard);
         data.reduce_ply();
 
         if (score > best_score) {
@@ -260,6 +267,7 @@ void iterative_deepening(board & chessboard, search_data & data) {
             break;
         }
 
+        // std::cout << depth << ": " << score << std::endl;
         best_move = data.get_best_move();
     }
     std::cout << "bestmove " << best_move << "\n";

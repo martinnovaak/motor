@@ -7,11 +7,11 @@
 
 constexpr static int mvv_lva[7][6] = {
 //attacker:  P, N,  B,  R,  Q,  NONE
-        {6,  5, 4, 3, 2, 1},    // victim PAWN
-        {12, 11, 10, 9, 8, 7, },   // victim KNIGHT
-        {18, 17, 16, 15, 14, 13},    // victim BISHOP
-        {24, 23, 22, 21, 20, 19},    // victim ROOK
-        {31, 30, 29, 28, 27, 26},    // victim QUEEN
+        {6,  5, 4, 3, 2, 1},        // victim PAWN
+        {12, 11, 10, 9, 8, 7, },    // victim KNIGHT
+        {18, 17, 16, 15, 14, 13},   // victim BISHOP
+        {24, 23, 22, 21, 20, 19},   // victim ROOK
+        {31, 30, 29, 28, 27, 26},   // victim QUEEN
         {0,  0,  0,  0,  0,  0},    // victim NONE
         {25, 0, 0, 0, 0, 0}
 };
