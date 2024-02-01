@@ -7,10 +7,10 @@
 #include "incbin.hpp"
 
 struct Weights {
-    std::array<std::array<std::array<std::array<std::int16_t, 16>, 64>, 6>, 2> feature_weight;
-    std::array<std::int16_t, 16>  feature_bias;
-    std::array<std::int16_t, 16> output_weight_STM;
-    std::array<std::int16_t, 16> output_weight_NSTM;
+    std::array<std::array<std::array<std::array<std::int16_t, 24>, 64>, 6>, 2> feature_weight;
+    std::array<std::int16_t, 24>  feature_bias;
+    std::array<std::int16_t, 24> output_weight_STM;
+    std::array<std::int16_t, 24> output_weight_NSTM;
     std::int16_t output_bias;
 };
 
@@ -72,7 +72,7 @@ public:
     }
 };
 
-perspective_network<16> network;
+perspective_network<24> network;
 
 void set_position(board& chessboard) {
     network.refresh();
