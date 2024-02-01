@@ -1,42 +1,54 @@
 #ifndef MOTOR_NNUE_HPP
 #define MOTOR_NNUE_HPP
 
-#include "weights.hpp"
 #include "../chess_board/board.hpp"
 #include <algorithm>
+
+#include "incbin.hpp"
+
+struct Weights {
+    std::array<std::array<std::array<std::array<std::int16_t, 16>, 64>, 6>, 2> feature_weight;
+    std::array<std::int16_t, 16>  feature_bias;
+    std::array<std::int16_t, 16> output_weight_STM;
+    std::array<std::int16_t, 16> output_weight_NSTM;
+    std::int16_t output_bias;
+};
+
+INCBIN(Weights, "nnue.bin");
+const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
 
 enum class Operation {
     Set, Unset
 };
 
-template<std::uint16_t HiddenSize>
+template<std::uint16_t hidden_size>
 class perspective_network
 {
 public:
-    std::array<std::int16_t, HiddenSize> white_accumulator;
-    std::array<std::int16_t, HiddenSize> black_accumulator;
+    std::array<std::int16_t, hidden_size> white_accumulator;
+    std::array<std::int16_t, hidden_size> black_accumulator;
 
     perspective_network() {
         refresh();
     }
 
     void refresh() {
-        white_accumulator = black_accumulator = feature_bias;
+        white_accumulator = black_accumulator = weights.feature_bias;
     }
 
     template<Operation operation>
     void update_accumulator(const Piece piece, const Color color, const Square square) {
-        const auto& white_weights = feature_weight[color][piece][square];
-        const auto& black_weights = feature_weight[color ^ 1][piece][square ^ 56];
+        const auto& white_weights = weights.feature_weight[color][piece][square];
+        const auto& black_weights = weights.feature_weight[color ^ 1][piece][square ^ 56];
 
         if constexpr (operation == Operation::Set) {
-            for (std::size_t i = 0; i < HiddenSize; i++) {
+            for (std::size_t i = 0; i < hidden_size; i++) {
                 white_accumulator[i] += white_weights[i];
                 black_accumulator[i] += black_weights[i];
             }
         }
         else {
-            for (std::size_t i = 0; i < HiddenSize; i++) {
+            for (std::size_t i = 0; i < hidden_size; i++) {
                 white_accumulator[i] -= white_weights[i];
                 black_accumulator[i] -= black_weights[i];
             }
@@ -46,14 +58,14 @@ public:
     template <Color color>
     std::int32_t evaluate() {
         constexpr std::int16_t min_value = 0, max_value = 255;
-        std::int32_t sum = output_bias;
+        std::int32_t sum = weights.output_bias;
 
         auto& stm_accumulator = color == White ? white_accumulator : black_accumulator;
         auto& nstm_accumulator = color == White ? black_accumulator : white_accumulator;
 
-        for (std::size_t j = 0; j < HiddenSize; j++) {
-            sum += std::clamp(stm_accumulator[j], min_value, max_value) * output_weight_STM[j];
-            sum += std::clamp(nstm_accumulator[j], min_value, max_value) * output_weight_NSTM[j];
+        for (std::size_t j = 0; j < hidden_size; j++) {
+            sum += std::clamp(stm_accumulator[j], min_value, max_value) * weights.output_weight_STM[j];
+            sum += std::clamp(nstm_accumulator[j], min_value, max_value) * weights.output_weight_NSTM[j];
         }
 
         return sum * 400 / 16320;
@@ -80,6 +92,7 @@ void set_position(board& chessboard) {
 template<Color our_color, bool make>
 void set_piece(board & chessboard, const Square square, const Piece piece) {
     chessboard.set_piece<our_color, make>(square, piece);
+
     network.update_accumulator<Operation::Set>(piece, our_color, square);
 }
 
