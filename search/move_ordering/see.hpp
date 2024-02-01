@@ -7,7 +7,7 @@
 constexpr std::int32_t SEE_VALUES[7] = {100, 450, 450, 650, 1250, 30'000, 0};
 
 template <Color color>
-static bool see(board & chessboard, chess_move & capture, int threshold = 0)  {
+static bool see(board & chessboard, const chess_move & capture, int threshold = 0)  {
     Square from = capture.get_from();
     Square to   = capture.get_to();
 
@@ -26,17 +26,17 @@ static bool see(board & chessboard, chess_move & capture, int threshold = 0)  {
         return true;
     }
 
-    uint64_t queens  = chessboard.get_pieces(White, Queen)  | chessboard.get_pieces(Black, Queen);
-    uint64_t rooks   = chessboard.get_pieces(White, Rook)   | chessboard.get_pieces(Black, Rook);
-    uint64_t bishops = chessboard.get_pieces(White, Bishop) | chessboard.get_pieces(Black, Bishop);
+    std::uint64_t queens  = chessboard.get_pieces(White, Queen)  | chessboard.get_pieces(Black, Queen);
+    std::uint64_t rooks   = chessboard.get_pieces(White, Rook)   | chessboard.get_pieces(Black, Rook);
+    std::uint64_t bishops = chessboard.get_pieces(White, Bishop) | chessboard.get_pieces(Black, Bishop);
     rooks   |= queens;
     bishops |= queens;
 
-    uint64_t occupancy = chessboard.get_occupancy() ^ (1ull << from) ^ (1ull << to) ;
+    std::uint64_t occupancy = chessboard.get_occupancy() ^ (1ull << from) ^ (1ull << to) ;
 
-    uint64_t attackers = chessboard.attackers<White>(to) | chessboard.attackers<Black>(to);
+    std::uint64_t attackers = chessboard.attackers<White>(to) | chessboard.attackers<Black>(to);
 
-    uint64_t side_occupancy[2] = {chessboard.get_side_occupancy<White>(), chessboard.get_side_occupancy<Black>()};
+    std::uint64_t side_occupancy[2] = {chessboard.get_side_occupancy<White>(), chessboard.get_side_occupancy<Black>()};
 
     while (true) {
         //attackers &= side_occupancy[side_to_capture];
@@ -45,10 +45,11 @@ static bool see(board & chessboard, chess_move & capture, int threshold = 0)  {
         }
 
         for (Piece pt : {Pawn, Knight, Bishop, Rook, Queen, King}) {
-            uint64_t bitboard = attackers & chessboard.get_pieces(side_to_capture, pt);
+            std::uint64_t bitboard = attackers & chessboard.get_pieces(side_to_capture, pt);
             if (bitboard) {
                 occupancy ^= (1ull << lsb(bitboard));
                 piece = pt;
+                break;
             }
         }
 
