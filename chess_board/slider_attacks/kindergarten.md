@@ -62,7 +62,7 @@ std::uint64_t bishop_antidiagonal(Square square, std::uint64_t occupancy) {
 
 ## Horizontal attacks 
 
-Horizontal attacks are much simpler. If we are interested in occupancy of n-th rank, we just need to shift the occupancy bit board by `n * 32 + 1` bits. It is also necessary to make an intersection with the first 6 bits.
+Horizontal attacks are much simpler. If we are interested in occupancy of n-th rank, we just need to shift the occupancy bit board by `n * 8 + 1` bits. It is also necessary to make an intersection with the first 6 bits.
 
 ```
  a-file occupancy       
