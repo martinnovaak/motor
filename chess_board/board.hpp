@@ -42,7 +42,7 @@ class board {
 
     std::array<Piece, 64> pieces;
     std::array<std::array<uint64_t, 6>, 2> bitboards;
-    std::array<uint64_t, 2>  side_occupancy; // occupancy bitboards
+    std::array<std::uint64_t, 2>  side_occupancy; // occupancy bitboards
     std::uint64_t occupancy;
 
     zobrist hash_key;
@@ -135,7 +135,7 @@ public:
     }
 
     template <Color enemy_color>
-    uint64_t get_checkmask(Square square) {
+    std::uint64_t get_checkmask(Square square) {
         const chess_move last_played_move = history.back().move;
         switch (last_played_move.get_check_type()) {
             case NOCHECK:

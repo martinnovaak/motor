@@ -8,14 +8,12 @@ template<typename TT_ENTRY>
 class transposition_table {
 public:
     explicit transposition_table(std::uint64_t size = 32 * 1024 * 1024) {
-        bucket_count = size / sizeof(TT_ENTRY);
-        mask = bucket_count - 1;
-        tt_table.resize(bucket_count);
+        resize(size);
     }
 
     void resize(const uint64_t byte_size) {
-        tt_table.resize(byte_size);
         bucket_count = byte_size / sizeof(TT_ENTRY);
+        mask = bucket_count - 1;
         tt_table.resize(bucket_count);
     }
 
