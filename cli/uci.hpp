@@ -13,6 +13,7 @@
 #include "../search/time_keeper.hpp"
 #include "../search/search.hpp"
 #include "../search/bench.hpp"
+#include "../perft.hpp"
 
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
@@ -136,6 +137,9 @@ void uci_process(board& b, const std::string& line) {
         }
     } else if (command == "bench") {
         bench(15);
+    } else if (command == "perft") {
+        ss >> command;
+        perft_debug(b, std::stoi(command));
     }
 }
 

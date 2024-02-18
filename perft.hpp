@@ -8,6 +8,7 @@
 #include "chess_board/board.hpp"
 #include "move_generation/move_generator.hpp"
 #include "move_generation/move_list.hpp"
+#include "evaluation/evaluation.hpp"
 
 template <Color side>
 std::uint64_t perft(board& b, int depth) {
@@ -21,9 +22,9 @@ std::uint64_t perft(board& b, int depth) {
 
     std::uint64_t nodes = 0;
     for (const auto move : ml) {
-        b.make_move<side>(move);
+        make_move<side>(b, move);
         nodes += perft<next_side>(b, depth - 1);
-        b.undo_move<side>();
+        undo_move<side>(b);
     }
     return nodes;
 }
@@ -47,11 +48,11 @@ std::uint64_t perft_debug(board & b, int depth) {
     for (const auto & m : ml) {
         std::string move_string = m.to_string();
         move_string += " ";
-        b.make_move<side>(m);
+        make_move<side>(b, m);
         std::uint64_t nodes = perft<next_side>(b, depth - 1);
         moves.push_back(move_string += std::to_string(nodes));
         total_nodes += nodes;
-        b.undo_move<side>();
+        undo_move<side>(b);
     }
     std::sort(moves.begin(), moves.end());
     for (auto m : moves) {
@@ -61,12 +62,12 @@ std::uint64_t perft_debug(board & b, int depth) {
     return total_nodes;
 }
 
-std::uint64_t perft_debug(board & b, int depth) {
-    if (b.get_side() == White) {
-        return perft_debug<White>(b, depth);
-    } else {
-        return perft_debug<Black>(b, depth);
-    }
+void perft_debug(board & b, int depth) {
+    auto start = std::chrono::steady_clock::now();
+    std::uint64_t result = b.get_side() == White ? perft_debug<White>(b, depth) : perft_debug<Black>(b, depth);
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double, std::milli> elapsed_milliseconds = end - start;
+    std::cout << "Time: " << elapsed_milliseconds.count() << ", nodes: " << result;
 }
 
 void perft_loop(board chessboard, int from, int to) {
@@ -76,7 +77,7 @@ void perft_loop(board chessboard, int from, int to) {
     }
 }
 
-void bench() {
+void perft_bench() {
     std::cout << "POSITION | NUMBER OF NODES | TIME IN MILLISECONDS\n";
     board chessboard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); // main position
     std::cout << "Main position\n";
