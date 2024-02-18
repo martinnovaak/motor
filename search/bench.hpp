@@ -77,15 +77,15 @@ void bench(int depth) {
 	std::uint64_t nodes = 0;
 
     board b;
-    auto t1 = std::chrono::steady_clock::now();
+    auto start = std::chrono::steady_clock::now();
 
     for (const auto & fen : fens) {
         b.fen_to_board(fen);
         nodes += (b.get_side() == Color::White) ? bench_iterative_deepening<Color::White>(b, depth) : bench_iterative_deepening<Color::Black>(b, depth);
     }
 
-    auto t2 = std::chrono::steady_clock::now();
-    double nps = static_cast<double>(nodes) / std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    auto end = std::chrono::steady_clock::now();
+    double nps = static_cast<double>(nodes) / std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
     std::cout << nodes << " nodes " << static_cast<int>(nps) << " nps" << std::endl;
 }
 

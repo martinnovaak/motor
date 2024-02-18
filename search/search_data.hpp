@@ -13,7 +13,7 @@ butterfly_table<std::uint16_t> history_table(5'000);
 
 class search_data {
 public:
-    search_data() : principal_variation_table(), timekeeper(), ply(0), nodes_searched(0)  {}
+    search_data() : ply(0), principal_variation_table(), timekeeper(), nodes_searched(0)  {}
 
     void set_timekeeper(int time, int bonus, int movestogo) {
         timekeeper.reset(time, bonus, movestogo);

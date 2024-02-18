@@ -32,8 +32,6 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
     constexpr Direction up_2 = (our_color == White ? NORTH_2 : SOUTH_2);
     constexpr Direction antidiagonal_capture   = (our_color == White ? NORTH_WEST : SOUTH_EAST);
     constexpr Direction diagonal_capture       = (our_color == White ? NORTH_EAST : SOUTH_WEST);
-    constexpr Direction antidiagonal_enpassant = (our_color == Black ? NORTH_WEST : SOUTH_EAST);
-    constexpr Direction diagonal_enpassant     = (our_color == Black ? NORTH_EAST : SOUTH_WEST);
 
     constexpr bool discovery = (vertical_discovery || nonvertical_discovery);
 
@@ -82,7 +80,6 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
     {
         std::uint64_t enemy_king = chessboard.get_pieces(their_color, King);
         std::uint64_t occupancy = ~empty;
-        Square enemy_king_square = lsb(enemy_king);
 
         std::uint64_t bitboard_promote_push = shift<up>(pawns_penultimate & move_v) & blocking_squares;
         std::uint64_t bitboard_promote_antidiagonal = shift<antidiagonal_capture>(pawns_penultimate & move_a) & threat_squares;
@@ -316,9 +313,6 @@ constexpr void generate_king_moves(const board & b, move_list & ml, Square king_
 
 template <Color our_color>
 constexpr void generate_castle_moves(move_list & ml, int castling_right, std::uint64_t safe_squares, std::uint64_t empty, std::uint64_t check_squares, std::uint64_t horizontal_discovery) {
-    constexpr Square king_e_square = our_color == White ? E1 : E8;
-    constexpr Square king_g_square = our_color == White ? G1 : G8;
-    constexpr Square king_c_square = our_color == White ? C1 : C8;
     constexpr Square rook_a_square = our_color == White ? A1 : A8;
     constexpr Square rook_h_square = our_color == White ? H1 : H8;
     constexpr Square rook_d_square = our_color == White ? D1 : D8;

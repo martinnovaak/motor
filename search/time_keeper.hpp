@@ -10,7 +10,7 @@ struct time_info {
 
 class time_keeper {
 public:
-    time_keeper() : stop(false), total_nodes(0), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2) {}
+    time_keeper() : stop(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0) {}
 
     void reset(int time, int increment = 0, int movestogo = 0) {
         start_time = std::chrono::steady_clock::now();
