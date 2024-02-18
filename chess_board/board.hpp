@@ -50,7 +50,7 @@ class board {
     std::vector<board_info> history;
 public:
     board (const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-            : bitboards{}, side_occupancy{}, occupancy{}, enpassant(Square::Null_Square) {
+            : enpassant(Square::Null_Square), bitboards{}, side_occupancy{}, occupancy{} {
         castling_rights = fifty_move_clock;
         hash_key = zobrist();
         for (auto& piece : pieces) {
@@ -247,7 +247,7 @@ public:
         std::uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(king_square, occupied) & seen_enemy_ad_pieces;
         std::uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(king_square, occupied)     & seen_enemy_ad_pieces;
 
-        auto get_pinmask = [king_square, this] (Ray ray_type, std::uint64_t pinners) {
+        auto get_pinmask = [king_square] (Ray ray_type, std::uint64_t pinners) {
             std::uint64_t pinmask_accumulator = 0ull;
             while (pinners) {
                 pinmask_accumulator |= pinmask[king_square][pop_lsb(pinners)];
@@ -281,7 +281,7 @@ public:
         std::uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(enemy_king, occupied) & check_ad_pieces;
         std::uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(enemy_king, occupied)     & check_ad_pieces;
 
-        auto get_discover_mask = [enemy_king, this](std::uint64_t discovers, Ray ray_type) {
+        auto get_discover_mask = [enemy_king](std::uint64_t discovers, Ray ray_type) {
             std::uint64_t discover_mask_accumulator = 0;
             while (discovers) {
                 discover_mask_accumulator |= pinmask[pop_lsb(discovers)][enemy_king];

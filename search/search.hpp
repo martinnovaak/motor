@@ -224,8 +224,8 @@ std::int16_t aspiration_window(board & chessboard, search_data & data, std::int1
     std::int16_t alpha, beta;
 
     while(!data.time_is_up()) {
-        alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(score  - alpha_window));
-        beta  = std::min( INF, static_cast<std::int16_t>(score  + beta_window));
+        alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(score - alpha_window));
+        beta  = std::min(INF, static_cast<std::int16_t>(score + beta_window));
 
         score = alpha_beta<color, NodeType::Root>(chessboard, data, alpha, beta, depth);
         if (score <= alpha) {
@@ -234,7 +234,6 @@ std::int16_t aspiration_window(board & chessboard, search_data & data, std::int1
         } else if (score >= beta) {
             alpha_window *= 2;
             beta_window *= 3;
-            // depth = std::max(1, depth - 1);
         } else {
             break;
         }
