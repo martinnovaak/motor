@@ -12,6 +12,7 @@
 #include "../move_generation/move_generator.hpp"
 #include "../search/time_keeper.hpp"
 #include "../search/search.hpp"
+#include "../search/bench.hpp"
 
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
@@ -51,11 +52,12 @@ void position_uci(board & b, const std::string & command) {
     std::stringstream move_ss(command.substr(moves_pos + 5));
     std::vector<std::string> moves;
     std::string string_move;
+
     while (move_ss >> string_move) {
         moves.push_back(string_move);
     }
 
-    for (const std::string& m : moves) {
+    for (const std::string & m : moves) {
         if (!parse_move(b, m)) return;
     }
 
@@ -84,7 +86,7 @@ void uci_go(board& b, const std::string& command) {
         } else if (tokens[i] == "movestogo") {
             info.movestogo = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "depth") {
-            //info.max_depth = std::stoi(tokens[i + 1]); // NOT SUPPORTED RIGHT NOW
+            info.max_depth = std::stoi(tokens[i + 1]); 
         } else if (tokens[i] == "movetime") {
             //info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
         } else if (tokens[i] == "infinite") {
@@ -115,7 +117,8 @@ void uci_process(board& b, const std::string& line) {
     }
     else if (command == "uci") {
         std::cout << "id name Motor"<< std::endl;
-        std::cout << "id author Martin Novak" << std::endl;
+        std::cout << "id author Martin Novak" << std::endl;      
+        std::cout << "option name Hash type spin default " << 8 << " min 1 max 1048576\n";
         std::cout << "uciok" << std::endl;
     }
     else if (command == "ucinewgame") {
@@ -123,37 +126,22 @@ void uci_process(board& b, const std::string& line) {
         tt.clear();
     }
     else if (command == "setoption") {
-        // Todo later
         std::string token;
         std::vector<std::string> tokens;
         while (ss >> token) {
             tokens.push_back(token);
         }
 
-        // Not yet supported
         if (tokens.size() >= 4) {
-            if (tokens[1] == "rfp") {
-                rfp = (int)std::stod(tokens[3]);
-                //std::cout << rfp << std::endl;
-            }
-            else if (tokens[1] == "iid") {
-                iid = (int)std::stod(tokens[3]);
-            }
-            else if (tokens[1] == "razoring") {
-                razoring = (int)std::stod(tokens[3]);
-            } 
-            else if (tokens[1] == "lmr") {
-                lmr = std::stod(tokens[3]);
-            }
-            else if (tokens[1] == "nmp_num") {
-                nmp_numerator = (int)std::stod(tokens[3]);
-            }
-            else if (tokens[1] == "nmp_den") {
-                nmp_denominator = (int)std::stod(tokens[3]);
+            if (tokens[1] == "hash") {
+                tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
             }
         } else {
             std::cout << "Command not found." << std::endl;
         }
+    }
+    else if (command == "bench") {
+        bench(15);
     }
 }
 
