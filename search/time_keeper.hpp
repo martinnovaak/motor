@@ -5,7 +5,7 @@
 #include <cstdint>
 
 struct time_info {
-    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0;
+    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64;
 };
 
 class time_keeper {
@@ -18,11 +18,16 @@ public:
         const int time_minus_threshold = time - 50;
         max_nodes = INT_MAX / 2;
         total_nodes = 0;
+        inf_time = false;
 
-        if(movestogo == 0) {
+        if (time == -1) {
+            inf_time = true;
+        }
+        else if(movestogo == 0) {
             time_limit = std::min(time_minus_threshold / 20 + increment / 2, time);
             optimal_time_limit = time_minus_threshold / 40 + increment / 2;
-        } else {
+        }
+        else {
             time_limit = increment + 950 * time / movestogo / 1000;
             optimal_time_limit = time_limit / 4 * 3;
         }
@@ -39,6 +44,10 @@ public:
             return true;
         }
 
+        if (inf_time) {
+            return false;
+        }
+
         if (elapsed() >= optimal_time_limit) {
             stop = true;
         }
@@ -48,6 +57,10 @@ public:
     bool should_end(std::uint64_t nodes = 0) { // called in alphabeta
         if (stop) {
             return true;
+        }
+
+        if (inf_time) {
+            return false;
         }
 
         if((nodes & 1023) == 0) {
@@ -79,6 +92,7 @@ public:
 private:
     std::chrono::time_point<std::chrono::steady_clock> start_time;
     bool stop;
+    bool inf_time;
     int time_limit;
     int optimal_time_limit;
     int max_nodes;
