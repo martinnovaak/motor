@@ -32,6 +32,10 @@ public:
         principal_variation_table.set_length(ply);
     }
 
+    std::string get_pv(int length) {
+        return principal_variation_table.get_pv_line(length);
+    }
+
     void update_pv(const chess_move move) {
         principal_variation_table.update_principal_variation(move, ply);
     }
@@ -77,13 +81,19 @@ public:
         return ply;
     }
 
-    std::int16_t improving(std::int16_t eval) const {
-        return (ply >= 2 && eval >= eval_grandfather);
+    std::uint64_t nodes() {
+        return nodes_searched;
+    }
+
+    void reset_nodes() {
+        nodes_searched = 0;
+    }
+
+    std::uint64_t nps() {
+        return timekeeper.NPS(nodes_searched);
     }
 
     chess_move counter_moves[64][64] = {};
-    std::int16_t eval_grandfather{};
-    std::int16_t eval_father{};
 private:
     std::int16_t ply;
 

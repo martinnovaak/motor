@@ -10,13 +10,6 @@
 #include "../move_generation/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
 
-int rfp = 150;
-int razoring = 200;
-int iid = 6;
-double lmr = 5.5;
-int nmp_numerator = 2;
-int nmp_denominator = 6;
-
 enum class NodeType : std::uint8_t {
     Root, PV, Non_PV, Null
 };
@@ -69,15 +62,14 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
     const TT_entry & tt_entry = tt[zobrist_key];
+
     chess_move best_move;
+    std::int16_t eval; 
 
-    std::int16_t eval = evaluate<color>(chessboard);;
-
-    bool tt_hit = false;
     if (tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
-        tt_hit = true;
         std::int16_t tt_eval = tt_entry.score;
+        eval = tt_eval;
         if constexpr (!is_pv) {
             if (tt_entry.depth >= depth) {
                 switch (tt_entry.bound) {
@@ -97,6 +89,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             }
         }
     } else {
+        eval = evaluate<color>(chessboard);
         if (depth >= 4) {
             depth--;
             if constexpr (is_pv) {
@@ -105,16 +98,15 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         }
     }
 
-    int improving = 1 + data.improving(eval);
     if constexpr (!is_root) {
         if (!in_check && std::abs(beta) < 9'000) {
             // reverse futility pruning
-            if (depth < 7 && eval - rfp * depth >= beta) {
-                return beta;
+            if (depth < 7 && eval - 150 * depth >= beta) {
+                return (eval + beta) / 2;
             }
 
             // razoring
-            if (depth <= 6 && eval + razoring * depth <= alpha) {
+            if (depth <= 6 && eval + 200 * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if(razor_eval <= alpha) {
                     return razor_eval;
@@ -124,9 +116,9 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             // NULL MOVE PRUNING
             if (node_type != NodeType::Null && depth >= 3 && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
-                int R = 3 + depth * nmp_numerator / nmp_denominator;
+                int R = 3 + depth / 3;
                 data.augment_ply();
-                std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha,depth - R);
+                std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R);
                 data.reduce_ply();
                 chessboard.undo_null_move<color>();
                 if (nullmove_score >= beta) {
@@ -156,7 +148,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
         if constexpr (!is_pv) {
             if (best_score > -9'000 && !in_check && chessmove.get_score() < 15'000) {
-                if (moves_searched > 3 + 2 * depth * depth / improving) {
+                if (moves_searched > 3 + 2 * depth * depth) {
                     break;
                 }
             }
@@ -164,8 +156,6 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
-        data.eval_grandfather = data.eval_father;
-        data.eval_father = eval;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -174,7 +164,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             // late move reduction
             score = alpha + 1;
             if(depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == Check_type::NOCHECK) {
-                int reduction = 2 + std::log2(depth) * std::log2(moves_searched) / lmr;
+                int reduction = 2.0 + std::log2(depth) * std::log2(moves_searched) / 5.5;
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction);
             }
 
@@ -218,6 +208,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                 }
             }
         }
+
         if (chessmove.is_quiet()) {
             quiets.add(chessmove);
         }
@@ -243,7 +234,7 @@ std::int16_t aspiration_window(board & chessboard, search_data & data, std::int1
         } else if (score >= beta) {
             alpha_window *= 2;
             beta_window *= 3;
-            //depth = std::max(1, depth - 1);
+            // depth = std::max(1, depth - 1);
         } else {
             break;
         }
@@ -253,10 +244,10 @@ std::int16_t aspiration_window(board & chessboard, search_data & data, std::int1
 }
 
 template <Color color>
-void iterative_deepening(board & chessboard, search_data & data) {
+void iterative_deepening(board & chessboard, search_data & data, int max_depth) {
     std::string best_move;
     int score;
-    for (int depth = 1; depth < MAX_DEPTH; depth++) {
+    for (int depth = 1; depth <= max_depth; depth++) {
         if (depth < 6) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth);
         } else {
@@ -267,7 +258,9 @@ void iterative_deepening(board & chessboard, search_data & data) {
             break;
         }
 
-        // std::cout << depth << ": " << score << std::endl;
+        std::cout << "info depth " << depth << " score cp " << score << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << "\n";
+        data.reset_nodes();
+
         best_move = data.get_best_move();
     }
     std::cout << "bestmove " << best_move << "\n";
@@ -278,10 +271,10 @@ void find_best_move(board & chessboard, time_info & info) {
     history_table.centralize_whole_table();
     if(chessboard.get_side() == White) {
         data.set_timekeeper(info.wtime, info.winc, info.movestogo);
-        iterative_deepening<White>(chessboard, data);
+        iterative_deepening<White>(chessboard, data, info.max_depth);
     } else {
         data.set_timekeeper(info.btime, info.binc, info.movestogo);
-        iterative_deepening<Black>(chessboard, data);
+        iterative_deepening<Black>(chessboard, data, info.max_depth);
     }
 }
 
