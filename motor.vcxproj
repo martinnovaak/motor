@@ -121,7 +121,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <Optimization>Full</Optimization>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalOptions>/arch:AVX2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,11 +147,12 @@
     <ClInclude Include="chess_board\zobrist_keys.hpp" />
     <ClInclude Include="cli\uci.hpp" />
     <ClInclude Include="evaluation\evaluation.hpp" />
+    <ClInclude Include="evaluation\incbin.hpp" />
     <ClInclude Include="evaluation\nnue.hpp" />
-    <ClInclude Include="evaluation\weights.hpp" />
     <ClInclude Include="move_generation\move_generator.hpp" />
     <ClInclude Include="move_generation\move_list.hpp" />
     <ClInclude Include="perft.hpp" />
+    <ClInclude Include="search\bench.hpp" />
     <ClInclude Include="search\move_ordering\move_ordering.hpp" />
     <ClInclude Include="search\move_ordering\see.hpp" />
     <ClInclude Include="search\pv_table.hpp" />
