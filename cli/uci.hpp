@@ -105,29 +105,24 @@ void uci_process(board& b, const std::string& line) {
 
     if (command == "position") {
         position_uci(b, line.substr(9));
-    }
-    else if (command == "go") {
+    } else if (command == "go") {
         uci_go(b, line.substr(3));
-    }
-    else if (command == "exit" || command == "quit" || command == "end") {
+    } else if (command == "exit" || command == "quit" || command == "end") {
         exit(0);
-    }
-    else if (command == "isready") {
+    } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
-    }
-    else if (command == "uci") {
-        std::cout << "id name Motor"<< std::endl;
+    } else if (command == "uci") {
+        std::cout << "id name Motor 0.1.0"<< std::endl;
         std::cout << "id author Martin Novak" << std::endl;      
-        std::cout << "option name Hash type spin default " << 8 << " min 1 max 1048576\n";
+        std::cout << "option name Hash type spin default " << 8 << " min 1 max 512\n";
         std::cout << "uciok" << std::endl;
-    }
-    else if (command == "ucinewgame") {
+    } else if (command == "ucinewgame") {
         history_table.clear();
         tt.clear();
-    }
-    else if (command == "setoption") {
+    } else if (command == "setoption") {
         std::string token;
         std::vector<std::string> tokens;
+
         while (ss >> token) {
             tokens.push_back(token);
         }
@@ -139,8 +134,7 @@ void uci_process(board& b, const std::string& line) {
         } else {
             std::cout << "Command not found." << std::endl;
         }
-    }
-    else if (command == "bench") {
+    } else if (command == "bench") {
         bench(15);
     }
 }
