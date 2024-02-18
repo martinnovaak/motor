@@ -19,9 +19,9 @@ public:
         pv_length[ply] = pv_length[ply + 1];
     }
 
-    [[nodiscard]] std::string get_pv_line() const {
+    [[nodiscard]] std::string get_pv_line(int length) const {
         std::stringstream line;
-        for (int i = 0; i < pv_length[0]; i++) {
+        for (int i = 0; i < std::min(int(pv_length[0]), length); i++) {
             line << triangular_pv_table[0][i].to_string() << " ";
         }
         return line.str();
