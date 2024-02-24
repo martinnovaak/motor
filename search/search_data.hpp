@@ -66,11 +66,11 @@ public:
     }
 
     void update_history(std::uint8_t from, std::uint8_t to, std::int8_t depth, std::int8_t sequence){
-        history_table.increase_value(from, to, (depth + sequence / 3) * depth);
+        history_table.increase_value(from, to, depth * depth);
     }
 
     void reduce_history(std::uint8_t from, std::uint8_t to, std::int8_t depth, std::int8_t sequence){
-        history_table.reduce_value(from, to, (depth + sequence / 3) * depth);
+        history_table.reduce_value(from, to, depth * depth);
     }
 
     std::uint16_t get_history(std::uint8_t from, std::uint8_t to) {
@@ -82,7 +82,7 @@ public:
     }
 
     std::uint64_t nodes() {
-        return nodes_searched;
+        return timekeeper.get_total_nodes();
     }
 
     void reset_nodes() {

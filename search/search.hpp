@@ -72,19 +72,10 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         eval = tt_eval;
         if constexpr (!is_pv) {
             if (tt_entry.depth >= depth) {
-                switch (tt_entry.bound) {
-                    case Bound::EXACT:
-                        return tt_eval;
-                    case Bound::LOWER:
-                        if (tt_eval >= beta) {
-                            return tt_eval;
-                        }
-                        break;
-                    case Bound::UPPER:
-                        if (tt_eval <= alpha) {
-                            return tt_eval;
-                        }
-                        break;
+                if ((tt_entry.bound == Bound::EXACT) ||
+                    (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
+                    (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
+                    return tt_eval;
                 }
             }
         }
@@ -102,7 +93,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         if (!in_check && std::abs(beta) < 9'000) {
             // reverse futility pruning
             if (depth < 7 && eval - 150 * depth >= beta) {
-                return (eval + beta) / 2;
+                return eval;
             }
 
             // razoring
@@ -143,6 +134,8 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
     score_moves<color>(chessboard, movelist, data, best_move);
     const chess_move previous_move = chessboard.get_last_played_move();
 
+    double lmr_base = std::log2(depth) / 5.5;
+
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
 
@@ -151,11 +144,24 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                 if (moves_searched > 3 + 2 * depth * depth) {
                     break;
                 }
+
+                if (depth < 3 && chessmove.get_score() < 5000 - depth * 500) {
+                    break;
+                }
+              
             }
         }
 
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
+
+        int reduction = 0;
+
+        if (depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == Check_type::NOCHECK) {
+            reduction = 1.0 + lmr_base * std::log2(moves_searched);
+        }
+        
+
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -164,8 +170,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             // late move reduction
             score = alpha + 1;
             if(depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == Check_type::NOCHECK) {
-                int reduction = 2.0 + std::log2(depth) * std::log2(moves_searched) / 5.5;
-                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction);
+                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1);
             }
 
             if (score > alpha) {
@@ -256,8 +261,7 @@ void iterative_deepening(board & chessboard, search_data & data, int max_depth) 
         if (data.time_is_up()) {
             break;
         }
-
-        std::cout << "info depth " << depth << " score cp " << score << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << "\n";
+        std::cout << "info depth " << depth << " score cp " << score << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
         data.reset_nodes();
 
         best_move = data.get_best_move();

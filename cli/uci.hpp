@@ -89,9 +89,9 @@ void uci_go(board& b, const std::string& command) {
         } else if (tokens[i] == "depth") {
             info.max_depth = std::stoi(tokens[i + 1]); 
         } else if (tokens[i] == "movetime") {
-            //info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
+            // info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
         } else if (tokens[i] == "infinite") {
-            //info.infinite = true;                      // NOT SUPPORTED RIGHT NOW
+            // info.infinite = true;                      
         }
     }
 
@@ -113,9 +113,9 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "uci") {
-        std::cout << "id name Motor 0.1.0"<< std::endl;
-        std::cout << "id author Martin Novak" << std::endl;      
-        std::cout << "option name Hash type spin default " << 8 << " min 1 max 512\n";
+        std::cout << "id name Motor " << std::endl;
+        std::cout << "id author Martin Novak " << std::endl;      
+        std::cout << "option name Hash type spin default " << 8 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table.clear();
@@ -129,7 +129,7 @@ void uci_process(board& b, const std::string& line) {
         }
 
         if (tokens.size() >= 4) {
-            if (tokens[1] == "hash") {
+            if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
             }
         } else {
@@ -146,10 +146,14 @@ void uci_process(board& b, const std::string& line) {
 void uci_mainloop() {
     board chessboard;
     std::string line{};
+    std::ofstream outputFile("commands.txt");
 
     while (std::getline(std::cin, line)) {
+        outputFile << line << std::endl;
         uci_process(chessboard, line);
     }
+
+    outputFile.close();
 }
 
 #endif //MOTOR_UCI_HPP

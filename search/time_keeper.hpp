@@ -85,6 +85,10 @@ public:
         return 0;
     }
 
+    std::uint64_t get_total_nodes() {
+        return total_nodes;
+    }
+
     void stop_timer() {
         stop = true;
     }
