@@ -20,7 +20,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     std::int16_t eval = evaluate<color>(chessboard);
 
     if (eval >= beta) {
-        return beta;
+        return eval;
     }
 
     if (eval > alpha) {
