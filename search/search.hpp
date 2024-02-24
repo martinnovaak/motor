@@ -148,7 +148,6 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
                 if (depth < 3 && chessmove.get_score() < 5000 - depth * 500) {
                     break;
                 }
-              
             }
         }
 
@@ -190,6 +189,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
         if (score > best_score) {
             best_score = score;
+            best_move = chessmove;
             data.update_pv(chessmove);
 
             if (score > alpha) {
