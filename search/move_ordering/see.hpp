@@ -4,7 +4,7 @@
 #include <cstdint>
 #include "../../chess_board/board.hpp"
 
-constexpr std::int32_t SEE_VALUES[7] = {100, 300, 300, 450, 900, 30'000, 0};
+constexpr std::int32_t SEE_VALUES[7] = {100, 450, 450, 650, 1250, 30'000, 0};
 
 template <Color color>
 static bool see(board & chessboard, const chess_move & capture, int threshold = 0)  {
@@ -12,12 +12,9 @@ static bool see(board & chessboard, const chess_move & capture, int threshold = 
     Square to   = capture.get_to();
 
     Piece piece = chessboard.get_piece(from);
-    
-    /*
     if (piece == Pawn || piece == King) {
         return true;
     }
-    */
 
     int side_to_capture = color ^ 1;
 
@@ -35,7 +32,7 @@ static bool see(board & chessboard, const chess_move & capture, int threshold = 
     rooks   |= queens;
     bishops |= queens;
 
-    std::uint64_t occupancy = chessboard.get_occupancy() ^ (1ull << from) ^ (1ull << to);
+    std::uint64_t occupancy = chessboard.get_occupancy() ^ (1ull << from) ^ (1ull << to) ;
 
     std::uint64_t attackers = chessboard.attackers<White>(to) | chessboard.attackers<Black>(to);
 
