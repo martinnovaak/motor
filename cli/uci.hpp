@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <chrono>
 #include <cmath>
-#include <fstream>
 
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
@@ -48,7 +47,11 @@ void position_uci(board & b, const std::string & command) {
         b.fen_to_board(fen);
     }
 
-    if (moves_pos == std::string::npos) return;
+    if (moves_pos == std::string::npos) {
+        set_position(b);
+        return;
+    }
+
 
     std::stringstream move_ss(command.substr(moves_pos + 5));
     std::vector<std::string> moves;
@@ -146,14 +149,10 @@ void uci_process(board& b, const std::string& line) {
 void uci_mainloop() {
     board chessboard;
     std::string line{};
-    std::ofstream outputFile("commands.txt");
 
     while (std::getline(std::cin, line)) {
-        outputFile << line << std::endl;
         uci_process(chessboard, line);
     }
-
-    outputFile.close();
 }
 
 #endif //MOTOR_UCI_HPP
