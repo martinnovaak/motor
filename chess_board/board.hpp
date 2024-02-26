@@ -384,7 +384,7 @@ public:
 
         if constexpr (make) {
             hash_key.update_psqt_hash(our_color, piece, square);
-            hash_key.update_psqt_hash(our_color, captured_piece, square);
+            hash_key.update_psqt_hash(their_color, captured_piece, square);
         }
     }
     

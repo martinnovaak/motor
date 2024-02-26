@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <chrono>
 #include <cmath>
-#include <fstream>
 
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
@@ -48,7 +47,11 @@ void position_uci(board & b, const std::string & command) {
         b.fen_to_board(fen);
     }
 
-    if (moves_pos == std::string::npos) return;
+    if (moves_pos == std::string::npos) {
+        set_position(b);
+        return;
+    }
+
 
     std::stringstream move_ss(command.substr(moves_pos + 5));
     std::vector<std::string> moves;
@@ -89,9 +92,9 @@ void uci_go(board& b, const std::string& command) {
         } else if (tokens[i] == "depth") {
             info.max_depth = std::stoi(tokens[i + 1]); 
         } else if (tokens[i] == "movetime") {
-            //info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
+            // info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
         } else if (tokens[i] == "infinite") {
-            //info.infinite = true;                      // NOT SUPPORTED RIGHT NOW
+            // info.infinite = true;                      
         }
     }
 
@@ -113,9 +116,9 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "uci") {
-        std::cout << "id name Motor 0.1.0"<< std::endl;
-        std::cout << "id author Martin Novak" << std::endl;      
-        std::cout << "option name Hash type spin default " << 8 << " min 1 max 512\n";
+        std::cout << "id name Motor " << std::endl;
+        std::cout << "id author Martin Novak " << std::endl;      
+        std::cout << "option name Hash type spin default " << 8 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table.clear();
@@ -129,7 +132,7 @@ void uci_process(board& b, const std::string& line) {
         }
 
         if (tokens.size() >= 4) {
-            if (tokens[1] == "hash") {
+            if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
             }
         } else {
