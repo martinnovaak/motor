@@ -66,14 +66,18 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         eval = score;
         best_move = chessmove;
 
-        if (eval >= beta) {
-          //  bound = Bound::LOWER;
+        if (beta <= eval) {
+            flag = Bound::LOWER;
             break;
         }
-        alpha = std::max(eval, alpha);
+
+        if (alpha <= eval) {
+            alpha = eval;
+            flag = Bound::EXACT;
+        }
     }
 
-
+    tt[zobrist_key] = { flag, 0, eval, best_move, zobrist_key };
     return eval;
 }
 
