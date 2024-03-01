@@ -84,7 +84,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
         if (depth >= 4) {
             depth--;
             if constexpr (is_pv) {
-                depth--;
+            //    depth--;
             }
         }
     }
@@ -97,7 +97,7 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
             }
 
             // razoring
-            if (depth <= 6 && eval + 200 * depth <= alpha) {
+            if (depth < 7 && eval + 200 * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if(razor_eval <= alpha) {
                     return razor_eval;
@@ -136,47 +136,43 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
     double lmr_base = std::log2(depth) / 5.5;
 
+    int fp_margin = eval + 160 + 80 * depth * depth;
+
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
+        int reduction = 1.0 + lmr_base * std::log2(moves_searched);
 
         if constexpr (!is_pv) {
             if (best_score > -9'000 && !in_check && chessmove.get_score() < 15'000) {
                 if (moves_searched > 3 + 2 * depth * depth) {
                     break;
                 }
-
-                if (depth < 3 && chessmove.get_score() < 5000 - depth * 500) {
-                    break;
-                }
-            }
+            }   
         }
 
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
 
-        int reduction = 0;
-
-        if (depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == Check_type::NOCHECK) {
-            reduction = 1.0 + lmr_base * std::log2(moves_searched);
-        }
-        
-
+        //int extension = chessmove.get_score() > 15'000 ? chessmove.get_check_type() >= 1 : 0;
 
         std::int16_t score;
         if (moves_searched == 0) {
             score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
         } else {
             // late move reduction
-            score = alpha + 1;
-            if(depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == Check_type::NOCHECK) {
+            bool do_full_search = true;
+            if(depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == NOCHECK) {
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1);
+                do_full_search = score > alpha && reduction > 0;
             }
 
-            if (score > alpha) {
+            if (do_full_search) {
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1);
-                if (score > alpha && score < beta) {
-                    score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
-                }
+            }
+
+                
+            if (is_pv && score > alpha) {
+                score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + extension);
             }
         }
 
@@ -225,22 +221,32 @@ std::int16_t alpha_beta(board & chessboard, search_data & data, std::int16_t alp
 
 template <Color color>
 std::int16_t aspiration_window(board & chessboard, search_data & data, std::int16_t score, int depth) {
-    std::int16_t alpha_window = 20, beta_window = 20;
+    std::int16_t window = 20;
     std::int16_t alpha, beta;
 
-    while(!data.time_is_up()) {
-        alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(score - alpha_window));
-        beta  = std::min(INF, static_cast<std::int16_t>(score + beta_window));
+    int search_depth = depth;
 
-        score = alpha_beta<color, NodeType::Root>(chessboard, data, alpha, beta, depth);
+    alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(score - window));
+    beta = std::min(INF, static_cast<std::int16_t>(score + window));
+
+    while(!data.time_is_up()) {
+        
+
+        score = alpha_beta<color, NodeType::Root>(chessboard, data, alpha, beta, search_depth);
         if (score <= alpha) {
-            alpha_window *= 3;
-            beta_window *= 2;
+            beta = (alpha + beta) / 2;
+            alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(alpha - window));
+            search_depth = depth;
         } else if (score >= beta) {
-            alpha_window *= 2;
-            beta_window *= 3;
+            beta = std::min(INF, static_cast<std::int16_t>(beta + window));
+            search_depth--;      
         } else {
             break;
+        }
+
+        window += window / 2;
+        if (window > 500) {
+            window = INF;
         }
     }
 
