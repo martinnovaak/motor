@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <chrono>
 #include <cmath>
+#include <thread>
 
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
@@ -97,6 +98,12 @@ void uci_go(board& b, const std::string& command) {
             // info.infinite = true;                      
         }
     }
+
+    //std::thread search_thread(find_best_move, std::ref(b), std::ref(info));
+
+    //handle_user_commands();
+
+    //search_thread.join();
 
     find_best_move(b, info);
 }
