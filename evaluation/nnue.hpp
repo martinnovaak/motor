@@ -5,10 +5,9 @@
 #include <algorithm>
 
 #include "incbin.hpp"
-#include <immintrin.h> // Include for AVX2
 
 
-constexpr unsigned int HIDDEN_SIZE = 32;
+constexpr unsigned int HIDDEN_SIZE = 64;
 
 struct Weights {
     std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2> feature_weight;
@@ -29,8 +28,8 @@ template<std::uint16_t hidden_size>
 class perspective_network
 {
 public:
-    std::array<std::array<std::int16_t, hidden_size>, 512> white_accumulator_stack;
-    std::array<std::array<std::int16_t, hidden_size>, 512> black_accumulator_stack;
+    std::array<std::array<std::int16_t, hidden_size>, 768> white_accumulator_stack;
+    std::array<std::array<std::int16_t, hidden_size>, 768> black_accumulator_stack;
     unsigned int index;
 
     perspective_network() {
