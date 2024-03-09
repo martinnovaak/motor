@@ -28,8 +28,8 @@ template<std::uint16_t hidden_size>
 class perspective_network
 {
 public:
-    std::array<std::array<std::int16_t, hidden_size>, 768> white_accumulator_stack;
-    std::array<std::array<std::int16_t, hidden_size>, 768> black_accumulator_stack;
+    std::array<std::array<std::int16_t, hidden_size>, 128> white_accumulator_stack;
+    std::array<std::array<std::int16_t, hidden_size>, 128> black_accumulator_stack;
     unsigned int index;
 
     perspective_network() {
@@ -135,14 +135,16 @@ void replace_piece(board & chessboard, const Square square, const Piece piece, c
     }
 }
 
-template<Color our_color>
+template<Color our_color, bool update = true>
 void make_move(board & chessboard, const chess_move move) {
     chessboard.increment_fifty_move_clock();
     chessboard.update_board_hash();
 
     chessboard.set_enpassant(Square::Null_Square);
 
-    network.push();
+    if constexpr (update) {
+        network.push();
+    }
 
     constexpr Color their_color = (our_color == White) ? Black : White;
     constexpr Direction down = (our_color == White) ? SOUTH : NORTH;
@@ -234,9 +236,11 @@ void make_move(board & chessboard, const chess_move move) {
     chessboard.emplace_history(captured_piece, move);
 }
 
-template <Color our_color>
+template <Color our_color, bool update = true>
 void undo_move(board & chessboard) {
-    network.pull();
+    if constexpr (update) {
+        network.pull();
+    }
 
     board_info b_info = chessboard.get_history();
     const chess_move played_move = b_info.move;

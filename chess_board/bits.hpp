@@ -1,6 +1,7 @@
 #ifndef MOTOR_BITS_HPP
 #define MOTOR_BITS_HPP
 
+#include <bit>
 #include "types.hpp"
 
 static void set_bit(std::uint64_t& bitboard, std::uint8_t square) {
@@ -13,12 +14,12 @@ static void pop_bit(std::uint64_t& bitboard, std::uint8_t square) {
 
 static Square lsb(std::uint64_t bitboard)
 {
-    return static_cast<Square>(__builtin_ctzll(bitboard));
+    return static_cast<Square>(std::countr_zero(bitboard));
 }
 
-static std::uint8_t popcount(std::uint64_t mask)
+static uint8_t popcount(std::uint64_t mask)
 {
-    return __builtin_popcountll(mask);
+    return std::popcount(mask);
 }
 
 static Square pop_lsb(std::uint64_t & bitboard) {
