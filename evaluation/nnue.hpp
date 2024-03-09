@@ -236,9 +236,11 @@ void make_move(board & chessboard, const chess_move move) {
     chessboard.emplace_history(captured_piece, move);
 }
 
-template <Color our_color>
+template <Color our_color, bool update = true>
 void undo_move(board & chessboard) {
-    network.pull();
+    if constexpr (update) {
+        network.pull();
+    }
 
     board_info b_info = chessboard.get_history();
     const chess_move played_move = b_info.move;
