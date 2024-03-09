@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <chrono>
 #include <cmath>
-#include <thread>
 
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
@@ -81,9 +80,9 @@ void uci_go(board& b, const std::string& command) {
 
     for (unsigned int i = 0; i < tokens.size(); i += 2) {
         if (tokens[i] == "wtime") {
-            info.wtime = std::stoi(tokens[i + 1]);
+            info.wtime = std::max(10, std::stoi(tokens[i + 1]));
         } else if (tokens[i] == "btime") {
-            info.btime = std::stoi(tokens[i + 1]);
+            info.btime = std::max(10, std::stoi(tokens[i + 1]));
         } else if (tokens[i] == "winc") {
             info.winc = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "binc") {
@@ -98,12 +97,6 @@ void uci_go(board& b, const std::string& command) {
             // info.infinite = true;                      
         }
     }
-
-    //std::thread search_thread(find_best_move, std::ref(b), std::ref(info));
-
-    //handle_user_commands();
-
-    //search_thread.join();
 
     find_best_move(b, info);
 }
@@ -123,7 +116,7 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "uci") {
-        std::cout << "id name Motor " << std::endl;
+        std::cout << "id name Motor 0.2.0 " << std::endl;
         std::cout << "id author Martin Novak " << std::endl;      
         std::cout << "option name Hash type spin default " << 8 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
