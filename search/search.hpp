@@ -88,9 +88,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         eval = evaluate<color>(chessboard);
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
-            if constexpr (is_pv) {
-                //    depth--;
-            }
         }
     }
 
@@ -130,8 +127,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if (movelist.size() == 0) {
         if (in_check) {
             return data.mate_value();
-        }
-        else {
+        } else {
             if (data.singular_move > 0) return alpha;
             return 0;
         }
@@ -162,28 +158,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        /*
-        int extension = 0;
-        if constexpr (!is_root) {
-            if (!tthit && data.singular_move == 0 && chessmove.get_score() == 16'383 && depth >= 6 && tt_entry.depth >= depth - 3 && std::abs(tt_entry.score) < 9'000 && tt_entry.bound != Bound::UPPER) {
-                int sbeta = eval - depth * 2;
-                int sdepth = (depth - 1) / 2;
-
-                data.singular_move = chessmove.get_value();
-                int sscore = alpha_beta<color, NodeType::Non_PV>(chessboard, data, sbeta - 1, sbeta, sdepth);
-                data.singular_move = 0;
-
-                if (sscore < sbeta) {
-                    extension = 1;
-                }
-            }
-        }
-        */
-
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
-
-        //int extension = chessmove.get_score() > 15'000 ? chessmove.get_check_type() >= 1 : 0;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -227,13 +203,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     flag = Bound::LOWER;
                     if (chessmove.is_quiet()) {
                         data.update_killer(chessmove);
-                        data.update_history(chessmove.get_from(), chessmove.get_to(), depth, quiets.size());
+                        data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
 
-                        int i = 0;
                         for (const auto& quiet : quiets) {
-                            data.reduce_history(quiet.get_from(), quiet.get_to(), depth, quiets.size() - i);
-                            i++;
+                            data.reduce_history(quiet.get_from(), quiet.get_to(), depth);
                         }
                     }
                     break;

@@ -65,11 +65,11 @@ public:
         return killer_moves[ply][index];
     }
 
-    void update_history(std::uint8_t from, std::uint8_t to, std::int8_t depth, std::int8_t sequence){
+    void update_history(std::uint8_t from, std::uint8_t to, std::int8_t depth){
         history_table.increase_value(from, to, depth * depth);
     }
 
-    void reduce_history(std::uint8_t from, std::uint8_t to, std::int8_t depth, std::int8_t sequence){
+    void reduce_history(std::uint8_t from, std::uint8_t to, std::int8_t depth){
         history_table.reduce_value(from, to, depth * depth);
     }
 
