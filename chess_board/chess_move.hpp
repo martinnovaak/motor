@@ -85,6 +85,10 @@ public:
         return move_data > other_move.move_data;
     }
 
+    std::int16_t get_value() {
+        return move_data & 0xffff;
+    }
+
     [[nodiscard]] bool is_quiet() const {
         switch (get_move_type()) {
             case QUIET:

@@ -94,6 +94,8 @@ public:
     }
 
     chess_move counter_moves[64][64] = {};
+    std::int16_t singular_move = {};
+    int stack_eval = {};
 private:
     std::int16_t ply;
 

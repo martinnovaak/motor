@@ -86,7 +86,7 @@ void bench(int depth) {
 
     auto end = std::chrono::steady_clock::now();
     double nps = static_cast<double>(nodes) / std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-    std::cout << nodes << " nodes " << static_cast<int>(nps) << " nps" << std::endl;
+    std::cout << "Bench: " << nodes << " nodes " << static_cast<int>(nps) << " nps" << std::endl;
 }
 
 #endif // MOTOR_BENCH_HPP
