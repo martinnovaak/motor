@@ -26,9 +26,9 @@ bool parse_move(board & b, const std::string& move_string) {
     for (const chess_move & m : ml) {
         if (m.to_string() == move_string) {
             if (b.get_side() == White) {
-                make_move<White>(b, m);
+                make_move<White, false>(b, m);
             } else {
-                make_move<Black>(b, m);
+                make_move<Black, false>(b, m);
             }
             return true;
         }
