@@ -4,12 +4,12 @@
 #include <cstdint>
 #include "../../chess_board/board.hpp"
 
-constexpr std::int32_t SEE_VALUES[7] = {100, 450, 450, 650, 1250, 30'000, 0};
+constexpr std::int32_t SEE_VALUES[7] = { 100, 450, 450, 650, 1250, 30'000, 0 };
 
 template <Color color>
-static bool see(board & chessboard, const chess_move & capture, int threshold = 0)  {
+static bool see(board& chessboard, const chess_move& capture, int threshold = 0) {
     Square from = capture.get_from();
-    Square to   = capture.get_to();
+    Square to = capture.get_to();
 
     Piece piece = chessboard.get_piece(from);
     if (piece == Pawn || piece == King) {
@@ -26,17 +26,17 @@ static bool see(board & chessboard, const chess_move & capture, int threshold = 
         return true;
     }
 
-    std::uint64_t queens  = chessboard.get_pieces(White, Queen)  | chessboard.get_pieces(Black, Queen);
-    std::uint64_t rooks   = chessboard.get_pieces(White, Rook)   | chessboard.get_pieces(Black, Rook);
+    std::uint64_t queens = chessboard.get_pieces(White, Queen) | chessboard.get_pieces(Black, Queen);
+    std::uint64_t rooks = chessboard.get_pieces(White, Rook) | chessboard.get_pieces(Black, Rook);
     std::uint64_t bishops = chessboard.get_pieces(White, Bishop) | chessboard.get_pieces(Black, Bishop);
-    rooks   |= queens;
+    rooks |= queens;
     bishops |= queens;
 
-    std::uint64_t occupancy = chessboard.get_occupancy() ^ (1ull << from) ^ (1ull << to) ;
+    std::uint64_t occupancy = chessboard.get_occupancy() ^ (1ull << from) ^ (1ull << to);
 
     std::uint64_t attackers = chessboard.attackers<White>(to) | chessboard.attackers<Black>(to);
 
-    std::uint64_t side_occupancy[2] = {chessboard.get_side_occupancy<White>(), chessboard.get_side_occupancy<Black>()};
+    std::uint64_t side_occupancy[2] = { chessboard.get_side_occupancy<White>(), chessboard.get_side_occupancy<Black>() };
 
     while (true) {
         //attackers &= side_occupancy[side_to_capture];
