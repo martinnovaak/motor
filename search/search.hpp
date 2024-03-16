@@ -5,30 +5,13 @@
 #include "tables/transposition_table.hpp"
 #include "move_ordering/move_ordering.hpp"
 #include "quiescence_search.hpp"
-#include "../chess_board/board.hpp"
-#include "../move_generation/move_list.hpp"
-#include "../move_generation/move_generator.hpp"
+#include "../chess/board.hpp"
+#include "../generator/movelist.hpp"
+#include "../generator/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
+#include "../executioner/makemove.hpp"
 
-enum class NodeType : std::uint8_t {
-    Root, PV, Non_PV, Null
-};
 
-enum class Bound : std::uint8_t {
-    EXACT, // Type 1 - score is exact
-    LOWER, // Type 2 - score is bigger than beta (fail-high) - Beta node
-    UPPER  // Type 3 - score is lower than alpha (fail-low)  - Alpha node
-};
-
-struct TT_entry {
-    Bound bound;            // 8 bits
-    std::int8_t depth;      // 8 bits
-    std::int16_t score;     // 16 bits
-    chess_move tt_move;     // 32 bits
-    std::uint64_t zobrist;  // 64 bits
-};
-
-transposition_table<TT_entry> tt(32 * 1024 * 1024);
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
@@ -63,8 +46,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::uint64_t zobrist_key = chessboard.get_hash_key();
     const TT_entry& tt_entry = tt[zobrist_key];
 
-    chess_move best_move;
-    chess_move tt_move = {};
+    chessmove best_move;
+    chessmove tt_move = {};
     std::int16_t eval;
     bool tthit = false;
 
@@ -121,35 +104,23 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    move_list movelist, quiets;
+    movelist movelist, quiets;
     generate_all_moves<color, false>(chessboard, movelist);
-
-    if (movelist.size() == 0) {
-        if (in_check) {
-            return data.mate_value();
-        } else {
-            if (data.singular_move > 0) return alpha;
-            return 0;
-        }
-    }
 
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
-    const chess_move previous_move = chessboard.get_last_played_move();
+    const chessmove previous_move = chessboard.get_last_played_move();
 
     double lmr_base = std::log2(depth) / 5.5;
 
+    int legal_moves = 0;
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
-        chess_move& chessmove = movelist.get_next_move(moves_searched);
-
-        if (chessmove.get_value() == data.singular_move) {
-            continue;
-        }
+        auto [chessmove, move_score] = movelist.get_next_move(moves_searched);
 
         int reduction = 1.0 + lmr_base * std::log2(moves_searched);
 
         if constexpr (!is_pv) {
-            if (best_score > -9'000 && !in_check && chessmove.get_score() < 15'000) {
+            if (best_score > -9'000 && !in_check && move_score < 15'000) {
                 if (chessmove.is_quiet()) {
                     if (moves_searched > 4 + depth * depth) {
                         continue;
@@ -158,7 +129,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        make_move<color>(chessboard, chessmove);
+        if(!make_move<color>(chessboard, chessmove)) {
+            continue;
+        }
+        legal_moves++;
         data.augment_ply();
 
         std::int16_t score;
@@ -168,7 +142,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         else {
             // late move reduction
             bool do_full_search = true;
-            if (depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == NOCHECK) {
+            if (depth >= 3 && move_score < 15'000 && !in_check) {
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1);
                 do_full_search = score > alpha && reduction > 0;
             }
@@ -206,7 +180,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         data.update_history(chessmove.get_from(), chessmove.get_to(), depth);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
 
-                        for (const auto& quiet : quiets) {
+                        for (const auto& [quiet, _] : quiets) {
                             data.reduce_history(quiet.get_from(), quiet.get_to(), depth);
                         }
                     }
@@ -217,6 +191,15 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (chessmove.is_quiet()) {
             quiets.add(chessmove);
+        }
+    }
+
+    if (legal_moves == 0) {
+        if (in_check) {
+            return data.mate_value();
+        } else {
+            if (data.singular_move > 0) return alpha;
+            return 0;
         }
     }
 

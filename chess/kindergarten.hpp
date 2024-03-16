@@ -1,7 +1,7 @@
 #ifndef MOTOR_KINDERGARTEN_HPP
 #define MOTOR_KINDERGARTEN_HPP
 
-#include "../types.hpp"
+#include "types.hpp"
 #include <cstdint>
 
 namespace kindergarten {

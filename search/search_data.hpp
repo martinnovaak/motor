@@ -6,6 +6,27 @@
 #include "pv_table.hpp"
 #include "time_keeper.hpp"
 #include "tables/butterfly_table.hpp"
+#include "tables/transposition_table.hpp"
+
+enum class NodeType : std::uint8_t {
+    Root, PV, Non_PV, Null
+};
+
+enum class Bound : std::uint8_t {
+    EXACT, // Type 1 - score is exact
+    LOWER, // Type 2 - score is bigger than beta (fail-high) - Beta node
+    UPPER  // Type 3 - score is lower than alpha (fail-low)  - Alpha node
+};
+
+struct TT_entry {
+    Bound bound;            // 8 bits
+    std::int8_t depth;      // 8 bits
+    std::int16_t score;     // 16 bits
+    chessmove tt_move;     // 32 bits
+    std::uint64_t zobrist;  // 64 bits
+};
+
+transposition_table<TT_entry> tt(32 * 1024 * 1024);
 
 constexpr std::int16_t INF = 20'000;
 
@@ -36,7 +57,7 @@ public:
         return principal_variation_table.get_pv_line(length);
     }
 
-    void update_pv(const chess_move move) {
+    void update_pv(const chessmove move) {
         principal_variation_table.update_principal_variation(move, ply);
     }
 
@@ -56,12 +77,12 @@ public:
         ply++;
     }
 
-    void update_killer(chess_move move) {
+    void update_killer(chessmove move) {
         killer_moves[ply][0] = killer_moves[ply][1];
         killer_moves[ply][1] = move;
     }
 
-    chess_move get_killer(int index) {
+    chessmove get_killer(int index) {
         return killer_moves[ply][index];
     }
 
@@ -93,7 +114,7 @@ public:
         return timekeeper.NPS(nodes_searched);
     }
 
-    chess_move counter_moves[64][64] = {};
+    chessmove counter_moves[64][64] = {};
     std::int16_t singular_move = {};
     int stack_eval = {};
 private:
@@ -104,7 +125,7 @@ private:
     time_keeper timekeeper;
 
     std::uint64_t nodes_searched;
-    chess_move killer_moves[MAX_DEPTH][2] = {};
+    chessmove killer_moves[MAX_DEPTH][2] = {};
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP

@@ -2,7 +2,7 @@
 #define MOTOR_MOVE_ORDERING_HPP
 
 #include "see.hpp"
-#include "../../move_generation/move_list.hpp"
+#include "../../generator/movelist.hpp"
 #include "../search_data.hpp"
 
 constexpr static int mvv_lva[7][6] = {
@@ -17,33 +17,33 @@ constexpr static int mvv_lva[7][6] = {
 };
 
 template <Color color>
-void score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
-    for (chess_move & move : movelist) {
+void score_moves(board & chessboard, movelist & movelist, search_data & data, const chessmove & tt_move) {
+    for (auto & [move, score] : movelist) {
         const std::uint8_t from = move.get_from();
         const std::uint8_t to   = move.get_to();
-        const chess_move previous_move = chessboard.get_last_played_move();
-        const chess_move counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
+        const chessmove previous_move = chessboard.get_last_played_move();
+        const chessmove counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
         if (move == tt_move) {
-            move.set_score(16383);
+            score = 214748364;
         } else if (!move.is_quiet()) {
-            move.set_score(15003 * see<color>(chessboard, move) + mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
+            score = 10'000'000 * see<color>(chessboard, move) + mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)];
         } else if (data.get_killer(0) == move){
-            move.set_score(15002);
+            score = 1'000'002;
         } else if (data.get_killer(1) == move){
-            move.set_score(15001);
+            score = 1'000'001;
         } else if (counter_move == move) {
-            move.set_score(15'000);
+            score = 1'000'000;
         } else {
-            move.set_score(data.get_history(from, to));
+            score = data.get_history(from, to);
         }
     }
 }
 
-static void qs_score_moves(board & chessboard, move_list & movelist) {
-    for(chess_move & move : movelist) {
+static void qs_score_moves(board & chessboard, movelist & movelist) {
+    for(auto & [move, score] : movelist) {
         const std::uint8_t from = move.get_from();
         const std::uint8_t to   = move.get_to();
-        move.set_score(mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)]);
+        score = mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)];
     }
 }
 

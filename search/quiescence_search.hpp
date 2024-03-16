@@ -4,10 +4,11 @@
 #include "search_data.hpp"
 #include "tables/transposition_table.hpp"
 #include "move_ordering/move_ordering.hpp"
-#include "../chess_board/board.hpp"
-#include "../move_generation/move_list.hpp"
-#include "../move_generation/move_generator.hpp"
+#include "../chess/board.hpp"
+#include "../generator/movelist.hpp"
+#include "../generator/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
+#include "../executioner/makemove.hpp"
 
 template <Color color>
 std::int16_t quiescence_search(board & chessboard, search_data & data, std::int16_t alpha, std::int16_t beta) {
@@ -42,20 +43,22 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         alpha = eval;
     }
 
-    move_list movelist;
+    movelist movelist;
     generate_all_moves<color, true>(chessboard, movelist);
     qs_score_moves(chessboard, movelist);
 
-    chess_move best_move;
+    chessmove best_move;
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
-        chess_move & chessmove = movelist.get_next_move(moves_searched);
+        auto [chessmove, _] = movelist.get_next_move(moves_searched);
 
         if (!see<color>(chessboard, chessmove)) {
             continue;
         }
 
-        make_move<color>(chessboard, chessmove);
+        if(!make_move<color>(chessboard, chessmove)) {
+            continue;
+        }
         std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha);
         undo_move<color>(chessboard);
 

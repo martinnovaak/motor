@@ -4,20 +4,20 @@
 #include <bit>
 #include "types.hpp"
 
-static void set_bit(std::uint64_t& bitboard, std::uint8_t square) {
+static void set_bit(std::uint64_t & bitboard, const Square square) {
     bitboard |= (1ull << square);
 }
 
-static void pop_bit(std::uint64_t& bitboard, std::uint8_t square) {
+static void pop_bit(std::uint64_t & bitboard, const Square square) {
     bitboard &= ~(1ull << square);
 }
 
-static Square lsb(std::uint64_t bitboard)
+static Square lsb(const std::uint64_t bitboard)
 {
     return static_cast<Square>(std::countr_zero(bitboard));
 }
 
-static uint8_t popcount(std::uint64_t mask)
+static std::uint8_t count_bits(const std::uint64_t mask)
 {
     return std::popcount(mask);
 }

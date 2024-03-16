@@ -6,23 +6,23 @@
 #include <chrono>
 #include <cmath>
 
-#include "../chess_board/board.hpp"
-#include "../move_generation/move_list.hpp"
-#include "../move_generation/move_generator.hpp"
+#include "../chess/board.hpp"
+#include "../generator/movelist.hpp"
+#include "../generator/move_generator.hpp"
 #include "../search/time_keeper.hpp"
 #include "../search/search.hpp"
 #include "../search/bench.hpp"
 #include "../perft.hpp"
 
 bool parse_move(board & b, const std::string& move_string) {
-    move_list ml;
+    movelist ml;
     if (b.get_side() == White) {
         generate_all_moves<White, false>(b, ml);
     } else {
         generate_all_moves<Black, false>(b, ml);
     }
 
-    for (const chess_move & m : ml) {
+    for (const auto [m, _] : ml) {
         if (m.to_string() == move_string) {
             if (b.get_side() == White) {
                 make_move<White, false>(b, m);

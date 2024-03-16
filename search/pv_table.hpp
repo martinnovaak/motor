@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <sstream>
-#include "../chess_board/chess_move.hpp"
+#include "../chess/chessmove.hpp"
 
 constexpr std::uint8_t MAX_DEPTH = 64;
 
@@ -11,7 +11,7 @@ class pv_table {
 public:
     pv_table() : pv_length{}, triangular_pv_table{} {}
 
-    void update_principal_variation(chess_move move, std::int8_t ply) {
+    void update_principal_variation(chessmove move, std::int8_t ply) {
         triangular_pv_table[ply][ply] = move;
         for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++) {
             triangular_pv_table[ply][next_ply] = triangular_pv_table[ply + 1][next_ply];
@@ -28,7 +28,7 @@ public:
     }
 
 
-    [[nodiscard]] chess_move get_best_move() const {
+    [[nodiscard]] chessmove get_best_move() const {
         return triangular_pv_table[0][0];
     }
 
@@ -38,7 +38,7 @@ public:
 
 private:
     std::uint8_t pv_length[MAX_DEPTH];
-    chess_move triangular_pv_table[MAX_DEPTH][MAX_DEPTH];
+    chessmove triangular_pv_table[MAX_DEPTH][MAX_DEPTH];
 };
 
 #endif //MOTOR_PV_TABLE_HPP

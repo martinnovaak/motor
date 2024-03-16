@@ -1,8 +1,8 @@
-#ifndef MOTOR_CHESS_MOVE_HPP
-#define MOTOR_CHESS_MOVE_HPP
+#ifndef MOTOR_CHESSMOVE_HPP
+#define MOTOR_CHESSMOVE_HPP
 
 #include "types.hpp"
-#include "fen_utilities.hpp"
+#include "fen_utils.hpp"
 
 #include <cstdint>
 
@@ -34,59 +34,40 @@ enum MoveType : std::uint16_t {
     QUEEN_PROMOTION_CAPTURE  = 15,
 };
 
-enum Check_type : uint8_t {
-    NOCHECK         = 0b00,
-    DIRECT_CHECK    = 0b01,
-    DISCOVERY_CHECK = 0b10,
-    DOUBLE_CHECK    = 0b11,
-};
-
-class chess_move {
+class chessmove {
 public:
-    chess_move() : move_data{} {}
+    chessmove() : packed_move_data{} {}
 
-    chess_move(Square from, Square to, MoveType move_type) {
-        move_data = from | to << 6 | move_type << 12;
+    chessmove(Square from, Square to, MoveType move_type, Piece piece_type) {
+        packed_move_data = from | to << 6 | move_type << 12 | piece_type << 16;
     }
 
-    chess_move(Square from, Square to, MoveType move_type, bool direct_check, bool discovery) {
-        move_data = from | to << 6 | move_type << 12 | direct_check << 16 | discovery << 17;
+    chessmove(Square from, Square to, MoveType move_type, Piece piece_type, Piece captured) {
+        packed_move_data = from | to << 6 | move_type << 12 | piece_type << 16 | captured << 19;
     }
 
     [[nodiscard]] Square get_from() const {
-        return static_cast<Square>((move_data) & 0b111111);
+        return static_cast<Square>((packed_move_data) & 0b111111);
     }
 
     [[nodiscard]] Square get_to() const {
-        return static_cast<Square>((move_data >> 6) & 0b111111);
+        return static_cast<Square>((packed_move_data >> 6) & 0b111111);
     }
 
     [[nodiscard]] MoveType get_move_type() const {
-        return static_cast<MoveType>((move_data >> 12) & 0b1111);
+        return static_cast<MoveType>((packed_move_data >> 12) & 0b1111);
     }
 
-    [[nodiscard]] Check_type get_check_type() const {
-        return static_cast<Check_type>((move_data >> 16) & 0b11);
+    [[nodiscard]] Piece get_piece() const {
+        return static_cast<Piece>(packed_move_data >> 16 & 0b111);
     }
 
-    void set_score(std::uint16_t score) {
-        this->move_data |= (score << 18);
+    [[nodiscard]] Piece get_captured_piece() const {
+        return static_cast<Piece>(packed_move_data >> 19 & 0b111);
     }
 
-    [[nodiscard]] std::int16_t get_score() const {
-        return static_cast<std::int16_t>((move_data >> 18) & 0b11111111111111);
-    }
-
-    bool operator==(const chess_move & other_move) const {
-        return (other_move.move_data & 0xffff) == (move_data & 0xffff);
-    }
-
-    bool operator>(const chess_move & other_move) const {
-        return move_data > other_move.move_data;
-    }
-
-    std::int16_t get_value() {
-        return move_data & 0xffff;
+    bool operator==(const chessmove & other_move) const {
+        return other_move.packed_move_data == packed_move_data;
     }
 
     [[nodiscard]] bool is_quiet() const {
@@ -95,16 +76,16 @@ public:
             case DOUBLE_PAWN_PUSH:
             case KING_CASTLE:
             case QUEEN_CASTLE:
-                return true;
-            case CAPTURE:
-            case EN_PASSANT:
             case KNIGHT_PROMOTION:
             case BISHOP_PROMOTION:
             case ROOK_PROMOTION:
-            case QUEEN_PROMOTION:
             case KNIGHT_PROMOTION_CAPTURE:
             case BISHOP_PROMOTION_CAPTURE:
             case ROOK_PROMOTION_CAPTURE:
+                return true;
+            case CAPTURE:
+            case EN_PASSANT:
+            case QUEEN_PROMOTION:
             case QUEEN_PROMOTION_CAPTURE:
                 return false;
         }
@@ -131,37 +112,26 @@ public:
         }
     }
 
+    [[nodiscard]] bool is_capture() const {
+        return !is_quiet();
+    }
+
     [[nodiscard]] std::string to_string() const {
         std::string move_string;
         move_string.append(square_to_string[get_from()]);
         move_string.append(square_to_string[get_to()]);
-        MoveType mt = get_move_type();
-        switch (mt)
+        switch (get_move_type())
         {
-            case KING_CASTLE:
-                move_string = "";
-                move_string.append(square_to_string[get_from() - 3]);
-                move_string.append(square_to_string[get_to()   + 1]);
-                return move_string;
-            case QUEEN_CASTLE:
-                move_string = "";
-                move_string.append(square_to_string[get_from() + 4]);
-                move_string.append(square_to_string[get_to()   - 1]);
-                return move_string;
             case KNIGHT_PROMOTION:
-                return move_string + "n";
-            case BISHOP_PROMOTION:
-                return move_string + "b";
-            case ROOK_PROMOTION:
-                return move_string + "r";
-            case QUEEN_PROMOTION:
-                return move_string + "q";
             case KNIGHT_PROMOTION_CAPTURE:
                 return move_string + "n";
+            case BISHOP_PROMOTION:
             case BISHOP_PROMOTION_CAPTURE:
                 return move_string + "b";
+            case ROOK_PROMOTION:
             case ROOK_PROMOTION_CAPTURE:
                 return move_string + "r";
+            case QUEEN_PROMOTION:
             case QUEEN_PROMOTION_CAPTURE:
                 return move_string + "q";
             default:
@@ -169,7 +139,7 @@ public:
         }
     }
 private:
-    std::uint32_t move_data = 0;
+    std::uint32_t packed_move_data = 0;
 };
 
-#endif //MOTOR_CHESS_MOVE_HPP
+#endif //MOTOR_CHESSMOVE_HPP

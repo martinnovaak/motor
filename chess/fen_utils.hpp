@@ -1,8 +1,7 @@
-#ifndef MOTOR_FEN_UTILITIES_HPP
-#define MOTOR_FEN_UTILITIES_HPP
+#ifndef MOTOR_FEN_UTILS_HPP
+#define MOTOR_FEN_UTILS_HPP
 
 #include <cstdint>
-#include <tuple>
 #include <string>
 #include "types.hpp"
 
@@ -48,19 +47,36 @@ std::uint8_t char_to_castling_right(char fen_right) {
         case 'q':
             return CastlingRight::CASTLE_BLACK_QUEENSIDE;
         case '-':
-        default:
-            return 0;
+            default:
+                return 0;
     }
 }
 
 Square square_from_string(const std::string &s) {
     if ('a' <= s[0] && s[0] <= 'z') {
         return static_cast<Square>((s[0] - 'a') + (s[1] - '1') * 8);
-    } else if ('A' <= s[0] && s[0] <= 'Z') {
-        return static_cast<Square>((s[0] - 'A') + (s[1] - '1') * 8);
-    } else { // s[0] == '-'
-        return Square::Null_Square;
     }
+
+    if ('A' <= s[0] && s[0] <= 'Z') {
+        return static_cast<Square>((s[0] - 'A') + (s[1] - '1') * 8);
+    }
+
+    // s[0] == '-'
+    return Square::Null_Square;
 }
 
-#endif //MOTOR_FEN_UTILITIES_HPP
+char piece_to_char(Piece piece, Color color) {
+    char piece_char;
+    switch (piece) {
+        case Pawn:   piece_char = 'p'; break;
+        case Knight: piece_char = 'n'; break;
+        case Bishop: piece_char = 'b'; break;
+        case Rook:   piece_char = 'r'; break;
+        case Queen:  piece_char = 'q'; break;
+        case King:   piece_char = 'k'; break;
+        default:            piece_char = '.'; break;
+    }
+    return color == White ? std::toupper(piece_char) : piece_char;
+}
+
+#endif //MOTOR_FEN_UTILIS_HPP
