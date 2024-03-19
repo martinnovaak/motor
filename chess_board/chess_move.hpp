@@ -69,16 +69,8 @@ public:
         return static_cast<Check_type>((move_data >> 16) & 0b11);
     }
 
-    void set_score(std::uint16_t score) {
-        this->move_data |= (score << 18);
-    }
-
-    [[nodiscard]] std::int16_t get_score() const {
-        return static_cast<std::int16_t>((move_data >> 18) & 0b11111111111111);
-    }
-
     bool operator==(const chess_move & other_move) const {
-        return (other_move.move_data & 0xffff) == (move_data & 0xffff);
+        return other_move.move_data == move_data;
     }
 
     bool operator>(const chess_move & other_move) const {
