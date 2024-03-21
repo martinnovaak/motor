@@ -17,9 +17,9 @@
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
     if (b.get_side() == White) {
-        generate_all_moves<White, false>(b, ml);
+        generate_all_moves<White, GenType::ALL>(b, ml);
     } else {
-        generate_all_moves<Black, false>(b, ml);
+        generate_all_moves<Black, GenType::ALL>(b, ml);
     }
 
     for (const chess_move & m : ml) {
@@ -118,7 +118,7 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "uci") {
         std::cout << "id name Motor 0.2.0 " << std::endl;
         std::cout << "id author Martin Novak " << std::endl;      
-        std::cout << "option name Hash type spin default " << 8 << " min 1 max 1024" << std::endl;
+        std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table.clear();

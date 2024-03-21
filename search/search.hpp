@@ -65,6 +65,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     chess_move best_move;
     chess_move tt_move = {};
+    std::int16_t static_eval = evaluate<color>(chessboard);;
     std::int16_t eval;
     bool tthit = false;
 
@@ -74,6 +75,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         std::int16_t tt_eval = tt_entry.score;
         tthit = true;
         eval = tt_eval;
+        static_eval = tt_eval;
         if constexpr (!is_pv) {
             if (tt_entry.depth >= depth) {
                 if ((tt_entry.bound == Bound::EXACT) ||
@@ -85,16 +87,19 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
     else {
-        eval = evaluate<color>(chessboard);
+        eval = static_eval;
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
         }
     }
 
+    data.improving[data.get_ply()] = static_eval;
+    int improving = data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+
     if constexpr (!is_root) {
         if (data.singular_move == 0 && !in_check && std::abs(beta) < 9'000) {
             // reverse futility pruning
-            if (depth < 7 && eval - 150 * depth >= beta) {
+            if (depth < 7 && eval - 150 * depth / (1 + improving) >= beta) {
                 return eval;
             }
 
@@ -121,7 +126,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    move_list movelist, quiets;
+    move_list movelist, quiets, captures;
     generate_all_moves<color, false>(chessboard, movelist);
 
     if (movelist.size() == 0) {
@@ -149,9 +154,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         int reduction = 1.0 + lmr_base * std::log2(moves_searched);
 
         if constexpr (!is_pv) {
-            if (best_score > -9'000 && !in_check && chessmove.get_score() < 15'000) {
+            if (best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
                 if (chessmove.is_quiet()) {
-                    if (moves_searched > 4 + depth * depth) {
+                    if (moves_searched > 4 + depth * depth ) {
                         continue;
                     }
                 }
@@ -168,7 +173,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         else {
             // late move reduction
             bool do_full_search = true;
-            if (depth >= 3 && chessmove.get_score() < 15'000 && chessmove.get_check_type() == NOCHECK) {
+            if (depth >= 3 && movelist[moves_searched] < 15'000 && chessmove.get_check_type() == NOCHECK) {
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1);
                 do_full_search = score > alpha && reduction > 0;
             }
@@ -218,10 +223,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (chessmove.is_quiet()) {
             quiets.add(chessmove);
         }
+        else {
+            captures.add(chessmove);
+        }
     }
 
     if (data.singular_move == 0)
         tt[zobrist_key] = { flag, depth, best_score, best_move, zobrist_key };
+
     return best_score;
 }
 
