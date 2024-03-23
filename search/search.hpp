@@ -156,7 +156,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         int reduction = 1.0 + lmr_base * std::log2(moves_searched);
 
-        if constexpr (!is_pv) {
+        if constexpr (!is_root) {
             if (best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000 && chessmove.get_check_type() == NOCHECK) {
                 if (chessmove.is_quiet()) {
                     if (moves_searched > 4 + depth * depth) {
