@@ -178,6 +178,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             // late move reduction
             bool do_full_search = true;
             if (depth >= 3 && movelist[moves_searched] < 15'000 && chessmove.get_check_type() == NOCHECK && !in_check) {
+                if (chessmove.is_quiet()) {
+                    reduction += !is_pv + !improving;
+                }
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1);
                 do_full_search = score > alpha && reduction > 0;
             }
