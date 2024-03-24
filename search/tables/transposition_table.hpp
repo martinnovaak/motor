@@ -21,6 +21,10 @@ public:
         tt_table = std::vector<TT_ENTRY>(bucket_count);
     }
 
+    void prefetch(const std::uint64_t zobrist_hash) {
+        __builtin_prefetch(&tt_table[zobrist_hash & mask]);
+    }
+
     TT_ENTRY & operator[](const std::uint64_t zobrist_hash) {
         return tt_table[zobrist_hash & mask];
     }

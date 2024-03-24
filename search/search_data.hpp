@@ -9,7 +9,13 @@
 
 constexpr std::int16_t INF = 20'000;
 
-butterfly_table<std::uint16_t> history_table(5'000);
+butterfly_table<std::int32_t> history_table(0);
+
+struct history_move {
+    Piece piece_type;
+    Square from;
+    Square to;
+};
 
 class search_data {
 public:
@@ -57,8 +63,10 @@ public:
     }
 
     void update_killer(chess_move move) {
-        killer_moves[ply][0] = killer_moves[ply][1];
-        killer_moves[ply][1] = move;
+        if (killer_moves[ply][0] != move) {
+            killer_moves[ply][0] = killer_moves[ply][1];
+            killer_moves[ply][1] = move;
+        }
     }
 
     chess_move get_killer(int index) {
@@ -73,7 +81,7 @@ public:
         history_table.reduce_value(from, to, depth * depth);
     }
 
-    std::uint16_t get_history(std::uint8_t from, std::uint8_t to) {
+    std::int16_t get_history(std::uint8_t from, std::uint8_t to) {
         return history_table.get_value(from, to);
     }
 
@@ -92,6 +100,11 @@ public:
     std::uint64_t nps() {
         return timekeeper.NPS(nodes_searched);
     }
+
+    int improving[96] = {};
+
+    history_move prev_moves[96];
+    int conthist[6][64][6][64] = {};
 
     chess_move counter_moves[64][64] = {};
     std::int16_t singular_move = {};

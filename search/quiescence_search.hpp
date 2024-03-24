@@ -43,7 +43,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     move_list movelist;
-    generate_all_moves<color, true>(chessboard, movelist);
+    generate_all_moves<color, GenType::CAPTURES>(chessboard, movelist);
     qs_score_moves(chessboard, movelist);
 
     chess_move best_move;
@@ -56,6 +56,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
 
         make_move<color>(chessboard, chessmove);
+        tt.prefetch(chessboard.get_hash_key());
         std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha);
         undo_move<color>(chessboard);
 

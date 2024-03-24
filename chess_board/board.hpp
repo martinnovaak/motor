@@ -159,6 +159,16 @@ public:
                   | (PAWN_ATTACKS_TABLE[side][square] & bitboards[their_color][Pawn]);
     }
 
+    template <Color color>
+    [[nodiscard]] std::uint64_t attackers(const Square square, std::uint64_t occ) const {
+        constexpr Color their_color = color == White ? Black : White;
+        return    (attacks<Ray::ROOK>(square, occ) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
+            | (attacks<Ray::BISHOP>(square, occ) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]))
+            | (KING_ATTACKS[square] & bitboards[their_color][King])
+            | (KNIGHT_ATTACKS[square] & bitboards[their_color][Knight])
+            | (PAWN_ATTACKS_TABLE[color][square] & bitboards[their_color][Pawn]);
+    }
+
     template<Color their_color>
     [[nodiscard]] std::uint64_t discovery_attackers(const Square square) const {
         return    (attacks<Ray::ROOK>(square, occupancy)   & (bitboards[their_color][Rook]   | bitboards[their_color][Queen]))

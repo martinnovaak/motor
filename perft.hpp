@@ -14,7 +14,7 @@ template <Color side>
 std::uint64_t perft(board& b, int depth) {
     constexpr Color next_side = side == White ? Black : White;
     move_list ml;
-    generate_all_moves<side, false>(b, ml);
+    generate_all_moves<side, GenType::ALL>(b, ml);
 
     if (depth == 1) {
         return ml.size();
@@ -42,7 +42,7 @@ template <Color side>
 std::uint64_t perft_debug(board & b, int depth) {
     constexpr Color next_side = (side == White) ? Black : White;
     move_list ml;
-    generate_all_moves<side, false>(b, ml);
+    generate_all_moves<side, GenType::ALL>(b, ml);
     std::uint64_t total_nodes = 0;
     std::vector<std::string> moves;
     for (const auto & m : ml) {
