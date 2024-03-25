@@ -74,7 +74,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         tthit = true;
-        eval = tt_eval;
+        //eval = tt_eval;
         static_eval = tt_eval;
         if constexpr (!is_pv) {
             if (tt_entry.depth >= depth) {
@@ -85,6 +85,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
             }
         }
+
+        if (!((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
+        {
+            eval = tt_eval;
+    }
     }
     else {
         if (data.singular_move == 0 && depth >= 4) {
@@ -100,7 +105,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if constexpr (!is_root) {
         if (data.singular_move == 0 && !in_check && std::abs(beta) < 9'000) {
             // razoring
-            if (depth < 7 && eval + 200 * depth <= alpha) {
+            if (eval + 500 * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if (razor_eval <= alpha) {
                     return razor_eval;
