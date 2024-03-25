@@ -14,7 +14,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     constexpr Color enemy_color = (color == White) ? Black : White;
 
     if(data.should_end()) {
-        return 0;
+        return beta;
     }
 
     std::int16_t eval = evaluate<color>(chessboard);

@@ -36,8 +36,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
-    if (data.singular_move == 0 && data.should_end()) {
-        return alpha;
+    if (data.should_end()) {
+        return beta;
     }
 
     data.update_pv_length();
@@ -138,6 +138,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     generate_all_moves<color, GenType::ALL>(chessboard, movelist);
 
     if (movelist.size() == 0) {
+        if (data.singular_move > 0) return alpha;
         if (in_check) {
             return data.mate_value();
         } else {
