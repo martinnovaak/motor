@@ -122,6 +122,8 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table.clear();
+        history = {};
+        conthist = {};
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
