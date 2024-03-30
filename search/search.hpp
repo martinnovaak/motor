@@ -31,10 +31,6 @@ struct TT_entry {
 transposition_table<TT_entry> tt(32 * 1024 * 1024);
 
 int history_bonus(int depth) {
-    if (depth > 13) {
-    //    return 32;
-    }
-
     return 16 * depth * depth + 128 * std::max(depth - 1, 0);
 }
 
@@ -101,7 +97,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (!((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
         {
             eval = tt_eval;
-    }
+        }
     }
     else {
         if (data.singular_move == 0 && depth >= 4) {
@@ -123,7 +119,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     return razor_eval;
                 }
             }
-
+            
             // reverse futility pruning
             if (depth < 7 && eval - 150 * depth / (1 + improving) >= beta) {
                 return eval;
@@ -154,7 +150,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (in_check) {
             return data.mate_value();
         } else {
-            if (data.singular_move > 0) return alpha;
             return 0;
         }
     }
@@ -217,9 +212,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             bool do_full_search = true;
             if (depth >= 3 && movelist[moves_searched] < 1'000'000) {
                 if (chessmove.is_quiet()) {
-                    reduction += !is_pv + !improving;
+                    reduction += !is_pv + !improving;  
                     reduction -= chessmove.get_check_type() > NOCHECK;
-                }
+                } 
 
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1);
                 do_full_search = score > alpha && reduction > 0;
@@ -233,10 +228,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (is_pv && score > alpha) {
                 score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1);
             }
-        }
-
-        if (data.time_is_up()) {
-            return 0;
         }
 
         undo_move<color>(chessboard);
@@ -256,7 +247,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     int bonus = history_bonus(depth);
                     if (chessmove.is_quiet()) {
                         data.update_killer(chessmove);
-                        data.update_history(color, chessmove.get_from(), chessmove.get_to(), depth * depth);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;   
 
                         update_history(history[color][from][to], bonus);
@@ -275,9 +265,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                             if constexpr (!is_root) {
                                 update_history(conthist[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], -bonus * 4);
                             }
-                            
                         }
-                    }
+                    }                
                     break;
                 }
             }
@@ -285,10 +274,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (chessmove.is_quiet()) {
             quiets.add(chessmove);
-        }
-        else {
-            captures.add(chessmove);
-        }
+        }       
     }
 
     if (data.singular_move == 0)
@@ -308,8 +294,6 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
     beta = std::min(INF, static_cast<std::int16_t>(score + window));
 
     while (!data.time_is_up()) {
-
-
         score = alpha_beta<color, NodeType::Root>(chessboard, data, alpha, beta, search_depth);
         if (score <= alpha) {
             beta = (alpha + beta) / 2;
