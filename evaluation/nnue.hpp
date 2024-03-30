@@ -7,7 +7,7 @@
 #include "incbin.hpp"
 
 
-constexpr unsigned int HIDDEN_SIZE = 64;
+constexpr unsigned int HIDDEN_SIZE = 256;
 
 struct Weights {
     std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2> feature_weight;
