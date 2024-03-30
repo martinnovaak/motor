@@ -116,8 +116,8 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "uci") {
-        std::cout << "id name Motor 0.2.0 " << std::endl;
-        std::cout << "id author Martin Novak " << std::endl;      
+        std::cout << "id name Motor 0.3.0 " << std::endl;
+        std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
@@ -136,7 +136,7 @@ void uci_process(board& b, const std::string& line) {
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
-            }
+            } 
         } else {
             std::cout << "Command not found." << std::endl;
         }
@@ -154,7 +154,7 @@ void uci_mainloop() {
 
     while (std::getline(std::cin, line)) {
         uci_process(chessboard, line);
-    }
+    } 
 }
 
 #endif //MOTOR_UCI_HPP
