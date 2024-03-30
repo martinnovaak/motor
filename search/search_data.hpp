@@ -10,6 +10,8 @@
 constexpr std::int16_t INF = 20'000;
 
 butterfly_table<std::int32_t> history_table(0);
+std::array<std::array<std::array<int, 64>, 64>, 2> history = {};
+std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> conthist = {};
 
 struct history_move {
     Piece piece_type;
@@ -73,16 +75,19 @@ public:
         return killer_moves[ply][index];
     }
 
-    void update_history(std::uint8_t from, std::uint8_t to, std::int8_t depth){
-        history_table.increase_value(from, to, depth * depth);
+    void update_history(Color color, std::uint8_t from, std::uint8_t to, int depth){
+        //history_table.increase_value(from, to, depth);
+        history[color][from][to] += depth;
     }
 
-    void reduce_history(std::uint8_t from, std::uint8_t to, std::int8_t depth){
-        history_table.reduce_value(from, to, depth * depth);
+    void reduce_history(Color color, std::uint8_t from, std::uint8_t to, int depth){
+        //history_table.reduce_value(from, to, depth);
+        history[color][from][to] -= depth;
     }
 
-    std::int16_t get_history(std::uint8_t from, std::uint8_t to) {
-        return history_table.get_value(from, to);
+    std::int16_t get_history(Color color, std::uint8_t from, std::uint8_t to) {
+        //return history_table.get_value(from, to);
+        return history[color][from][to];
     }
 
     [[nodiscard]] std::int16_t get_ply() const {
@@ -104,10 +109,10 @@ public:
     int improving[96] = {};
 
     history_move prev_moves[96];
-    int conthist[6][64][6][64] = {};
+    
 
     chess_move counter_moves[64][64] = {};
-    std::int16_t singular_move = {};
+    std::uint32_t singular_move = {};
     int stack_eval = {};
 private:
     std::int16_t ply;
@@ -117,7 +122,7 @@ private:
     time_keeper timekeeper;
 
     std::uint64_t nodes_searched;
-    chess_move killer_moves[MAX_DEPTH][2] = {};
+    chess_move killer_moves[96][2] = {};
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP

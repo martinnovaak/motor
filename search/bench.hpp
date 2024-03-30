@@ -68,6 +68,7 @@ std::uint64_t bench_iterative_deepening(board& chessboard, int max_depth) {
         else {
             score = aspiration_window<color>(chessboard, data, score, depth);
         }
+        data.nps();
     }
 
     return data.nodes();

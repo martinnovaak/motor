@@ -199,7 +199,15 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
         Square square_from = enpassant_square - antidiagonal_capture;
         if(enpassant_antidiagonal && chessboard.check_legality_of_enpassant<their_color>(square_from, pawn_to_capture)) {
             if constexpr (vertical_discovery) {
-                movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, vertical_discovery));
+                pop_bit(occupancy, pawn_to_capture);
+                pop_bit(occupancy, square_from);
+                std::uint64_t queen_bitboard = chessboard.get_pieces(our_color, Queen);
+                std::uint64_t bitboard_ad = chessboard.get_pieces(our_color, Bishop) | queen_bitboard;
+                // 6r1/2q2p2/1PB2k2/3P1Pp1/5Q1B/8/6K1/7R w - g6 0 56
+                bool direct_discovery = direct_check || bitboard_ad & attacks<Ray::BISHOP>(enemy_king_square, occupancy);
+                set_bit(occupancy, square_from);
+                set_bit(occupancy, pawn_to_capture);
+                movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_discovery, vertical_discovery));
             } else {
                 pop_bit(occupancy, pawn_to_capture);
                 pop_bit(occupancy, square_from);
@@ -218,7 +226,15 @@ void generate_pawn_moves(const board & chessboard, move_list & movelist, std::ui
         square_from = enpassant_square - diagonal_capture;
         if(enpassant_diagonal && chessboard.check_legality_of_enpassant<their_color>(square_from, pawn_to_capture)) {
             if constexpr (vertical_discovery) {
-                movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_check, vertical_discovery));
+                pop_bit(occupancy, pawn_to_capture);
+                pop_bit(occupancy, square_from);
+                std::uint64_t queen_bitboard = chessboard.get_pieces(our_color, Queen);
+                std::uint64_t bitboard_ad = chessboard.get_pieces(our_color, Bishop) | queen_bitboard;
+                // 6r1/2q2p2/1PB2k2/3P1Pp1/5Q1B/8/6K1/7R w - g6 0 56
+                bool direct_discovery = direct_check || bitboard_ad & attacks<Ray::BISHOP>(enemy_king_square, occupancy);
+                set_bit(occupancy, square_from);
+                set_bit(occupancy, pawn_to_capture);
+                movelist.add(chess_move(square_from, enpassant_square, EN_PASSANT, direct_discovery, vertical_discovery));
             } else {
                 pop_bit(occupancy, pawn_to_capture);
                 pop_bit(occupancy, square_from);

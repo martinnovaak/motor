@@ -77,8 +77,8 @@ public:
         return move_data > other_move.move_data;
     }
 
-    std::int16_t get_value() {
-        return move_data & 0xffff;
+    std::uint32_t get_value() {
+        return move_data;
     }
 
     [[nodiscard]] bool is_quiet() const {
