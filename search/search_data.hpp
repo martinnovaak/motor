@@ -71,6 +71,11 @@ public:
         }
     }
 
+    void reset_killers() {
+        killer_moves[ply + 2][0] = {};
+        killer_moves[ply + 2][1] = {};
+    }
+
     chess_move get_killer(int index) {
         return killer_moves[ply][index];
     }

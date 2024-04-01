@@ -109,6 +109,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     int improving = data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
 
     data.prev_moves[data.get_ply()] = {};
+    data.reset_killers();
 
     if constexpr (!is_root) {
         if (data.singular_move == 0 && !in_check && std::abs(beta) < 9'000) {
