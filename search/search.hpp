@@ -176,8 +176,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (moves_searched > 4 + depth * depth) {
                         continue;
                     }
+
+                    int see_margin = alpha - static_eval - 150 * depth;
+                    if (see_margin > 0 || !see<color>(chessboard, chessmove, see_margin)) {
+                        continue;
                 }
             }
+        }
         }
 
         int ext = 0;
