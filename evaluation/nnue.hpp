@@ -81,12 +81,35 @@ public:
         const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
         const auto& nstm_accumulator = color == White ? black_accumulator_stack[index] : white_accumulator_stack[index];
 
-        for (std::size_t j = 0; j < hidden_size; j++) {
-            sum += std::clamp(stm_accumulator[j], min_value, max_value) * weights.output_weight_STM[j];
-            sum += std::clamp(nstm_accumulator[j], min_value, max_value) * weights.output_weight_NSTM[j];
+        std::int32_t sum = flatten(stm_accumulator.data(), weights.output_weight_STM.data());
+        sum += flatten(nstm_accumulator.data(), weights.output_weight_NSTM.data());  
+        
+        return (sum / 255 + weights.output_bias) * 400 / (64 * 255);
+    }
+
+private:
+    std::int32_t flatten(const std::int16_t * accumulator, const std::int16_t * weights) {
+        constexpr int CHUNK = 16;
+        constexpr std::int16_t QA = 255;
+        auto sum = _mm256_setzero_si256();
+        auto min = _mm256_setzero_si256();
+        auto max = _mm256_set1_epi16(QA);
+        for (int i = 0; i < hidden_size / CHUNK ; i++) {
+            auto us_vector = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(accumulator + i * CHUNK));
+            auto weights_vec = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(weights + i * CHUNK));
+            auto clamped = _mm256_min_epi16(_mm256_max_epi16(us_vector, min), max);
+            auto mul = _mm256_madd_epi16(clamped, _mm256_mullo_epi16(clamped, weights_vec));
+            sum = _mm256_add_epi32(sum, mul);
+        }
+        return horizontal_sum(sum);
         }
         
-        return sum * 400 / 16320;
+    std::int32_t horizontal_sum(const __m256i input_sum) {
+        __m256i horizontal_sum_256 = _mm256_hadd_epi32(input_sum, input_sum);
+        __m128i upper_128 = _mm256_extracti128_si256(horizontal_sum_256, 1);
+        __m128i combined_128 = _mm_add_epi32(upper_128, _mm256_castsi256_si128(horizontal_sum_256));
+        __m128i horizontal_sum_128 = _mm_hadd_epi32(combined_128, combined_128);
+        return _mm_cvtsi128_si32(horizontal_sum_128);
     }
 };
 
