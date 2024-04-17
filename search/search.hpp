@@ -168,6 +168,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             continue;
         }
 
+        std::uint64_t start_nodes = data.nodes();
+
         int reduction = 1.0 + lmr_base * std::log2(moves_searched);
 
         if constexpr (!is_root) {
@@ -239,6 +241,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         undo_move<color>(chessboard);
         data.reduce_ply();
+
+        if constexpr (is_root) {
+            data.update_node_count(from, to, start_nodes);
+        }
 
         if (score > best_score) {
             best_score = score;
