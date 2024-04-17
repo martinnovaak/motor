@@ -168,6 +168,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             continue;
         }
 
+        std::uint64_t start_nodes = data.nodes();
+
         int reduction = 1.0 + lmr_base * std::log2(moves_searched);
 
         if constexpr (!is_root) {
@@ -240,6 +242,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         undo_move<color>(chessboard);
         data.reduce_ply();
 
+        if constexpr (is_root) {
+            data.update_node_count(from, to, start_nodes);
+        }
+
         if (score > best_score) {
             best_score = score;
             best_move = chessmove;
@@ -300,7 +306,7 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
     alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(score - window));
     beta = std::min(INF, static_cast<std::int16_t>(score + window));
 
-    while (!data.time_is_up()) {
+    while (!data.time_stopped()) {
         score = alpha_beta<color, NodeType::Root>(chessboard, data, alpha, beta, search_depth, false);
         if (score <= alpha) {
             beta = (alpha + beta) / 2;
@@ -329,6 +335,10 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
     std::string best_move;
     int score;
     for (int depth = 1; depth <= max_depth; depth++) {
+        if (data.time_is_up(depth)) {
+            break;
+        }
+
         if (depth < 6) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth, false);
         }
@@ -336,7 +346,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
             score = aspiration_window<color>(chessboard, data, score, depth);
         }
 
-        if (data.time_is_up()) {
+        if (data.time_stopped()) {
             break;
         }
         std::cout << "info depth " << depth << " score cp " << score << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
