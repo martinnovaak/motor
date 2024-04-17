@@ -32,8 +32,13 @@ public:
         return timekeeper.should_end(nodes_searched);
     }
 
-    bool time_is_up() {
+    bool time_stopped() {
         return timekeeper.stopped();
+    }
+
+    bool time_is_up(int depth) {
+        //timekeeper.can_end(nodes(), principal_variation_table.get_best_move());
+        return timekeeper.can_end(nodes(), principal_variation_table.get_best_move(), depth);
     }
 
     void update_pv_length() {
@@ -103,8 +108,16 @@ public:
         return timekeeper.get_total_nodes();
     }
 
+    std::uint64_t searched_nodes() {
+        return this->nodes_searched;
+    }
+
     void reset_nodes() {
         nodes_searched = 0;
+    }
+
+    void update_node_count(int from, int to, std::uint64_t node_count) {
+        timekeeper.update_node_count(from, to, nodes() - node_count);
     }
 
     std::uint64_t nps() {

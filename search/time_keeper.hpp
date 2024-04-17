@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include "../chess_board/chess_move.hpp"
 
 struct time_info {
     int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64;
@@ -10,7 +11,7 @@ struct time_info {
 
 class time_keeper {
 public:
-    time_keeper() : stop(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0) {}
+    time_keeper() : stop(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
 
     void reset(int time, int increment = 0, int movestogo = 0) {
         start_time = std::chrono::steady_clock::now();
@@ -19,13 +20,15 @@ public:
         max_nodes = INT_MAX / 2;
         total_nodes = 0;
         inf_time = false;
+        node_count = {};
 
         if (time == -1) {
             inf_time = true;
         }
         else if(movestogo == 0) {
-            time_limit = std::min(time_minus_threshold / 20 + increment / 2, time);
-            optimal_time_limit = time_minus_threshold / 40 + increment / 2;
+            int total = time_minus_threshold / 25 + 3 * increment / 4;
+            optimal_time_limit = total * 6 / 10;
+            time_limit = std::min(time_minus_threshold, total * 2);
         }
         else {
             time_limit = increment + 950 * time / movestogo / 1000;
@@ -39,7 +42,7 @@ public:
         return stop;
     }
 
-    bool can_end() { // called in iterative deepening
+    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth) { // called in iterative deepening
         if (stop) {
             return true;
         }
@@ -48,7 +51,10 @@ public:
             return false;
         }
 
-        if (elapsed() >= optimal_time_limit) {
+        
+        double opt_scale = 1.0; // preparation for node_tm
+
+        if (elapsed() >= optimal_time_limit * opt_scale) {
             stop = true;
         }
         return stop;
@@ -93,6 +99,10 @@ public:
         stop = true;
     }
 
+    void update_node_count(int from, int to, int delta) {
+        node_count[from][to] += delta;
+    }
+
 private:
     std::chrono::time_point<std::chrono::steady_clock> start_time;
     bool stop;
@@ -101,6 +111,7 @@ private:
     int optimal_time_limit;
     int max_nodes;
     std::uint64_t total_nodes;
+    std::array<std::array<int, 64>, 64> node_count;
 };
 
 #endif //MOTOR_TIME_KEEPER_HPP
