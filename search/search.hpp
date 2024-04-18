@@ -112,7 +112,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     data.reset_killers();
 
     if constexpr (!is_root) {
-        if (data.singular_move == 0 && !in_check && std::abs(beta) < 9'000) {
+        if (!in_check && std::abs(beta) < 9'000) {
             // razoring
             if (eval + 500 * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
@@ -122,7 +122,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
             
             // reverse futility pruning
-            if (depth < 7 && eval - 150 * depth / (1 + improving) >= beta) {
+            if (depth < 9 && eval - 180 * (depth - improving) >= beta) {
                 return eval;
             }
             
@@ -182,9 +182,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (moves_searched > 4 + depth * depth) {
                         continue;
                     }
+                }
 
-                    int see_margin = alpha - static_eval - 150 * depth;
-                    if (see_margin > 0 || !see<color>(chessboard, chessmove, see_margin)) {
+
+                int see_margin = chessmove.is_quiet() ? -80 * depth : -30 * depth * depth;
+                if (depth < 6 && !see<color>(chessboard, chessmove, see_margin)) {
                         continue;
                 }
             }
@@ -282,7 +284,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         history_move prev = {};
                         if constexpr (!is_root) {
                             prev = data.prev_moves[data.get_ply() - 1];
-                            update_history(conthist[prev.piece_type][prev.to][piece][to], bonus * contbonus);
+                            update_history(conthist[prev.piece_type][prev.to][piece][to], bonus * 3);
                         }
                        
                         int index = 0;
@@ -292,7 +294,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                             update_history(history[color][quiet.get_from()][quiet.get_to()], malus);
                             
                             if constexpr (!is_root) {
-                                update_history(conthist[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus * contbonus);
+                                update_history(conthist[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus * 3);
                             }
                         }
                     }                
