@@ -8,7 +8,7 @@
 
 
 constexpr unsigned int HIDDEN_SIZE = 512;
-constexpr int QA = 255;
+constexpr int QA = 403;
 constexpr int QB = 64;
 
 struct Weights {
