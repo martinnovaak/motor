@@ -118,7 +118,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if (razor_eval <= alpha) {
                     return razor_eval;
-                }
+                }             
             }
             
             // reverse futility pruning
@@ -187,7 +187,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
                 int see_margin = chessmove.is_quiet() ? -80 * depth : -30 * depth * depth;
                 if (depth < 6 && !see<color>(chessboard, chessmove, see_margin)) {
-                        continue;
+                    continue;
                 }
             }
         }
@@ -280,24 +280,24 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;   
 
                         update_history(history[color][from][to], bonus);
-                        
+
                         history_move prev = {};
                         if constexpr (!is_root) {
                             prev = data.prev_moves[data.get_ply() - 1];
                             update_history(conthist[prev.piece_type][prev.to][piece][to], bonus * 3);
                         }
-                       
+
                         int index = 0;
                         for (const auto& quiet : quiets) {
                             index++;
                             int malus = -bonus;
                             update_history(history[color][quiet.get_from()][quiet.get_to()], malus);
-                            
+
                             if constexpr (!is_root) {
                                 update_history(conthist[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus * 3);
                             }
                         }
-                    }                
+                    }
                     break;
                 }
             }
@@ -305,7 +305,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (chessmove.is_quiet()) {
             quiets.add(chessmove);
-        }       
+        }
     }
 
     if (data.singular_move == 0)
@@ -381,7 +381,6 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
 
 void find_best_move(board& chessboard, time_info& info) {
     search_data data;
-    //history_table.centralize_whole_table();
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
             history[0][i][j] /= 2;
