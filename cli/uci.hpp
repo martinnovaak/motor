@@ -121,7 +121,6 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
-        history_table.clear();
         history = {};
         conthist = {};
         tt.clear();

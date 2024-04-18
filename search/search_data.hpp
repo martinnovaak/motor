@@ -5,11 +5,9 @@
 
 #include "pv_table.hpp"
 #include "time_keeper.hpp"
-#include "tables/butterfly_table.hpp"
 
 constexpr std::int16_t INF = 20'000;
 
-butterfly_table<std::int32_t> history_table(0);
 std::array<std::array<std::array<int, 64>, 64>, 2> history = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> conthist = {};
 

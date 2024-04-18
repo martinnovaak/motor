@@ -189,7 +189,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
             }
         }
-        }
 
         int ext = 0;
 
@@ -217,8 +216,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
             }
         }
-        */
-
 
         auto from = chessmove.get_from();
         auto to = chessmove.get_to();
