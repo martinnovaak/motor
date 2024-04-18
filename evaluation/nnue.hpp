@@ -80,12 +80,29 @@ public:
         }
     }
 
+#ifndef __AVX2__ 
+    template <Color color>
+    std::int32_t evaluate() {
+        std::int32_t sum = 0;
+
+        const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
+        const auto& nstm_accumulator = color == White ? black_accumulator_stack[index] : white_accumulator_stack[index];
+
+        for (std::size_t j = 0; j < hidden_size; j++) {
+            sum += screlu(stm_accumulator[j]) * weights.output_weight_STM[j];
+            sum += screlu(nstm_accumulator[j]) * weights.output_weight_NSTM[j];
+        }
+
+        return (sum / QA + weights.output_bias) * QA / (QB * QA);
+    }
+#else
     template <Color color>
     std::int32_t evaluate() {
         const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
         const auto& nstm_accumulator = color == White ? black_accumulator_stack[index] : white_accumulator_stack[index];
 
-        std::int32_t sum = flatten(stm_accumulator.data(), weights.output_weight_STM.data());
+        std::int32_t sum = 0;
+        sum += flatten(stm_accumulator.data(), weights.output_weight_STM.data());
         sum += flatten(nstm_accumulator.data(), weights.output_weight_NSTM.data());  
         
         return (sum / QA + weights.output_bias) * QA / (QB * QA);
@@ -114,6 +131,7 @@ private:
         __m128i horizontal_sum_128 = _mm_hadd_epi32(combined_128, combined_128);
         return _mm_cvtsi128_si32(horizontal_sum_128);
     }
+#endif // __AVX2__
 };
 
 perspective_network<HIDDEN_SIZE> network;

@@ -116,7 +116,7 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "uci") {
-        std::cout << "id name Motor 0.3.0 " << std::endl;
+        std::cout << "id name Motor 0.4.0 " << std::endl;
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
