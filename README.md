@@ -5,7 +5,7 @@ UCI chess engine written in C++ 20 with (768 -> 512) x 2 -> 1 NNUE trained with 
 Engine contains legal movegen with [kidergarten bitboards](https://github.com/martinnovaak/motor/blob/main/chess_board/slider_attacks/kindergarten.md).
 
 ## Compiling
-
+Requirements: CLang
 ### MSBuild
 `msbuild.exe" motor.sln /p:Configuration=Release /p:Platform=x64`
 
