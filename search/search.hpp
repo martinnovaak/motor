@@ -143,6 +143,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
+    if constexpr (!is_root) {
+        data.double_extension[data.get_ply()] = data.double_extension[data.get_ply() - 1];
+    }
+
     move_list movelist, quiets;
     generate_all_moves<color, GenType::ALL>(chessboard, movelist);
 
@@ -204,6 +208,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 data.singular_move = 0;
                 if (s_score < s_beta) {
                     ext = 1;
+                    if constexpr(!is_pv) {
+                        if (s_score + 20 < s_beta && data.double_extension[data.get_ply()] < 3) {
+                            ext = 2;
+                            data.double_extension[data.get_ply()]++;
+                        }
+                    }
                 }
             }
         }
