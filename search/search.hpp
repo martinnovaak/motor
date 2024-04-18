@@ -31,7 +31,7 @@ struct TT_entry {
 transposition_table<TT_entry> tt(32 * 1024 * 1024);
 
 int history_bonus(int depth) {
-    return 16 * depth * depth + 128 * std::max(depth - 1, 0);
+    return 160 * depth;
 }
 
 void update_history(int& value, int bonus) {
@@ -189,7 +189,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
             }
         }
-        }
 
         int ext = 0;
 
@@ -217,8 +216,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
             }
         }
-        */
-
 
         auto from = chessmove.get_from();
         auto to = chessmove.get_to();
@@ -282,19 +279,20 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
                         update_history(history[color][from][to], bonus);
                         
-                        history_move prev = {}, prevprev = {};
+                        history_move prev = {};
                         if constexpr (!is_root) {
                             prev = data.prev_moves[data.get_ply() - 1];
-                            update_history(conthist[prev.piece_type][prev.to][piece][to], bonus * 4);
+                            update_history(conthist[prev.piece_type][prev.to][piece][to], bonus * contbonus);
                         }
                        
                         int index = 0;
                         for (const auto& quiet : quiets) {
                             index++;
-                            update_history(history[color][quiet.get_from()][quiet.get_to()], -bonus);
+                            int malus = -bonus;
+                            update_history(history[color][quiet.get_from()][quiet.get_to()], malus);
                             
                             if constexpr (!is_root) {
-                                update_history(conthist[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], -bonus * 4);
+                                update_history(conthist[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus * contbonus);
                             }
                         }
                     }                
