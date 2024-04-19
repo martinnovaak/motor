@@ -6,6 +6,8 @@
 
 #include "incbin.hpp"
 
+#include <immintrin.h>
+
 
 constexpr unsigned int HIDDEN_SIZE = 512;
 constexpr int QA = 403;
