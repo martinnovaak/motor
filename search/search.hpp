@@ -28,6 +28,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         return beta;
     }
 
+    if (data.get_ply() > 92) {
+        return evaluate<color>(chessboard);
+    }
+
     data.update_pv_length();
 
     bool in_check = false;
@@ -53,8 +57,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     chess_move best_move;
     chess_move tt_move = {};
-    std::int16_t static_eval = evaluate<color>(chessboard);;
-    std::int16_t eval = static_eval;
+    //std::int16_t static_eval = evaluate<color>(chessboard);;
+    std::int16_t eval, static_eval;
     bool tthit = false;
 
     if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
@@ -62,8 +66,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         tthit = true;
-        //eval = tt_eval;
-        static_eval = tt_eval;
+        eval = static_eval = tt_entry.static_eval;
         if constexpr (!is_pv) {
             if (tt_entry.depth >= depth) {
                 if ((tt_entry.bound == Bound::EXACT) ||
@@ -80,6 +83,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
     else {
+        eval = static_eval = evaluate<color>(chessboard);
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
         }
@@ -128,7 +132,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     move_list movelist, quiets;
-    generate_all_moves<color, GenType::ALL>(chessboard, movelist);
+    generate_all_moves<color, false>(chessboard, movelist);
 
     if (movelist.size() == 0) {
         if (data.singular_move > 0) return alpha;
@@ -157,7 +161,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         int reduction = 1.0 + lmr_base * std::log2(moves_searched);
 
         if constexpr (!is_root) {
-            if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000 && chessmove.get_check_type() == NOCHECK) {
+            if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
                 if (chessmove.is_quiet()) {
                     if (moves_searched > 4 + depth * depth) {
                         continue;
@@ -217,7 +221,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (depth >= 3 && movelist[moves_searched] < 1'000'000) {
                 if (chessmove.is_quiet()) {
                     reduction += !is_pv + !improving;  
-                    reduction -= chessmove.get_check_type() > NOCHECK;
+                    reduction -= chessboard.in_check();
                 } 
 
                 reduction = std::clamp(reduction, 0, depth - 2);
@@ -289,7 +293,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     if (data.singular_move == 0)
-        tt[zobrist_key] = { flag, depth, best_score, best_move, zobrist_key };
+        tt[zobrist_key] = { flag, depth, best_score, static_eval, best_move, zobrist_key };
 
     return best_score;
 }

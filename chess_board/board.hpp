@@ -102,11 +102,9 @@ public:
         std::uint64_t checks;
         if (side_str == "w") {
             side = Color::White;
-            checks = attackers<White>(lsb(bitboards[side][King]));
         } else {
             side = Color::Black;
             hash_key.update_side_hash();
-            checks = attackers<Black>(lsb(bitboards[side][King]));
         }
 
         castling_rights = 0;
@@ -119,34 +117,31 @@ public:
         hash_key.update_enpassant_hash(enpassant);
 
         chess_move move;
-        int number_of_checks = popcount(checks);
-        if (number_of_checks == 2) {
-            move = chess_move(A1, Null_Square, QUIET, true, true);
-        } else if (number_of_checks == 1) {
-            move = chess_move(A1, lsb(checks), QUIET, true, false);
-        }
-
         board_info binfo {castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key};
         history.push_back(binfo);
     }
 
-    [[nodiscard]] Check_type in_check() const {
-        return history.back().move.get_check_type();
+    [[nodiscard]] bool in_check() const {
+        if (side == Black) {
+            return attackers<Black>(get_king_square());
+        } else {
+            return attackers<White>(get_king_square());
+        }
     }
 
     template <Color enemy_color>
     std::uint64_t get_checkmask(Square square) {
-        const chess_move last_played_move = history.back().move;
-        switch (last_played_move.get_check_type()) {
-            case NOCHECK:
-                return full_board;
-            case DIRECT_CHECK:
-                return pinmask[square][last_played_move.get_to()];
-            case DISCOVERY_CHECK:
-                return pinmask[square][lsb(discovery_attackers<enemy_color>(square))];
-            case DOUBLE_CHECK:
-                return 0ull;
+        constexpr Color our_color = enemy_color == White ? Black : White;
+        std::uint64_t checkers = attackers<our_color>(lsb(bitboards[our_color][King]));
+
+        if (checkers == 0) {
+            return full_board;
         }
+        int sq = pop_lsb(checkers);
+        if(checkers) {
+            return 0ull;
+        }
+        return pinmask[square][sq];
     }
 
     template <Color color>
@@ -167,12 +162,6 @@ public:
             | (KING_ATTACKS[square] & bitboards[their_color][King])
             | (KNIGHT_ATTACKS[square] & bitboards[their_color][Knight])
             | (PAWN_ATTACKS_TABLE[color][square] & bitboards[their_color][Pawn]);
-    }
-
-    template<Color their_color>
-    [[nodiscard]] std::uint64_t discovery_attackers(const Square square) const {
-        return    (attacks<Ray::ROOK>(square, occupancy)   & (bitboards[their_color][Rook]   | bitboards[their_color][Queen]))
-                  | (attacks<Ray::BISHOP>(square, occupancy) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]));
     }
 
     template <Color their_color>
