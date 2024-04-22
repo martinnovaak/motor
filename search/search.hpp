@@ -28,6 +28,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         return beta;
     }
 
+    if (data.get_ply() > 92) {
+        return evaluate<color>(chessboard);
+    }
+
     data.update_pv_length();
 
     bool in_check = false;
