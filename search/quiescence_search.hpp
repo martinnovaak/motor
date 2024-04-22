@@ -17,7 +17,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         return beta;
     }
 
-    std::int16_t eval = evaluate<color>(chessboard);
+    std::int16_t static_eval, eval;
 
     Bound flag = Bound::UPPER;
 
@@ -26,12 +26,15 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
 
     if (tt_entry.zobrist == zobrist_key) {
         std::int16_t tt_eval = tt_entry.score;
+        static_eval = tt_entry.static_eval;
         eval = tt_eval;
         if ((tt_entry.bound == Bound::EXACT) ||
             (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
             (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
             return tt_eval;
         }
+    } else {
+        static_eval = eval = evaluate<color>(chessboard);
     }
 
     if (eval >= beta) {
@@ -43,7 +46,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     move_list movelist;
-    generate_all_moves<color, GenType::CAPTURES>(chessboard, movelist);
+    generate_all_moves<color, true>(chessboard, movelist);
     qs_score_moves(chessboard, movelist);
 
     chess_move best_move;
@@ -78,7 +81,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     }
 
-    tt[zobrist_key] = { flag, 0, eval, best_move, zobrist_key };
+    tt[zobrist_key] = { flag, 0, eval, static_eval, best_move, zobrist_key };
     return eval;
 }
 

@@ -23,7 +23,8 @@ struct TT_entry {
     Bound bound;            // 8 bits
     std::int8_t depth;      // 8 bits
     std::int16_t score;     // 16 bits
-    chess_move tt_move;     // 32 bits
+    std::int16_t static_eval; // 16 bits
+    chess_move tt_move;     // 16 bits
     std::uint64_t zobrist;  // 64 bits
 };
 

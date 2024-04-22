@@ -149,10 +149,10 @@ void see_test_suite() {
         board b(fen);
         move_list ml;
         if (b.get_side() == White) {
-            generate_all_moves<White, GenType::ALL>(b, ml);
+            generate_all_moves<White, false>(b, ml);
         }
         else {
-            generate_all_moves<Black, GenType::ALL>(b, ml);
+            generate_all_moves<Black, false>(b, ml);
         }
         
         for (const auto& move : ml) {
@@ -175,7 +175,7 @@ void see_test_suite() {
     }
     std::cout << "FAULTS: " << counter << std::endl;
 
-    for (auto fen : errors) {
+    for (const auto& fen : errors) {
         std::cout << fen << std::endl;
     }
 }
