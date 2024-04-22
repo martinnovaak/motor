@@ -17,9 +17,9 @@
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
     if (b.get_side() == White) {
-        generate_all_moves<White, GenType::ALL>(b, ml);
+        generate_all_moves<White, false>(b, ml);
     } else {
-        generate_all_moves<Black, GenType::ALL>(b, ml);
+        generate_all_moves<Black, false>(b, ml);
     }
 
     for (const chess_move & m : ml) {
