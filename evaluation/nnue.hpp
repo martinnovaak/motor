@@ -194,6 +194,8 @@ void make_move(board & chessboard, const chess_move move) {
 
     constexpr Color their_color = (our_color == White) ? Black : White;
     constexpr Direction down = (our_color == White) ? SOUTH : NORTH;
+    constexpr Square our_A_square = (our_color == White) ? A1 : A8;
+    constexpr Square our_H_square = (our_color == White) ? H1 : H8;
     constexpr Square our_C_square = (our_color == White) ? C1 : C8;
     constexpr Square our_D_square = (our_color == White) ? D1 : D8;
     constexpr Square our_F_square = (our_color == White) ? F1 : F8;
@@ -219,13 +221,13 @@ void make_move(board & chessboard, const chess_move move) {
         break;
     case KING_CASTLE:
         square_from = king_castle_square;
-        unset_piece<our_color, true>(chessboard, king_castle_square, King);
+        unset_piece<our_color, true>(chessboard, our_H_square, Rook);
         set_piece<our_color, true>(chessboard, our_F_square, Rook);
         set_piece<our_color, true>(chessboard, our_G_square, King);
         break;
     case QUEEN_CASTLE:
         square_from = king_castle_square;
-        unset_piece<our_color, true>(chessboard, king_castle_square, King);
+        unset_piece<our_color, true>(chessboard, our_A_square, Rook);
         set_piece<our_color, true>(chessboard, our_D_square, Rook);
         set_piece<our_color, true>(chessboard, our_C_square, King);
         break;
