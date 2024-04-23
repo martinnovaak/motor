@@ -222,7 +222,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 if (chessmove.is_quiet()) {
                     reduction += !is_pv + !improving;  
                     reduction -= chessboard.in_check();
-                } 
+                } else {
+                    reduction /= 2;
+                }
 
                 reduction = std::clamp(reduction, 0, depth - 2);
 
