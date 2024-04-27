@@ -9,7 +9,7 @@
 #include <immintrin.h>
 
 
-constexpr unsigned int HIDDEN_SIZE = 512;
+constexpr unsigned int HIDDEN_SIZE = 1024;
 constexpr int QA = 403;
 constexpr int QB = 64;
 
