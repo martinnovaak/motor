@@ -95,7 +95,7 @@ public:
             sum += screlu(nstm_accumulator[j]) * weights.output_weight_NSTM[j];
         }
 
-        return (sum / QA + weights.output_bias) * QA / (QB * QA);
+        return (sum / QA + weights.output_bias) * 400 / (QB * QA);
     }
 #else
     template <Color color>
@@ -107,7 +107,7 @@ public:
         sum += flatten(stm_accumulator.data(), weights.output_weight_STM.data());
         sum += flatten(nstm_accumulator.data(), weights.output_weight_NSTM.data());  
         
-        return (sum / QA + weights.output_bias) * QA / (QB * QA);
+        return (sum / QA + weights.output_bias) * 400 / (QB * QA);
     }
 
 private:
