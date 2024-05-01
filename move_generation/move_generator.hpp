@@ -111,7 +111,7 @@ void generate_pawn_moves(const board & b, move_list & ml, std::uint64_t pawn_bit
 
     // EN PASSANT
     Square enpassant_square = b.enpassant_square();
-    if (enpassant_square != Square::Null_Square && ((1ull << enpassant_square | 1ull << (enpassant_square - up) & checkmask)))
+    if (enpassant_square != Square::Null_Square && (((1ull << enpassant_square) | (1ull << (enpassant_square - up))) & checkmask))
     {
         std::uint64_t enpassant_bitboard = (1ull << enpassant_square);
         std::uint64_t enpassant_antidiagonal = shift<antidiagonal_capture>(pawns_not_penultimate & move_a) & enpassant_bitboard;
