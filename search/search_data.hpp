@@ -30,9 +30,6 @@ struct TT_entry {
 
 transposition_table<TT_entry> tt(32 * 1024 * 1024);
 
-std::array<std::array<std::array<int, 64>, 64>, 2> history = {};
-std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> conthist = {};
-
 struct history_move {
     Piece piece_type;
     Square from;
@@ -105,20 +102,6 @@ public:
         return killer_moves[ply][index];
     }
 
-    void update_history(Color color, std::uint8_t from, std::uint8_t to, int depth){
-        //history_table.increase_value(from, to, depth);
-        history[color][from][to] += depth;
-    }
-
-    void reduce_history(Color color, std::uint8_t from, std::uint8_t to, int depth){
-        //history_table.reduce_value(from, to, depth);
-        history[color][from][to] -= depth;
-    }
-
-    std::int16_t get_history(Color color, std::uint8_t from, std::uint8_t to) {
-        //return history_table.get_value(from, to);
-        return history[color][from][to];
-    }
 
     [[nodiscard]] std::int16_t get_ply() const {
         return ply;

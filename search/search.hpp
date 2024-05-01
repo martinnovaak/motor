@@ -10,14 +10,6 @@
 #include "../move_generation/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
 
-int history_bonus(int depth) {
-    return 160 * depth;
-}
-
-void update_history(int& value, int bonus) {
-    value += bonus - (value * std::abs(bonus) / 16384);
-}
-
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
     constexpr Color enemy_color = color == White ? Black : White;
@@ -261,26 +253,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     int bonus = history_bonus(depth);
                     if (chessmove.is_quiet()) {
                         data.update_killer(chessmove);
-                        data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;   
-
-                        update_history(history[color][from][to], bonus);
-
-                        history_move prev = {};
-                        if constexpr (!is_root) {
-                            prev = data.prev_moves[data.get_ply() - 1];
-                            update_history(conthist[prev.piece_type][prev.to][piece][to], bonus * 3);
-                        }
-
-                        int index = 0;
-                        for (const auto& quiet : quiets) {
-                            index++;
-                            int malus = -bonus;
-                            update_history(history[color][quiet.get_from()][quiet.get_to()], malus);
-
-                            if constexpr (!is_root) {
-                                update_history(conthist[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus * 3);
-                            }
-                        }
+                        data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
+                        update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, depth);
                     }
                     break;
                 }
@@ -365,21 +339,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
 
 void find_best_move(board& chessboard, time_info& info) {
     search_data data;
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
-            history[0][i][j] /= 2;
-            history[1][i][j] /= 2;
-        }
-    }
-    for (int i = 0; i < 6; i++) {
-        for (int j = 0; j < 64; j++) {
-            for (int k = 0; k < 6; k++) {
-                for (int l = 0; l < 64; l++) {
-                    conthist[i][j][k][l] /= 2;
-                }
-            }
-        }
-    }
+    decay_history_tables();
 
     if (chessboard.get_side() == White) {
         data.set_timekeeper(info.wtime, info.winc, info.movestogo);
