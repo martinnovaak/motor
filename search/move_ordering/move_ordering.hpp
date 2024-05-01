@@ -4,6 +4,7 @@
 #include "see.hpp"
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
+#include "../tables/history_table.hpp"
 
 constexpr static int mvv_lva[7][6] = {
 //attacker:  P, N,  B,  R,  Q,  NONE
@@ -20,8 +21,8 @@ template <Color color>
 void score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
     int move_index = 0;
     for (chess_move & move : movelist) {
-        const std::uint8_t from = move.get_from();
-        const std::uint8_t to   = move.get_to();
+        const Square from = move.get_from();
+        const Square to   = move.get_to();
         const chess_move previous_move = chessboard.get_last_played_move();
         const chess_move counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
         int move_score;
@@ -38,11 +39,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
             move_score = 1'000'000;
         }
         else {
-            move_score = data.get_history(color, from, to);
-            if (data.get_ply()) {
-                auto prev = data.prev_moves[data.get_ply() - 1];
-                move_score += conthist[prev.piece_type][prev.to][chessboard.get_piece(from)][to];
-            }
+            move_score = get_history<color>(data, from, to, chessboard.get_piece(from));
         }
         
         movelist[move_index] = move_score;

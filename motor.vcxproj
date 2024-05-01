@@ -161,6 +161,8 @@
     <ClInclude Include="search\quiescence_search.hpp" />
     <ClInclude Include="search\search.hpp" />
     <ClInclude Include="search\search_data.hpp" />
+    <ClInclude Include="search\tables\history_table.hpp" />
+    <ClInclude Include="search\tables\lmr_table.hpp" />
     <ClInclude Include="search\tables\transposition_table.hpp" />
     <ClInclude Include="search\time_keeper.hpp" />
   </ItemGroup>
