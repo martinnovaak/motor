@@ -3,6 +3,8 @@
 
 #include "search_data.hpp"
 #include "tables/transposition_table.hpp"
+#include "tables/lmr_table.hpp"
+#include "tables/history_table.hpp"
 #include "move_ordering/move_ordering.hpp"
 #include "quiescence_search.hpp"
 #include "../chess_board/board.hpp"
@@ -156,6 +158,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (moves_searched > 4 + depth * depth) {
                         continue;
                     }
+
+                    int lmr_depth = std::max(0, depth - reduction);
+                    if (lmr_depth < 7 && static_eval + 300 + 120 * lmr_depth <= alpha) {
+                    //    continue;
+                    }
                 }
 
 
@@ -189,6 +196,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                             data.double_extension[data.get_ply()]++;
                         }
                     }
+                }
+                else if (s_beta >= beta) {
+                    return s_beta;
                 }
             }
         }

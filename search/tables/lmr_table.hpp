@@ -9,7 +9,7 @@ std::array<std::array<int, 218>, 96> initializeReductions() {
 
     for (int i = 1; i < 96; i++) {
         for (int j = 1; j < 218; j++) {
-            reductions[i][j] = static_cast<int>(1.0 + std::log2(static_cast<double>(i)) * std::log2(static_cast<double>(j)) / 5.2);
+            reductions[i][j] = static_cast<int>(1.0 + std::log2(static_cast<double>(i)) * std::log2(static_cast<double>(j)) / 5.5);
         }
     }
 
