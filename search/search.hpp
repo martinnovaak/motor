@@ -139,8 +139,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     score_moves<color>(chessboard, movelist, data, best_move);
     const chess_move previous_move = chessboard.get_last_played_move();
 
-    double lmr_base = std::log2(depth) / 5.5;
-
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
 
@@ -150,7 +148,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         std::uint64_t start_nodes = data.nodes();
 
-        int reduction = 1.0 + lmr_base * std::log2(moves_searched);
+        int reduction = lmr_table[depth][moves_searched];
 
         if constexpr (!is_root) {
             if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
