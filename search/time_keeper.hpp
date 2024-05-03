@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <climits>
 #include "../chess_board/chess_move.hpp"
 
 struct time_info {
@@ -11,7 +12,7 @@ struct time_info {
 
 class time_keeper {
 public:
-    time_keeper() : stop(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
+    time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
 
     void reset(int time, int increment = 0, int movestogo = 0) {
         start_time = std::chrono::steady_clock::now();
@@ -91,7 +92,7 @@ public:
         return 0;
     }
 
-    std::uint64_t get_total_nodes() {
+    [[nodiscard]] std::uint64_t get_total_nodes() const {
         return total_nodes;
     }
 
