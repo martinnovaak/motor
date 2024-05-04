@@ -17,7 +17,9 @@ struct Weights {
     std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2> feature_weight;
     std::array<std::int16_t, HIDDEN_SIZE>  feature_bias;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM;
+    std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM_hm;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM;
+    std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM_hm;
     std::int16_t output_bias;
 };
 
@@ -39,6 +41,8 @@ class perspective_network
 public:
     std::array<std::array<std::int16_t, hidden_size>, 128> white_accumulator_stack;
     std::array<std::array<std::int16_t, hidden_size>, 128> black_accumulator_stack;
+    std::array<std::array<std::int16_t, hidden_size>, 128> white_accumulator_stack_hm;
+    std::array<std::array<std::int16_t, hidden_size>, 128> black_accumulator_stack_hm;
     unsigned int index;
 
     perspective_network() {
@@ -46,13 +50,15 @@ public:
     }
 
     void refresh() {
-        white_accumulator_stack[0] = black_accumulator_stack[0] = weights.feature_bias;
+        white_accumulator_stack[0] = black_accumulator_stack[0] = white_accumulator_stack_hm[0] = black_accumulator_stack_hm[0] = weights.feature_bias;
         index = 0;
     }
 
     void push() {
         white_accumulator_stack[index + 1] = white_accumulator_stack[index];
         black_accumulator_stack[index + 1] = black_accumulator_stack[index];
+        white_accumulator_stack_hm[index + 1] = white_accumulator_stack_hm[index];
+        black_accumulator_stack_hm[index + 1] = black_accumulator_stack_hm[index];
         index++;
     }
 
@@ -63,28 +69,36 @@ public:
     template<Operation operation>
     void update_accumulator(const Piece piece, const Color color, const Square square) {
         const auto& white_weights = weights.feature_weight[color][piece][square];
+        const auto& white_weights_hm = weights.feature_weight[color][piece][square ^ 7];
         const auto& black_weights = weights.feature_weight[color ^ 1][piece][square ^ 56];
+        const auto& black_weights_hm = weights.feature_weight[color ^ 1][piece][square ^ 63];
 
         auto& white_accumulator = white_accumulator_stack[index];
         auto& black_accumulator = black_accumulator_stack[index];
+        auto& white_accumulator_hm = white_accumulator_stack_hm[index];
+        auto& black_accumulator_hm = black_accumulator_stack_hm[index];
 
         if constexpr (operation == Operation::Set) {
             for (std::size_t i = 0; i < hidden_size; i++) {
                 white_accumulator[i] += white_weights[i];
                 black_accumulator[i] += black_weights[i];
+                white_accumulator_hm[i] += white_weights_hm[i];
+                black_accumulator_hm[i] += black_weights_hm[i];
             }
         }
         else {
             for (std::size_t i = 0; i < hidden_size; i++) {
                 white_accumulator[i] -= white_weights[i];
                 black_accumulator[i] -= black_weights[i];
+                white_accumulator_hm[i] -= white_weights_hm[i];
+                black_accumulator_hm[i] -= black_weights_hm[i];
             }
         }
     }
 
-#ifndef __AVX2__ 
+#ifndef __AVX2__
     template <Color color>
-    std::int32_t evaluate() {
+    std::int32_t evaluate(bool white_king, bool black_king) {
         std::int32_t sum = 0;
 
         const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
@@ -92,21 +106,28 @@ public:
 
         for (std::size_t j = 0; j < hidden_size; j++) {
             sum += screlu(stm_accumulator[j]) * weights.output_weight_STM[j];
+            sum += screlu(stm_accumulator_hm[j]) * weights.output_weight_STM_hm[j];
             sum += screlu(nstm_accumulator[j]) * weights.output_weight_NSTM[j];
+            sum += screlu(nstm_accumulator_hm[j]) * weights.output_weight_NSTM_hm[j];
         }
 
         return (sum / QA + weights.output_bias) * 400 / (QB * QA);
     }
 #else
     template <Color color>
-    std::int32_t evaluate() {
-        const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
-        const auto& nstm_accumulator = color == White ? black_accumulator_stack[index] : white_accumulator_stack[index];
+    std::int32_t evaluate(bool white_king, bool black_king) {
+        const auto& stm_accumulator = color == White ? (white_king ? white_accumulator_stack[index] : white_accumulator_stack_hm[index]) : (black_king ? black_accumulator_stack[index] : black_accumulator_stack_hm[index]);
+        const auto& nstm_accumulator = color == White ? (black_king ? black_accumulator_stack[index] : black_accumulator_stack_hm[index]) : (white_king ? white_accumulator_stack[index] : white_accumulator_stack_hm[index]);
+        const auto& stm_accumulator_hm = color == White ? (white_king ? white_accumulator_stack_hm[index] : white_accumulator_stack[index]) : (black_king ? black_accumulator_stack_hm[index] : black_accumulator_stack[index]);
+        const auto& nstm_accumulator_hm = color == White ? (black_king ? black_accumulator_stack_hm[index] : black_accumulator_stack[index]) : (white_king ? white_accumulator_stack_hm[index] : white_accumulator_stack[index]);
 
         std::int32_t sum = 0;
         sum += flatten(stm_accumulator.data(), weights.output_weight_STM.data());
-        sum += flatten(nstm_accumulator.data(), weights.output_weight_NSTM.data());  
+        sum += flatten(stm_accumulator_hm.data(), weights.output_weight_STM_hm.data());
+        sum += flatten(nstm_accumulator.data(), weights.output_weight_NSTM.data());
         
+        sum += flatten(nstm_accumulator_hm.data(), weights.output_weight_NSTM_hm.data());
+
         return (sum / QA + weights.output_bias) * 400 / (QB * QA);
     }
 

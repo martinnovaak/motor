@@ -212,6 +212,11 @@ public:
         return lsb(bitboards[side][King]);
     }
 
+    template <Color color>
+    [[nodiscard]] Square get_king() const {
+        return lsb(bitboards[color][King]);
+    }
+
     [[nodiscard]] std::uint64_t get_occupancy() const {
         return occupancy;
     }
