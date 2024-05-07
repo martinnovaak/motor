@@ -29,7 +29,7 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
 
     if constexpr (!is_root) {
         prev = data.prev_moves[data.get_ply() - 1];
-        update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus * 3);
+        update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
     }
 
     int index = 0;
@@ -39,7 +39,7 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
         update_history(history_table[color][quiet.get_from()][quiet.get_to()], malus);
 
         if constexpr (!is_root) {
-            update_history(continuation_table[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus * 3);
+            update_history(continuation_table[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus);
         }
     }
 }
@@ -52,24 +52,6 @@ int get_history(search_data & data, Square from, Square to, Piece piece) {
         move_score += continuation_table[prev.piece_type][prev.to][piece][to];
     }
     return move_score;
-}
-
-void decay_history_tables() {
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
-            history_table[0][i][j] /= 2;
-            history_table[1][i][j] /= 2;
-        }
-    }
-    for (int i = 0; i < 6; i++) {
-        for (int j = 0; j < 64; j++) {
-            for (int k = 0; k < 6; k++) {
-                for (int l = 0; l < 64; l++) {
-                    continuation_table[i][j][k][l] /= 2;
-                }
-            }
-        }
-    }
 }
 
 #endif //MOTOR_BUTTERFLY_TABLE_HPP

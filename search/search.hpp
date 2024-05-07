@@ -347,7 +347,6 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
 
 void find_best_move(board& chessboard, time_info& info) {
     search_data data;
-    decay_history_tables();
 
     if (chessboard.get_side() == White) {
         data.set_timekeeper(info.wtime, info.winc, info.movestogo);
