@@ -11,7 +11,7 @@ std::array<std::array<std::array<int, 64>, 64>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 
 int history_bonus(int depth) {
-    return 160 * depth;
+    return std::min(2000, 200 * depth);
 }
 
 void update_history(int& value, int bonus) {
@@ -23,13 +23,21 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
     int bonus = history_bonus(depth);
 
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
-    history_move prev = {};
+    history_move prev = {}, prev2 = {}, prev4 = {};
 
     update_history(history_table[color][from][to], bonus);
 
     if constexpr (!is_root) {
         prev = data.prev_moves[data.get_ply() - 1];
         update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
+        if (data.get_ply() > 1) {
+            prev2 = data.prev_moves[data.get_ply() - 2];
+            update_history(continuation_table[prev2.piece_type][prev2.to][piece][to], bonus);
+            if (data.get_ply() > 3) {
+                prev4 = data.prev_moves[data.get_ply() - 4];
+                update_history(continuation_table[prev4.piece_type][prev4.to][piece][to], bonus);
+            }
+        }
     }
 
     int index = 0;
@@ -40,6 +48,12 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
 
         if constexpr (!is_root) {
             update_history(continuation_table[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus);
+            if (data.get_ply() > 1) {
+                update_history(continuation_table[prev2.piece_type][prev2.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus);
+                if (data.get_ply() > 3) {
+                    update_history(continuation_table[prev4.piece_type][prev4.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus);
+                }
+            }
         }
     }
 }
@@ -50,6 +64,14 @@ int get_history(search_data & data, Square from, Square to, Piece piece) {
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
         move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+        if (data.get_ply()) {
+            prev = data.prev_moves[data.get_ply() - 2];
+            move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+            if (data.get_ply()) {
+                prev = data.prev_moves[data.get_ply() - 4];
+                move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+            }
+        }
     }
     return move_score;
 }
