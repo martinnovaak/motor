@@ -123,6 +123,7 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "ucinewgame") {
         history_table = {};
         continuation_table = {};
+        capture_table = {};
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
