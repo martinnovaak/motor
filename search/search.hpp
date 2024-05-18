@@ -1,6 +1,8 @@
 #ifndef MOTOR_SEARCH_HPP
 #define MOTOR_SEARCH_HPP
 
+#include <iostream>
+
 #include "search_data.hpp"
 #include "tables/transposition_table.hpp"
 #include "tables/lmr_table.hpp"
@@ -11,6 +13,9 @@
 #include "../move_generation/move_list.hpp"
 #include "../move_generation/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
+
+int noisy_lmr = 8'253;
+int quiet_lmr = 12'000;
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
@@ -125,7 +130,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         data.double_extension[data.get_ply()] = data.double_extension[data.get_ply() - 1];
     }
 
-    move_list movelist, quiets;
+    move_list movelist, quiets, captures;
     generate_all_moves<color, false>(chessboard, movelist);
 
     if (movelist.size() == 0) {
@@ -265,6 +270,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                         update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, depth);
                     }
+                    update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;
                 }
             }
@@ -272,6 +278,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (chessmove.is_quiet()) {
             quiets.add(chessmove);
+        } else {
+            captures.add(chessmove);
         }
     }
 
