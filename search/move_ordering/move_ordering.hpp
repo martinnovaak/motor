@@ -17,10 +17,10 @@ constexpr static int mvv_lva[7][6] = {
         {25, 0, 0, 0, 0, 0}
 };
 
-int noisy_base = 1600;
-int mvv_mul = 10;
+int noisy_base = 0;
+int mvv_mul = 100;
 
-int mvv[7] = {100, 300, 300, 500, 800, 0, 700};
+int mvv[7] = {200, 450, 500, 880, 1200, 0, 1100};
 
 template <Color color>
 void score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
@@ -34,7 +34,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         if (move == tt_move) {
             move_score = 214748364;
         } else if (!move.is_quiet()) {
-            move_score = 10'000'000 * see<color>(chessboard, move) -1000 + 100* mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)];
+            move_score = 10'000'000 * see<color>(chessboard, move) + noisy_base + mvv[chessboard.get_piece(to)];
             // move_score = move_score -noisy_base + mvv[chessboard.get_piece(to)] - mvv_mul * (chessboard.get_piece(from));
             move_score += capture_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
         } else if (data.get_killer(0) == move){

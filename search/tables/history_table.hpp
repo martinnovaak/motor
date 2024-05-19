@@ -11,8 +11,9 @@ std::array<std::array<std::array<int, 64>, 64>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 
-int noisy_mul = 80;
-int noisy_max = 2000;
+int noisy_mul = 30;
+int noisy_max = 500;
+int noisy_gravity = 2048;
 int quiet_mul = 200;
 int quiet_max = 2000;
 
@@ -24,10 +25,14 @@ void update_history(int& value, int bonus) {
     value += bonus - (value * std::abs(bonus) / 16384);
 }
 
+void update_cap_history(int& value, int bonus) {
+    value += bonus - (value * std::abs(bonus) / noisy_gravity);
+}
+
 template <Color color, bool is_root>
 void update_quiet_history(search_data & data, board & chessboard, const chess_move & best_move, move_list & quiets, move_list & captures, int depth) {
     int bonus = history_bonus(depth);
-    int cap_bonus = std::min(noisy_max, noisy_mul * depth * depth);
+    int cap_bonus = std::min(noisy_max, noisy_mul * depth);
 
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
@@ -69,14 +74,13 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
             }
         }
     } else {
-        //update_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
-        capture_table[piece][to][chessboard.get_piece(to)] = 0;
+         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
     }
 
     for (const auto &capture: captures) {
         int malus = -cap_bonus;
         auto cap_to = capture.get_to();
-        update_history(history_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], malus);
+        update_cap_history(capture_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], malus);
     }
 }
 
