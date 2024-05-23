@@ -9,52 +9,78 @@
 
 std::array<std::array<std::array<int, 64>, 64>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
+std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
+
+constexpr int noisy_mul = 30;
+constexpr int noisy_max = 500;
+constexpr int noisy_gravity = 2048;
+constexpr int quiet_mul = 200;
+constexpr int quiet_max = 2000;
 
 int history_bonus(int depth) {
-    return std::min(2000, 200 * depth);
+    return std::min(quiet_max, quiet_mul * depth);
 }
 
 void update_history(int& value, int bonus) {
     value += bonus - (value * std::abs(bonus) / 16384);
 }
 
+void update_cap_history(int& value, int bonus) {
+    value += bonus - (value * std::abs(bonus) / noisy_gravity);
+}
+
 template <Color color, bool is_root>
-void update_quiet_history(search_data & data, board & chessboard, const chess_move & best_move, move_list & quiets, int depth) {
+void update_quiet_history(search_data & data, board & chessboard, const chess_move & best_move, move_list & quiets, move_list & captures, int depth) {
     int bonus = history_bonus(depth);
+    int cap_bonus = std::min(noisy_max, noisy_mul * depth);
 
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
 
-    update_history(history_table[color][from][to], bonus);
+    if (best_move.is_quiet()) {
 
-    if constexpr (!is_root) {
-        prev = data.prev_moves[data.get_ply() - 1];
-        update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
-        if (data.get_ply() > 1) {
-            prev2 = data.prev_moves[data.get_ply() - 2];
-            update_history(continuation_table[prev2.piece_type][prev2.to][piece][to], bonus);
-            if (data.get_ply() > 3) {
-                prev4 = data.prev_moves[data.get_ply() - 4];
-                update_history(continuation_table[prev4.piece_type][prev4.to][piece][to], bonus);
-            }
-        }
-    }
-
-    int index = 0;
-    for (const auto& quiet : quiets) {
-        index++;
-        int malus = -bonus;
-        update_history(history_table[color][quiet.get_from()][quiet.get_to()], malus);
+        update_history(history_table[color][from][to], bonus);
 
         if constexpr (!is_root) {
-            update_history(continuation_table[prev.piece_type][prev.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus);
+            prev = data.prev_moves[data.get_ply() - 1];
+            update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
             if (data.get_ply() > 1) {
-                update_history(continuation_table[prev2.piece_type][prev2.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus);
+                prev2 = data.prev_moves[data.get_ply() - 2];
+                update_history(continuation_table[prev2.piece_type][prev2.to][piece][to], bonus);
                 if (data.get_ply() > 3) {
-                    update_history(continuation_table[prev4.piece_type][prev4.to][chessboard.get_piece(quiet.get_from())][quiet.get_to()], malus);
+                    prev4 = data.prev_moves[data.get_ply() - 4];
+                    update_history(continuation_table[prev4.piece_type][prev4.to][piece][to], bonus);
                 }
             }
         }
+
+        int index = 0;
+        for (const auto &quiet: quiets) {
+            index++;
+            int malus = -bonus;
+            auto qfrom = quiet.get_from();
+            auto qto = quiet.get_to();
+            auto qpiece = chessboard.get_piece(qfrom);
+            update_history(history_table[color][qfrom][qto], malus);
+
+            if constexpr (!is_root) {
+                update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], malus);
+                if (data.get_ply() > 1) {
+                    update_history(continuation_table[prev2.piece_type][prev2.to][qpiece][qto], malus);
+                    if (data.get_ply() > 3) {
+                        update_history(continuation_table[prev4.piece_type][prev4.to][qpiece][qto], malus);
+                    }
+                }
+            }
+        }
+    } else {
+         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
+    }
+
+    for (const auto &capture: captures) {
+        int malus = -cap_bonus;
+        auto cap_to = capture.get_to();
+        update_cap_history(capture_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], malus);
     }
 }
 

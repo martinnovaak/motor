@@ -116,13 +116,14 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "uci") {
-        std::cout << "id name Motor 0.4.0 " << std::endl;
+        std::cout << "id name Motor 0.5.0 " << std::endl;
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
         continuation_table = {};
+        capture_table = {};
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
@@ -140,6 +141,10 @@ void uci_process(board& b, const std::string& line) {
             std::cout << "Command not found." << std::endl;
         }
     } else if (command == "bench") {
+        history_table = {};
+        continuation_table = {};
+        capture_table = {};
+        tt.clear();
         bench(15);
     } else if (command == "perft") {
         ss >> command;
