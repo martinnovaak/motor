@@ -14,9 +14,6 @@
 #include "../move_generation/move_generator.hpp"
 #include "../evaluation/evaluation.hpp"
 
-int noisy_lmr = 8'253;
-int quiet_lmr = 12'000;
-
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
     constexpr Color enemy_color = color == White ? Black : White;
@@ -80,8 +77,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         {
             eval = tt_eval;
         }
-    }
-    else {
+    } else {
         eval = static_eval = evaluate<color>(chessboard);
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
@@ -97,21 +93,20 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if constexpr (!is_root) {
         if (!in_check && std::abs(beta) < 9'000) {
             // razoring
-            if (eval + 500 * depth <= alpha) {
+            if (eval + 470 * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if (razor_eval <= alpha) {
                     return razor_eval;
-                }             
+                }
             }
-            
+
             // reverse futility pruning
-            if (depth < 9 && eval - 180 * (depth - improving) >= beta) {
+            if (depth < 9 && eval - 170 * (depth - improving) >= beta) {
                 return eval;
             }
-            
 
             // NULL MOVE PRUNING
-            if (node_type != NodeType::Null && depth >= 3 && eval >= beta && !chessboard.pawn_endgame()) {
+            if (node_type != NodeType::Null && depth >= 3 + is_pv && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
                 int R = 3 + depth / 3 + improving;
@@ -165,13 +160,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     }
 
                     int lmr_depth = std::max(0, depth - reduction);
-                    if (lmr_depth < 7 && static_eval + 300 + 120 * lmr_depth <= alpha) {
+                    if (lmr_depth < 7 && static_eval + 110 + 320 * lmr_depth <= alpha) {
                         continue;
                     }
                 }
 
 
-                int see_margin = chessmove.is_quiet() ? -80 * depth : -30 * depth * depth;
+                int see_margin = chessmove.is_quiet() ? -77 * depth : -35 * depth * depth;
                 if (depth < 6 && !see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
@@ -196,7 +191,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 if (s_score < s_beta) {
                     ext = 1;
                     if constexpr(!is_pv) {
-                        if (s_score + 20 < s_beta && data.double_extension[data.get_ply()] < 3) {
+                        if (s_score + 19 < s_beta && data.double_extension[data.get_ply()] < 5) {
                             ext = 2;
                             data.double_extension[data.get_ply()]++;
                         }
@@ -228,7 +223,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction += !is_pv + !improving;  
                     reduction -= chessboard.in_check();
                     reduction -= movelist[moves_searched] / 12'000;
-                } 
+                }
 
                 reduction = std::clamp(reduction, 0, depth - 2);
 
@@ -268,7 +263,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (chessmove.is_quiet()) {
                         data.update_killer(chessmove);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
-                        update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, depth);
                     }
                     update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;
@@ -291,7 +285,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
 template <Color color>
 std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_t score, int depth) {
-    std::int16_t window = 20;
+    std::int16_t window = 22;
     std::int16_t alpha, beta;
 
     int search_depth = depth;
@@ -360,8 +354,7 @@ void find_best_move(board& chessboard, time_info& info) {
     if (chessboard.get_side() == White) {
         data.set_timekeeper(info.wtime, info.winc, info.movestogo);
         iterative_deepening<White>(chessboard, data, info.max_depth);
-    }
-    else {
+    } else {
         data.set_timekeeper(info.btime, info.binc, info.movestogo);
         iterative_deepening<Black>(chessboard, data, info.max_depth);
     }
