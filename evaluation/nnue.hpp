@@ -8,10 +8,20 @@
 
 #include <immintrin.h>
 
-
 constexpr unsigned int HIDDEN_SIZE = 1024;
 constexpr int QA = 403;
 constexpr int QB = 64;
+
+constexpr std::array<int, 64> buckets = {
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+};
 
 struct Weights {
     std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2> feature_weight;
@@ -45,6 +55,10 @@ public:
         refresh();
     }
 
+    void refresh_current_accumulator() {
+        white_accumulator_stack[index] = black_accumulator_stack[index] = weights.feature_bias;
+    }
+
     void refresh() {
         white_accumulator_stack[0] = black_accumulator_stack[0] = weights.feature_bias;
         index = 0;
@@ -60,10 +74,14 @@ public:
         index--;
     }
 
+    int get_square_index(int square, int king_square) {
+        return (king_square % 8 > 3) ? square ^ 7 : square;
+    }
+
     template<Operation operation>
-    void update_accumulator(const Piece piece, const Color color, const Square square) {
-        const auto& white_weights = weights.feature_weight[color][piece][square];
-        const auto& black_weights = weights.feature_weight[color ^ 1][piece][square ^ 56];
+    void update_accumulator(const Piece piece, const Color color, const Square square, int wking, int bking) {
+        const auto& white_weights = weights.feature_weight[color][piece][get_square_index(square, wking)];
+        const auto& black_weights = weights.feature_weight[color ^ 1][piece][get_square_index(square, bking) ^ 56];
 
         auto& white_accumulator = white_accumulator_stack[index];
         auto& black_accumulator = black_accumulator_stack[index];
@@ -140,6 +158,8 @@ perspective_network<HIDDEN_SIZE> network;
 
 void set_position(board& chessboard) {
     network.refresh();
+    int wking = lsb(chessboard.get_pieces(White, King));
+    int bking = lsb(chessboard.get_pieces(Black, King));
 
     for (Color side : {White, Black}) {
         for (Piece piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
@@ -147,37 +167,53 @@ void set_position(board& chessboard) {
 
             while (bitboard) {
                 Square square = pop_lsb(bitboard);
-                network.update_accumulator<Operation::Set>(piece, side, square);
+                network.update_accumulator<Operation::Set>(piece, side, square, wking, bking);
+            }
+        }
+    }
+}
+
+template<Color color>
+void update_bucket(board& chessboard, int wking, int bking) {
+    network.refresh_current_accumulator();
+
+    for (Color side : {White, Black}) {
+        for (Piece piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
+            std::uint64_t bitboard = chessboard.get_pieces(side, piece);
+
+            while (bitboard) {
+                Square square = pop_lsb(bitboard);
+                network.update_accumulator<Operation::Set>(piece, side, square, wking, bking);
             }
         }
     }
 }
 
 template<Color our_color, bool make>
-void set_piece(board & chessboard, const Square square, const Piece piece) {
+void set_piece(board & chessboard, const Square square, const Piece piece, int wking = 0, int bking = 0) {
     chessboard.set_piece<our_color, make>(square, piece);
     
     if constexpr (make == true) {
-        network.update_accumulator<Operation::Set>(piece, our_color, square);
+        network.update_accumulator<Operation::Set>(piece, our_color, square, wking, bking);
     }
 }
 
 template<Color our_color, bool make>
-void unset_piece(board& chessboard, const Square square, const Piece piece) {
+void unset_piece(board& chessboard, const Square square, const Piece piece, int wking = 0, int bking = 0) {
     chessboard.unset_piece<our_color, make>(square, piece);
     
     if constexpr (make == true) {
-        network.update_accumulator<Operation::Unset>(piece, our_color, square);
+        network.update_accumulator<Operation::Unset>(piece, our_color, square, wking, bking);
     }
 }
 
 template<Color our_color, Color their_color, bool make>
-void replace_piece(board & chessboard, const Square square, const Piece piece, const Piece captured_piece) {
+void replace_piece(board & chessboard, const Square square, const Piece piece, const Piece captured_piece, int wking = 0, int bking = 0) {
     chessboard.replace_piece<our_color, their_color, make>(square, piece, captured_piece);
     
     if constexpr (make == true) {
-        network.update_accumulator<Operation::Set>(piece, our_color, square);
-        network.update_accumulator<Operation::Unset>(captured_piece, their_color, square);
+        network.update_accumulator<Operation::Set>(piece, our_color, square, wking, bking);
+        network.update_accumulator<Operation::Unset>(captured_piece, their_color, square, wking, bking);
     }
 }
 
@@ -208,73 +244,87 @@ void make_move(board & chessboard, const chess_move move) {
     const Piece piece = chessboard.get_piece(square_from);
     const Piece captured_piece = chessboard.get_piece(square_to);
 
-    unset_piece<our_color, true>(chessboard, square_from, piece);
+    int wking = lsb(chessboard.get_pieces(White, King));
+    int bking = lsb(chessboard.get_pieces(Black, King));
+
+    if (piece == King && buckets[square_from] != buckets[square_to]) {
+        if constexpr (our_color == White) {
+            wking = square_to;
+        }
+        else 
+        {
+            bking = square_to;
+        }
+        update_bucket<our_color>(chessboard, wking, bking);
+    }
+
+    unset_piece<our_color, true>(chessboard, square_from, piece, wking, bking);
     switch (movetype) {
     case QUIET:
         if (piece == Pawn) chessboard.reset_fifty_move_clock();
-        set_piece<our_color, true>(chessboard, square_to, piece);
+        set_piece<our_color, true>(chessboard, square_to, piece, wking, bking);
         break;
     case DOUBLE_PAWN_PUSH:
         chessboard.reset_fifty_move_clock();
-        set_piece<our_color, true>(chessboard, square_to, Pawn);
+        set_piece<our_color, true>(chessboard, square_to, Pawn, wking, bking);
         chessboard.set_enpassant(square_to + down);
         break;
     case KING_CASTLE:
         square_from = king_castle_square;
-        unset_piece<our_color, true>(chessboard, our_H_square, Rook);
-        set_piece<our_color, true>(chessboard, our_F_square, Rook);
-        set_piece<our_color, true>(chessboard, our_G_square, King);
+        unset_piece<our_color, true>(chessboard, our_H_square, Rook, wking, bking);
+        set_piece<our_color, true>(chessboard, our_F_square, Rook, wking, bking);
+        set_piece<our_color, true>(chessboard, our_G_square, King, wking, bking);
         break;
     case QUEEN_CASTLE:
         square_from = king_castle_square;
-        unset_piece<our_color, true>(chessboard, our_A_square, Rook);
-        set_piece<our_color, true>(chessboard, our_D_square, Rook);
-        set_piece<our_color, true>(chessboard, our_C_square, King);
+        unset_piece<our_color, true>(chessboard, our_A_square, Rook, wking, bking);
+        set_piece<our_color, true>(chessboard, our_D_square, Rook, wking, bking);
+        set_piece<our_color, true>(chessboard, our_C_square, King, wking, bking);
         break;
     case CAPTURE:
         chessboard.reset_fifty_move_clock();
-        replace_piece<our_color, their_color, true>(chessboard, square_to, piece, captured_piece);
+        replace_piece<our_color, their_color, true>(chessboard, square_to, piece, captured_piece, wking, bking);
         chessboard.update_castling_rights(square_to);
         break;
     case EN_PASSANT:
         chessboard.reset_fifty_move_clock();
-        set_piece<our_color, true>(chessboard, square_to, piece);
-        unset_piece<their_color, true>(chessboard, square_to + down, piece);
+        set_piece<our_color, true>(chessboard, square_to, piece, wking, bking);
+        unset_piece<their_color, true>(chessboard, square_to + down, piece, wking, bking);
         break;
     case KNIGHT_PROMOTION:
         chessboard.reset_fifty_move_clock();
-        set_piece<our_color, true>(chessboard, square_to, Knight);
+        set_piece<our_color, true>(chessboard, square_to, Knight, wking, bking);
         break;
     case BISHOP_PROMOTION:
         chessboard.reset_fifty_move_clock();
-        set_piece<our_color, true>(chessboard, square_to, Bishop);
+        set_piece<our_color, true>(chessboard, square_to, Bishop, wking, bking);
         break;
     case ROOK_PROMOTION:
         chessboard.reset_fifty_move_clock();
-        set_piece<our_color, true>(chessboard, square_to, Rook);
+        set_piece<our_color, true>(chessboard, square_to, Rook, wking, bking);
         break;
     case QUEEN_PROMOTION:
         chessboard.reset_fifty_move_clock();
-        set_piece<our_color, true>(chessboard, square_to, Queen);
+        set_piece<our_color, true>(chessboard, square_to, Queen, wking, bking);
         break;
     case KNIGHT_PROMOTION_CAPTURE:
         chessboard.reset_fifty_move_clock();
-        replace_piece<our_color, their_color, true>(chessboard, square_to, Knight, captured_piece);
+        replace_piece<our_color, their_color, true>(chessboard, square_to, Knight, captured_piece, wking, bking);
         chessboard.update_castling_rights(square_to);
         break;
     case BISHOP_PROMOTION_CAPTURE:
         chessboard.reset_fifty_move_clock();
-        replace_piece<our_color, their_color, true>(chessboard, square_to, Bishop, captured_piece);
+        replace_piece<our_color, their_color, true>(chessboard, square_to, Bishop, captured_piece, wking, bking);
         chessboard.update_castling_rights(square_to);
         break;
     case ROOK_PROMOTION_CAPTURE:
         chessboard.reset_fifty_move_clock();
-        replace_piece<our_color, their_color, true>(chessboard, square_to, Rook, captured_piece);
+        replace_piece<our_color, their_color, true>(chessboard, square_to, Rook, captured_piece, wking, bking);
         chessboard.update_castling_rights(square_to);
         break;
     case QUEEN_PROMOTION_CAPTURE:
         chessboard.reset_fifty_move_clock();
-        replace_piece<our_color, their_color, true>(chessboard, square_to, Queen, captured_piece);
+        replace_piece<our_color, their_color, true>(chessboard, square_to, Queen, captured_piece, wking, bking);
         chessboard.update_castling_rights(square_to);
         break;
     }
