@@ -326,11 +326,11 @@ public:
 
         for (int i = static_cast<int>(history.size()) - 3; i >= end; i -= 2) {
             if (history[i].hash_key == hash_key) {
-                repetitions++;
+                return true;
             }
         }
 
-        return repetitions >= 2;
+        return false;
     }
 
     void update_castling_rights(Square square) {
