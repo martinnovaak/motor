@@ -59,19 +59,19 @@ const std::string fens[] = {
 template <Color color>
 std::uint64_t bench_iterative_deepening(board& chessboard, int max_depth) {
     search_data data;
+    time_info info;
+    data.set_timekeeper(info.wtime, info.winc, info.movestogo);
 
     int score;
     for (int depth = 1; depth <= max_depth; depth++) {
         if (depth < 6) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth);
-        }
-        else {
+        } else {
             score = aspiration_window<color>(chessboard, data, score, depth);
         }
-        data.nps();
     }
 
-    return data.nodes();
+    return data.searched_nodes();
 }
 
 void bench(int depth) {
@@ -87,7 +87,7 @@ void bench(int depth) {
 
     auto end = std::chrono::steady_clock::now();
     double nps = static_cast<double>(nodes) / std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-    std::cout << "Bench: " << nodes << " nodes " << static_cast<int>(nps) << " nps" << std::endl;
+    std::cout << nodes << " nodes " << static_cast<int>(nps) << " nps" << std::endl;
 }
 
 #endif // MOTOR_BENCH_HPP
