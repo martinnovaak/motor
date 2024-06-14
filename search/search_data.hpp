@@ -83,6 +83,7 @@ public:
     }
 
     void augment_ply() {
+        nodes_searched++;
         ply++;
     }
 

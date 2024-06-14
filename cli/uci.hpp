@@ -145,7 +145,7 @@ void uci_process(board& b, const std::string& line) {
         continuation_table = {};
         capture_table = {};
         tt.clear();
-        bench(15);
+        bench(11);
     } else if (command == "perft") {
         ss >> command;
         perft_debug(b, std::stoi(command));
