@@ -9,6 +9,7 @@
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
 #include "../move_generation/move_generator.hpp"
+#include "../executioner/makemove.hpp"
 #include "../search/time_keeper.hpp"
 #include "../search/search.hpp"
 #include "../search/bench.hpp"

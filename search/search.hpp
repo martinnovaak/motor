@@ -12,7 +12,7 @@
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
 #include "../move_generation/move_generator.hpp"
-#include "../evaluation/evaluation.hpp"
+#include "../executioner/makemove.hpp"
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
