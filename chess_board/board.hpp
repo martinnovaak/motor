@@ -15,14 +15,14 @@
 #include "pinmask.hpp"
 
 constexpr int castling_mask[64] = {
-    13, 15, 15, 15, 12, 15, 15, 14,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-     7, 15, 15, 15,  3, 15, 15, 11,
+        13, 15, 15, 15, 12, 15, 15, 14,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        7, 15, 15, 15,  3, 15, 15, 11,
 };
 
 struct board_info {
@@ -158,10 +158,10 @@ public:
     [[nodiscard]] std::uint64_t attackers(const Square square, std::uint64_t occ) const {
         constexpr Color their_color = color == White ? Black : White;
         return    (attacks<Ray::ROOK>(square, occ) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]))
-            | (attacks<Ray::BISHOP>(square, occ) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]))
-            | (KING_ATTACKS[square] & bitboards[their_color][King])
-            | (KNIGHT_ATTACKS[square] & bitboards[their_color][Knight])
-            | (PAWN_ATTACKS_TABLE[color][square] & bitboards[their_color][Pawn]);
+                  | (attacks<Ray::BISHOP>(square, occ) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]))
+                  | (KING_ATTACKS[square] & bitboards[their_color][King])
+                  | (KNIGHT_ATTACKS[square] & bitboards[their_color][Knight])
+                  | (PAWN_ATTACKS_TABLE[color][square] & bitboards[their_color][Pawn]);
     }
 
     template <Color their_color>
@@ -262,40 +262,6 @@ public:
         return { horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask };
     }
 
-    template<Color our_color>
-    [[nodiscard]] std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, std::uint64_t> get_discovering_pieces(Square enemy_king, std::uint64_t seen_squares) const {
-        //std::uint64_t seen_squares = attacks<Ray::QUEEN>(enemy_king, occupancy);
-        const std::uint64_t possibly_discovering_pieces = seen_squares & side_occupancy[our_color];
-
-        if (possibly_discovering_pieces == 0ull) {
-            return {};
-        }
-
-        std::uint64_t occupied = occupancy & ~possibly_discovering_pieces;
-
-        std::uint64_t check_hv_pieces = ~seen_squares & (bitboards[our_color][Rook] | bitboards[our_color][Queen]);
-        std::uint64_t check_ad_pieces = ~seen_squares & (bitboards[our_color][Bishop] | bitboards[our_color][Queen]);
-        std::uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(enemy_king, occupied)   & check_hv_pieces;
-        std::uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(enemy_king, occupied)     & check_hv_pieces;
-        std::uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(enemy_king, occupied) & check_ad_pieces;
-        std::uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(enemy_king, occupied)     & check_ad_pieces;
-
-        auto get_discover_mask = [enemy_king](std::uint64_t discovers, Ray ray_type) {
-            std::uint64_t discover_mask_accumulator = 0;
-            while (discovers) {
-                discover_mask_accumulator |= pinmask[pop_lsb(discovers)][enemy_king];
-            }
-            return discover_mask_accumulator;
-        };
-
-        std::uint64_t horizontal_discover_mask   = get_discover_mask(horizontal_pinners, Ray::HORIZONTAL);
-        std::uint64_t vertical_discover_mask     = get_discover_mask(vertical_pinners, Ray::VERTICAL);
-        std::uint64_t antidiagonal_discover_mask = get_discover_mask(antidiagonal_pinners, Ray::ANTIDIAGONAL);
-        std::uint64_t diagonal_discover_mask     = get_discover_mask(diagonal_pinners, Ray::DIAGONAL);
-
-        return { horizontal_discover_mask, vertical_discover_mask, antidiagonal_discover_mask, diagonal_discover_mask };
-    }
-
     [[nodiscard]] int get_castle_rights() const {
         return castling_rights;
     }
@@ -338,7 +304,7 @@ public:
         castling_rights &= castling_mask[square];
         hash_key.update_castling_hash(castling_rights);
     }
-    
+
     template<Color our_color, bool make>
     void set_piece(const Square square, const Piece piece) {
         pieces[square] = piece;
@@ -386,7 +352,7 @@ public:
             hash_key.update_psqt_hash(their_color, captured_piece, square);
         }
     }
-    
+
     template<Color color>
     void make_null_move()
     {
