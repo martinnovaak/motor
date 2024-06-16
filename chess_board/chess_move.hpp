@@ -38,7 +38,7 @@ class chess_move {
 public:
     chess_move() : packed_move_data{} {}
 
-    chess_move(Square from, Square to, MoveType move_type) {
+    constexpr chess_move(Square from, Square to, MoveType move_type) {
         packed_move_data = from | to << 6 | move_type << 12;
     }
 

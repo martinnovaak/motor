@@ -83,5 +83,14 @@ enum CastlingRight : std::uint8_t {
     CASTLE_BLACK_KINGSIDE  = 4,
     CASTLE_BLACK_QUEENSIDE = 8,
 };
+constexpr std::uint64_t bb(Square s) { return (1ULL << s); }
+
+struct generator_data {
+    std::uint64_t orthogonal_pins;
+    std::uint64_t diagonal_pins;
+    std::uint64_t checkers;
+    std::uint64_t checkmask;
+    std::uint64_t threats;
+};
 
 #endif //MOTOR_TYPES_HPP

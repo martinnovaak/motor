@@ -105,4 +105,29 @@ constexpr std::uint64_t attacks(Square square, std::uint64_t occupancy)
     }
 }
 
+template<Direction direction>
+constexpr std::uint64_t shift(std::uint64_t bitboard) {
+    switch (direction) {
+        case NORTH: return bitboard << 8;
+        case SOUTH: return bitboard >> 8;
+        case NORTH_2: return bitboard << 16;
+        case SOUTH_2: return bitboard >> 16;
+        case NORTH_EAST: return (bitboard & ~files[FILE_H]) << 9;
+        case NORTH_WEST: return (bitboard & ~files[FILE_A]) << 7;
+        case SOUTH_EAST: return (bitboard & ~files[FILE_H]) >> 7;
+        case SOUTH_WEST: return (bitboard & ~files[FILE_A]) >> 9;
+        case EAST: return (bitboard & ~files[FILE_H]) << 1;
+        case WEST: return (bitboard & ~files[FILE_A]) >> 1;
+    }
+}
+
+template<Color color>
+std::uint64_t pawn_attacks(std::uint64_t bitboard) {
+    if constexpr (color == White) {
+        return shift<NORTH_WEST>(bitboard) | shift<NORTH_EAST>(bitboard);
+    } else {
+        return shift<SOUTH_WEST>(bitboard) | shift<SOUTH_EAST>(bitboard);
+    }
+}
+
 #endif //MOTOR_ATTACKS_HPP

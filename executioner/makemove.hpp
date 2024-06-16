@@ -197,6 +197,7 @@ void make_move(board& chessboard, const chess_move move) {
     chessboard.update_castling_rights(square_from);
     chessboard.set_side(their_color);
     chessboard.emplace_history(captured_piece, move);
+    chessboard.update_bitboards<their_color>();
 }
 
 template <Color our_color, bool update = true>

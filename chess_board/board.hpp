@@ -32,6 +32,11 @@ struct board_info {
     Piece captured_piece;
     chess_move move;
     zobrist hash_key;
+    std::uint64_t orthogonal_pins = 0ull;
+    std::uint64_t diagonal_pins = 0ull;
+    std::uint64_t checkers = 0ull;
+    std::uint64_t checkmask = 0ull;
+    std::uint64_t threats = 0ull;
 };
 
 class board {
@@ -48,6 +53,7 @@ class board {
     zobrist hash_key;
 
     std::vector<board_info> history;
+    board_info * info;
 public:
     board (const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             : enpassant(Square::Null_Square), bitboards{}, side_occupancy{}, occupancy{} {
@@ -70,6 +76,9 @@ public:
 
         side_occupancy[Color::White] = side_occupancy[Color::Black] = occupancy = 0ull;
         history.clear();
+        history.reserve(2000);
+        info = history.data();
+
         hash_key = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -119,29 +128,90 @@ public:
         chess_move move;
         board_info binfo {castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key};
         history.push_back(binfo);
+
+        side == White ? update_bitboards<White>() : update_bitboards<Black>();
+    }
+
+    template <Color our_color>
+    void calculate_threats() {
+        constexpr Color their_color = our_color == White ? Black : White;
+
+        std::uint64_t threatened = pawn_attacks<their_color>(bitboards[their_color][Pawn]);
+
+        std::uint64_t knights = bitboards[their_color][Knight];
+        while (knights) {
+            threatened |= KNIGHT_ATTACKS[pop_lsb(knights)];
+        }
+        std::uint64_t occupied = occupancy ^ bitboards[our_color][King]; // x-ray through king
+
+        std::uint64_t bishops = bitboards[their_color][Bishop];
+        while (bishops) {
+            threatened |= attacks<Ray::BISHOP>(pop_lsb(bishops), occupied); // x-ray through king
+        }
+
+        std::uint64_t rooks = bitboards[their_color][Rook];
+        while (rooks) {
+            threatened |= attacks<Ray::ROOK>(pop_lsb(rooks), occupied);
+        }
+
+        std::uint64_t queens = bitboards[their_color][Queen];
+        while (queens) {
+            threatened |= attacks<Ray::QUEEN>(pop_lsb(queens), occupied);
+        }
+
+        threatened |= KING_ATTACKS[lsb(bitboards[their_color][King])];
+        info->threats = threatened;
+    }
+
+    template <Color our_color>
+    void calculate_checkers() {
+        // state->checkers = (state->threats[King] & bitboards[our_color][King]) != 0ull ? attackers<our_color>(lsb(bitboards[our_color][King])) : 0ull;
+        info->checkers = attackers<our_color>(lsb(bitboards[our_color][King]));
+    }
+
+    template <Color our_color>
+    void calculate_pins() {
+        constexpr Color their_color = our_color == White ? Black : White;
+        const Square king_square = lsb(bitboards[our_color][King]);
+
+        std::uint64_t diagonal_pins = 0ull, orthogonal_pins = 0ull;
+
+        std::uint64_t pinners = (attacks<Ray::BISHOP>(king_square, side_occupancy[their_color]) & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]));
+        while (pinners) {
+            const Square s = pop_lsb(pinners);
+            const std::uint64_t b = pinmask[king_square][s];
+
+            if(popcount(b & side_occupancy[our_color]) == 1) {
+                diagonal_pins |= b;
+            }
+        }
+
+        pinners = (attacks<Ray::ROOK>(king_square   , side_occupancy[their_color]) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]));
+        while (pinners) {
+            const Square s = pop_lsb(pinners);
+            const std::uint64_t b = pinmask[king_square][s];
+
+            if(popcount(b & side_occupancy[our_color]) == 1) {
+                orthogonal_pins |= b;
+            }
+        }
+
+        info->orthogonal_pins = orthogonal_pins;
+        info->diagonal_pins = diagonal_pins;
+    }
+
+    template <Color our_color>
+    void update_bitboards() {
+        calculate_threats<our_color>();
+        calculate_checkers<our_color>();
+        info->checkmask = 0ull;
+        if (info->checkers) {
+            info->checkmask |= pinmask[get_king_square<our_color>()][lsb(info->checkers)];
+        }
     }
 
     [[nodiscard]] bool in_check() const {
-        if (side == Black) {
-            return attackers<Black>(get_king_square());
-        } else {
-            return attackers<White>(get_king_square());
-        }
-    }
-
-    template <Color enemy_color>
-    std::uint64_t get_checkmask(Square square) {
-        constexpr Color our_color = enemy_color == White ? Black : White;
-        std::uint64_t checkers = attackers<our_color>(lsb(bitboards[our_color][King]));
-
-        if (checkers == 0) {
-            return full_board;
-        }
-        int sq = pop_lsb(checkers);
-        if(checkers) {
-            return 0ull;
-        }
-        return pinmask[square][sq];
+        return info->checkers;
     }
 
     template <Color color>
@@ -164,42 +234,6 @@ public:
                   | (PAWN_ATTACKS_TABLE[color][square] & bitboards[their_color][Pawn]);
     }
 
-    template <Color their_color>
-    std::uint64_t get_attacked_squares() const {
-        std::uint64_t attacked_squares = 0ull;
-
-        std::uint64_t pawns = bitboards[their_color][Pawn];
-        while(pawns) {
-            attacked_squares |= PAWN_ATTACKS_TABLE[their_color][pop_lsb(pawns)];
-        }
-
-        std::uint64_t knights = bitboards[their_color][Knight];
-        while(knights) {
-            attacked_squares |= KNIGHT_ATTACKS[pop_lsb(knights)];
-        }
-
-        std::uint64_t ad_pieces = bitboards[their_color][Bishop] | bitboards[their_color][Queen];
-        while(ad_pieces) {
-            attacked_squares |= attacks<Ray::BISHOP>(pop_lsb(ad_pieces), occupancy);
-        }
-
-        std::uint64_t hv_pieces = bitboards[their_color][Rook] | bitboards[their_color][Queen];
-        while(hv_pieces) {
-            attacked_squares |= attacks<Ray::ROOK>(pop_lsb(hv_pieces), occupancy);
-        }
-
-        attacked_squares |= KING_ATTACKS[lsb(bitboards[their_color][King])];
-        return attacked_squares;
-    }
-
-    template <Color their_color>
-    std::uint64_t get_safe_squares(const Square square) {
-        pop_bit(occupancy, square);
-        const std::uint64_t attackers_squares = ~get_attacked_squares<their_color>();
-        set_bit(occupancy, square);
-        return attackers_squares;
-    }
-
     [[nodiscard]] Piece get_piece(const int square) const {
         return pieces[square];
     }
@@ -210,6 +244,11 @@ public:
 
     [[nodiscard]] Square get_king_square() const {
         return lsb(bitboards[side][King]);
+    }
+
+    template <Color color>
+    [[nodiscard]] Square get_king_square() const {
+        return lsb(bitboards[color][King]);
     }
 
     [[nodiscard]] std::uint64_t get_occupancy() const {
@@ -225,57 +264,15 @@ public:
         return bitboards[color][piece];
     }
 
-    template<Color our_color, Color their_color>
-    [[nodiscard]] std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, std::uint64_t> get_pinners(Square king_square) const {
-        std::uint64_t seen_squares = attacks<Ray::QUEEN>(king_square, occupancy);
-        std::uint64_t possibly_pinned_pieces = seen_squares & side_occupancy[our_color];
+    template <Color color>
+    [[nodiscard]] std::uint64_t get_orthogonal_pieces() const { return bitboards[color][Rook] | bitboards[color][Queen]; }
+    template <Color color>
+    [[nodiscard]] std::uint64_t get_diagonal_pieces() const { return bitboards[color][Bishop] | bitboards[color][Queen]; }
 
-        // If there are no potentially pinned pieces, return an empty tuple
-        if (possibly_pinned_pieces == 0ull) {
-            return {};
-        }
-
-        // Calculate the occupied squares excluding the potentially pinned pieces
-        std::uint64_t occupied = occupancy & ~possibly_pinned_pieces;
-
-        // Calculate the squares where pinning might occur for each ray direction
-        std::uint64_t seen_enemy_hv_pieces = ~seen_squares & (bitboards[their_color][Rook]   | bitboards[their_color][Queen]);
-        std::uint64_t seen_enemy_ad_pieces = ~seen_squares & (bitboards[their_color][Bishop] | bitboards[their_color][Queen]);
-        std::uint64_t horizontal_pinners   = attacks<Ray::HORIZONTAL>(king_square, occupied)   & seen_enemy_hv_pieces;
-        std::uint64_t vertical_pinners     = attacks<Ray::VERTICAL>(king_square, occupied)     & seen_enemy_hv_pieces;
-        std::uint64_t antidiagonal_pinners = attacks<Ray::ANTIDIAGONAL>(king_square, occupied) & seen_enemy_ad_pieces;
-        std::uint64_t diagonal_pinners     = attacks<Ray::DIAGONAL>(king_square, occupied)     & seen_enemy_ad_pieces;
-
-        auto get_pinmask = [king_square] (Ray ray_type, std::uint64_t pinners) {
-            std::uint64_t pinmask_accumulator = 0ull;
-            while (pinners) {
-                pinmask_accumulator |= pinmask[king_square][pop_lsb(pinners)];
-            }
-            return pinmask_accumulator;
-        };
-
-        std::uint64_t horizontal_pinmask   = get_pinmask(Ray::HORIZONTAL, horizontal_pinners);
-        std::uint64_t vertical_pinmask     = get_pinmask(Ray::VERTICAL, vertical_pinners);
-        std::uint64_t antidiagonal_pinmask = get_pinmask(Ray::ANTIDIAGONAL, antidiagonal_pinners);
-        std::uint64_t diagonal_pinmask     = get_pinmask(Ray::DIAGONAL, diagonal_pinners);
-
-        return { horizontal_pinmask, vertical_pinmask, antidiagonal_pinmask, diagonal_pinmask };
-    }
-
-    [[nodiscard]] int get_castle_rights() const {
-        return castling_rights;
-    }
+    [[nodiscard]] bool can_castle(CastlingRight cr) const { return castling_rights & cr; }
 
     [[nodiscard]] Square enpassant_square() const {
         return enpassant;
-    }
-
-    template<Color their_color>
-    [[nodiscard]] bool check_legality_of_enpassant (Square square_from, Square enpassant_pawn) const {
-        // CHECK if king will get horizontal check after removing both pawns after enpassant
-        Square king_square = get_king_square();
-        std::uint64_t occupancy_after_enpassant = ~((1ull << (square_from)) | (1ull << (enpassant_pawn))) & occupancy;
-        return !(attacks<Ray::HORIZONTAL>(king_square, occupancy_after_enpassant) & (bitboards[their_color][Rook] | bitboards[their_color][Queen]));
     }
 
     [[nodiscard]] bool pawn_endgame() const {
@@ -283,12 +280,15 @@ public:
     }
 
     [[nodiscard]] bool is_draw() const {
+        if (fifty_move_clock < 4) {
+            return false;
+        }
+
         if (fifty_move_clock >= 100) {
             return true;
         }
 
         const int end = std::max(0, static_cast<int>(history.size()) - 1 - fifty_move_clock);
-        int repetitions = 0;
 
         for (int i = static_cast<int>(history.size()) - 3; i >= end; i -= 2) {
             if (history[i].hash_key == hash_key) {
@@ -366,19 +366,21 @@ public:
 
         chess_move move;
         history.emplace_back(castling_rights, enpassant, fifty_move_clock, Piece::Null_Piece, move, hash_key);
+        info = &history.back();
+        calculate_threats<their_color>();
     }
 
     template<Color color>
     void undo_null_move()
     {
         history.pop_back();
-        const auto & hist = history.back();
+        info--;
 
         side = color;
-        hash_key = hist.hash_key;
-        enpassant = hist.enpassant;
-        castling_rights = hist.castling_rights;
-        fifty_move_clock = hist.fifty_move_clock;
+        hash_key = info->hash_key;
+        enpassant = info->enpassant;
+        castling_rights = info->castling_rights;
+        fifty_move_clock = info->fifty_move_clock;
     }
 
     [[nodiscard]] std::uint64_t get_hash_key() const {
@@ -386,7 +388,7 @@ public:
     }
 
     [[nodiscard]] chess_move get_last_played_move() const {
-        return history.back().move;
+        return info->move;
     }
 
     void increment_fifty_move_clock() {
@@ -408,6 +410,7 @@ public:
 
     void emplace_history(Piece captured_piece, chess_move move) {
         history.emplace_back(castling_rights, enpassant, fifty_move_clock, captured_piece, move, hash_key);
+        info = &history.back();
     }
 
     void update_board_hash() {
@@ -421,11 +424,21 @@ public:
 
     void undo_history() {
         history.pop_back();
-        const board_info & b_info = history.back();
-        enpassant = b_info.enpassant;
-        fifty_move_clock = b_info.fifty_move_clock;
-        castling_rights = b_info.castling_rights;
-        hash_key = b_info.hash_key;
+        info--;
+        enpassant = info->enpassant;
+        fifty_move_clock = info->fifty_move_clock;
+        castling_rights = info->castling_rights;
+        hash_key = info->hash_key;
+    }
+
+    generator_data get_generator_data() {
+        generator_data generatorData = {};
+        generatorData.orthogonal_pins = info->orthogonal_pins;
+        generatorData.diagonal_pins = info->diagonal_pins;
+        generatorData.checkmask = info->checkmask;
+        generatorData.threats = info->threats;
+        generatorData.checkers = info->checkers;
+        return generatorData;
     }
 };
 
