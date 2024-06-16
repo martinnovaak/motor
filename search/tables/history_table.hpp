@@ -11,9 +11,9 @@ std::array<std::array<std::array<int, 64>, 64>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 
-constexpr int noisy_mul = 30;
-constexpr int noisy_max = 500;
-constexpr int noisy_gravity = 2048;
+constexpr int noisy_mul = 12;
+constexpr int noisy_max = 2400;
+constexpr int noisy_gravity = 24000;
 constexpr int quiet_mul = 200;
 constexpr int quiet_max = 2000;
 
@@ -32,7 +32,7 @@ void update_cap_history(int& value, int bonus) {
 template <Color color, bool is_root>
 void update_quiet_history(search_data & data, board & chessboard, const chess_move & best_move, move_list & quiets, move_list & captures, int depth) {
     int bonus = history_bonus(depth);
-    int cap_bonus = std::min(noisy_max, noisy_mul * depth);
+    int cap_bonus = std::min(noisy_max, noisy_mul * depth * depth);
 
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
