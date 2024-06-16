@@ -7,7 +7,7 @@
 template<typename TT_ENTRY>
 class transposition_table {
 public:
-    explicit transposition_table(std::uint64_t size = 32 * 1024 * 1024) {
+    explicit transposition_table(std::uint64_t size = 16 * 1024 * 1024) {
         resize(size);
     }
 
