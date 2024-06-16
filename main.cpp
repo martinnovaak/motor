@@ -2,7 +2,7 @@
 
 int main (int argv, char* argc[]) {
     if (argv > 1 && std::string{ argc[1] } == "bench") {
-        bench(12);
+        bench(13);
         return 0;
     }
 
