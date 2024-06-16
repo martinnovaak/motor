@@ -265,19 +265,14 @@ public:
             return false;
         }
 
-        // Fifty-move rule check
         if (state->fifty_move_clock >= 100) {
             return true;
         }
 
-        // Determine the index of the current state in the history array
-        const int currentIndex = state - history.data();
+        const int current_index = state - history.data();
+        const int end = std::max(0, current_index - static_cast<int>(state->fifty_move_clock));
 
-        // Determine the earliest move to check
-        const int end = std::max(0, currentIndex - static_cast<int>(state->fifty_move_clock));
-
-        // Threefold repetition check
-        for (int i = currentIndex - 4; i >= end; i -= 2) {
+        for (int i = current_index - 4; i >= end; i -= 2) {
             if (history[i].hash_key == state->hash_key) {
                 return true;
             }
@@ -323,24 +318,12 @@ public:
         return state->hash_key.get_key();
     }
 
-    [[nodiscard]] zobrist get_zobrist() const {
-        return state->hash_key;
-    }
-
     [[nodiscard]] chess_move get_last_played_move() const {
         return history.back().move;
     }
 
-    void increment_fifty_move_clock() {
-        this->state->fifty_move_clock++;
-    }
-
     void reset_fifty_move_clock() {
         this->state->fifty_move_clock = 0;
-    }
-
-    void set_side(Color color) {
-        this->side = color;
     }
 
     void set_enpassant(Square square) {
@@ -420,40 +403,12 @@ public:
         return true;
     }
 
-    std::uint64_t calculate_hash() {
-        zobrist hash = {};
-
-        for (const Color color : {White, Black}) {
-            for (const Piece piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
-                std::uint64_t bitboard = get_pieces(color, piece);
-
-                while (bitboard) {
-                    Square square = pop_lsb(bitboard);
-                    hash.update_psqt_hash(color, piece, square);
-                }
-            }
-        }
-
-        hash.update_castling_hash(state->castling_rights);
-
-        hash.update_enpassant_hash(enpassant_square());
-        if (side == Black)
-            hash.update_side_hash();
-
-        return hash.get_key();
-    }
-
-    std::uint64_t hash() {
-        return state->hash_key.get_key();
-    }
-
     void shift_history() {
         const int index = state - history.data();
         for (int i = 100; i <= index; ++i) {
             history[i - 100] = history[i];
         }
 
-        // Fill the vacated positions with default values
         board_info default_value = {}; // Default constructed board_info
         std::fill(history.begin() + (index - 100 + 1), history.begin() + (index + 1), default_value);
 
