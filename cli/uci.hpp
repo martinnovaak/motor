@@ -9,6 +9,7 @@
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
 #include "../move_generation/move_generator.hpp"
+#include "../executioner/makemove.hpp"
 #include "../search/time_keeper.hpp"
 #include "../search/search.hpp"
 #include "../search/bench.hpp"
@@ -61,8 +62,14 @@ void position_uci(board & b, const std::string & command) {
         moves.push_back(string_move);
     }
 
+    int i = 0;
     for (const std::string & m : moves) {
         if (!parse_move(b, m)) return;
+        i++;
+        if (i > 200) {
+            b.shift_history();
+            i -= 200;
+        }
     }
 
     set_position(b);
@@ -119,6 +126,7 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "id name Motor 0.5.0 " << std::endl;
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
+        std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
@@ -145,7 +153,7 @@ void uci_process(board& b, const std::string& line) {
         continuation_table = {};
         capture_table = {};
         tt.clear();
-        bench(11);
+        bench(13);
     } else if (command == "perft") {
         ss >> command;
         perft_debug(b, std::stoi(command));

@@ -8,7 +8,7 @@
 #include "chess_board/board.hpp"
 #include "move_generation/move_generator.hpp"
 #include "move_generation/move_list.hpp"
-#include "evaluation/evaluation.hpp"
+#include "executioner/makemove.hpp"
 
 template <Color side>
 std::uint64_t perft(board& b, int depth) {
@@ -24,7 +24,7 @@ std::uint64_t perft(board& b, int depth) {
     for (const auto move : ml) {
         make_move<side, false>(b, move);
         nodes += perft<next_side>(b, depth - 1);
-        undo_move<side, false>(b);
+        undo_move<side, false>(b, move);
     }
     return nodes;
 }
@@ -52,7 +52,7 @@ std::uint64_t perft_debug(board & b, int depth) {
         std::uint64_t nodes = perft<next_side>(b, depth - 1);
         moves.push_back(move_string += std::to_string(nodes));
         total_nodes += nodes;
-        undo_move<side, false>(b);
+        undo_move<side, false>(b, m);
     }
     std::sort(moves.begin(), moves.end());
     for (auto m : moves) {

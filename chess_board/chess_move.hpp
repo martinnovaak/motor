@@ -18,28 +18,25 @@ const std::string square_to_string[] = {
 };
 
 enum MoveType : std::uint16_t {
-    QUIET                    = 0,
-    DOUBLE_PAWN_PUSH         = 1,
-    KING_CASTLE              = 2,
-    QUEEN_CASTLE             = 3,
-    CAPTURE                  = 4,
-    EN_PASSANT               = 5,
-    KNIGHT_PROMOTION         = 8,
-    BISHOP_PROMOTION         = 9,
-    ROOK_PROMOTION           = 10,
-    QUEEN_PROMOTION          = 11,
-    KNIGHT_PROMOTION_CAPTURE = 12,
-    BISHOP_PROMOTION_CAPTURE = 13,
-    ROOK_PROMOTION_CAPTURE   = 14,
-    QUEEN_PROMOTION_CAPTURE  = 15,
+    NORMAL,
+    PROMOTION = 1 << 14,
+    EN_PASSANT = 2 << 14,
+    CASTLING  = 3 << 14
+};
+
+enum PromotionType : std::uint16_t {
+    KnightPromotion = 0,
+    BishopPromotion = 1 << 12,
+    RookPromotion = 2 << 12,
+    QueenPromotion  = 3 << 12
 };
 
 class chess_move {
 public:
-    chess_move() : packed_move_data{} {}
+    constexpr chess_move() : packed_move_data{} {}
 
-    chess_move(Square from, Square to, MoveType move_type) {
-        packed_move_data = from | to << 6 | move_type << 12;
+    constexpr chess_move(Square from, Square to, MoveType move_type, PromotionType pt = KnightPromotion) {
+        packed_move_data = static_cast<std::uint16_t>(move_type) | from | to << 6 | pt;
     }
 
     [[nodiscard]] Square get_from() const {
@@ -51,80 +48,37 @@ public:
     }
 
     [[nodiscard]] MoveType get_move_type() const {
-        return static_cast<MoveType>((packed_move_data >> 12) & 0b1111);
+        return static_cast<MoveType>(packed_move_data & (3 << 14));
+    }
+
+    [[nodiscard]] Piece get_promotion() const {
+        return static_cast<Piece>(((packed_move_data >> 12) & 3) + Knight);
     }
 
     bool operator==(const chess_move & other_move) const {
         return other_move.packed_move_data == packed_move_data;
     }
 
-    [[nodiscard]] bool is_quiet() const {
-        switch (get_move_type()) {
-            case QUIET:
-            case DOUBLE_PAWN_PUSH:
-            case KING_CASTLE:
-            case QUEEN_CASTLE:
-            case KNIGHT_PROMOTION:
-            case BISHOP_PROMOTION:
-            case ROOK_PROMOTION:
-            case KNIGHT_PROMOTION_CAPTURE:
-            case BISHOP_PROMOTION_CAPTURE:
-            case ROOK_PROMOTION_CAPTURE:
-                return true;
-            case CAPTURE:
-            case EN_PASSANT:
-            case QUEEN_PROMOTION:
-            case QUEEN_PROMOTION_CAPTURE:
-                return false;
-        }
-    }
-
-    [[nodiscard]] bool is_promotion() const {
-        switch (get_move_type()) {
-            case QUIET:
-            case DOUBLE_PAWN_PUSH:
-            case KING_CASTLE:
-            case QUEEN_CASTLE:
-            case CAPTURE:
-            case EN_PASSANT:
-            case KNIGHT_PROMOTION:
-            case BISHOP_PROMOTION:
-            case ROOK_PROMOTION:
-            case KNIGHT_PROMOTION_CAPTURE:
-            case BISHOP_PROMOTION_CAPTURE:
-            case ROOK_PROMOTION_CAPTURE:
-                return false;
-            case QUEEN_PROMOTION:
-            case QUEEN_PROMOTION_CAPTURE:
-                return true;
-        }
-    }
-
-    [[nodiscard]] bool is_capture() const {
-        return !is_quiet();
-    }
-
     [[nodiscard]] std::string to_string() const {
         std::string move_string;
         move_string.append(square_to_string[get_from()]);
         move_string.append(square_to_string[get_to()]);
-        switch (get_move_type())
+        if (get_move_type() == PROMOTION)
         {
-            case KNIGHT_PROMOTION:
-            case KNIGHT_PROMOTION_CAPTURE:
-                return move_string + "n";
-            case BISHOP_PROMOTION:
-            case BISHOP_PROMOTION_CAPTURE:
-                return move_string + "b";
-            case ROOK_PROMOTION:
-            case ROOK_PROMOTION_CAPTURE:
-                return move_string + "r";
-            case QUEEN_PROMOTION:
-            case QUEEN_PROMOTION_CAPTURE:
-                return move_string + "q";
-            default:
-                return move_string;
+            switch(get_promotion()) {
+                case Knight:
+                    return move_string + "n";
+                case Bishop:
+                    return move_string + "b";
+                case Rook:
+                    return move_string + "r";
+                case Queen:
+                    return move_string + "q";
+                default:
+                    return move_string;
+            }
         }
+        return move_string;
     }
 
     [[nodiscard]] std::uint16_t get_value() const {

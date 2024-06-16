@@ -45,7 +45,6 @@ public:
     }
 
     bool should_end() {
-        nodes_searched++;
         return timekeeper.should_end(nodes_searched);
     }
 

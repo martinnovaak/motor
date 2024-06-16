@@ -83,5 +83,47 @@ enum CastlingRight : std::uint8_t {
     CASTLE_BLACK_KINGSIDE  = 4,
     CASTLE_BLACK_QUEENSIDE = 8,
 };
+constexpr std::uint64_t bb(Square s) { return (1ULL << s); }
+
+constexpr Square CastlingRookFrom[16] = {
+        Null_Square, // NO_CASTLING
+        H1,   // WHITE_KING_SIDE = 1,
+        A1,   // WHITE_QUEEN_SIDE = 2,
+        Null_Square,
+        H8,   // BLACK_KING_SIDE  = 4,
+        Null_Square,Null_Square,Null_Square,
+        A8    // BLACK_QUEEN_SIDE = 8,
+};
+constexpr Square CastlingRookTo[16] = {
+        Null_Square, // NO_CASTLING
+        F1,   // WHITE_KING_SIDE = 1,
+        D1,   // WHITE_QUEEN_SIDE = 2,
+        Null_Square,
+        F8,   // BLACK_KING_SIDE  = 4,
+        Null_Square,Null_Square,Null_Square,
+        D8    // BLACK_QUEEN_SIDE = 8,
+};
+
+// Squares that need to be empty for castling
+constexpr std::uint64_t CastlingPath[16] = {
+        0ull,                            // NO_CASTLING
+        bb(F1) | bb(G1),              // WHITE_KING_SIDE = 1,
+        bb(D1) | bb(C1) | bb(B1),     // WHITE_QUEEN_SIDE = 2,
+        0ull,
+        bb(F8) | bb(G8),              // BLACK_KING_SIDE  = 4,
+        0ull,0ull,0ull,
+        bb(D8) | bb(C8) | bb(B8)   // BLACK_QUEEN_SIDE = 8,
+};
+
+// Squares that need not to be attacked by ennemy for castling
+constexpr std::uint64_t CastlingKingPath[16] = {
+        0ull,                             // NO_CASTLING
+        bb(E1) | bb(F1) | bb(G1),  // WHITE_KING_SIDE = 1,
+        bb(E1) | bb(D1) | bb(C1),  // WHITE_QUEEN_SIDE = 2,
+        0ull,
+        bb(E8) | bb(F8) | bb(G8),  // BLACK_KING_SIDE  = 4,
+        0ull,0ull,0ull,
+        bb(E8) | bb(D8) | bb(C8)   // BLACK_QUEEN_SIDE = 8,
+};
 
 #endif //MOTOR_TYPES_HPP
