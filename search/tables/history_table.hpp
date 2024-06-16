@@ -54,9 +54,7 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
             }
         }
 
-        int index = 0;
         for (const auto &quiet: quiets) {
-            index++;
             int malus = -bonus;
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();

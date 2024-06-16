@@ -53,15 +53,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     chess_move best_move;
     chess_move tt_move = {};
-    //std::int16_t static_eval = evaluate<color>(chessboard);;
     std::int16_t eval, static_eval;
-    bool tthit = false;
 
     if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
-        tthit = true;
         eval = static_eval = tt_entry.static_eval;
         if constexpr (!is_pv) {
             if (tt_entry.depth >= depth) {

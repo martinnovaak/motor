@@ -4,14 +4,6 @@
 #include <bit>
 #include "types.hpp"
 
-static void set_bit(std::uint64_t& bitboard, std::uint8_t square) {
-    bitboard |= (1ull << square);
-}
-
-static void pop_bit(std::uint64_t& bitboard, std::uint8_t square) {
-    bitboard &= ~(1ull << square);
-}
-
 static Square lsb(std::uint64_t bitboard)
 {
     return static_cast<Square>(std::countr_zero(bitboard));
