@@ -32,7 +32,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         int move_score;
         if (move == tt_move) {
             move_score = 214748364;
-        } else if (!move.is_quiet()) {
+        } else if (!chessboard.is_quiet(move)) {
             move_score = 10'000'000 * see<color>(chessboard, move) + noisy_base + mvv[chessboard.get_piece(to)];
             move_score += capture_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
         } else if (data.get_killer(0) == move){

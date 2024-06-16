@@ -37,7 +37,7 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
 
-    if (best_move.is_quiet()) {
+    if (chessboard.is_quiet(best_move)) {
 
         update_history(history_table[color][from][to], bonus);
 

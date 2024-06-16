@@ -6,19 +6,22 @@
 
 class move_list {
 private:
-    std::array<chess_move, 218> list;
-    std::array<std::int32_t, 218> move_score;
+    std::array<chess_move, 256> list;
+    std::array<std::int32_t, 256> move_score;
     std::uint8_t count;
 public:
-    using iterator = typename std::array<chess_move, 218>::iterator;
-
     move_list() : list{}, count{} {}
 
     [[nodiscard]] std::uint8_t size() const {
         return count;
     }
 
-    void add(chess_move m) {
+    void push_back(chess_move && m) {
+        list[count] = m;
+        count++;
+    }
+
+    void push_back(const chess_move & m) {
         list[count] = m;
         count++;
     }
@@ -40,12 +43,13 @@ public:
         return move_score[index];
     }
 
-    [[nodiscard]] iterator begin() {
-        return list.begin();
-    }
-    [[nodiscard]] iterator end() {
-        return list.begin() + count;
-    }
+    typedef chess_move* iterator;
+    typedef const chess_move* const_iterator;
+
+    iterator begin() { return &list[0]; }
+    const_iterator begin() const { return &list[0]; }
+    iterator end() { return &list[count]; }
+    const_iterator end() const { return &list[count]; }
 };
 
 #endif //MOTOR_MOVE_LIST_HPP

@@ -151,10 +151,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         std::uint64_t start_nodes = data.nodes();
 
         int reduction = lmr_table[depth][moves_searched];
+        bool is_quiet = chessboard.is_quiet(chessmove);
 
         if constexpr (!is_root) {
             if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
-                if (chessmove.is_quiet()) {
+                if (is_quiet) {
                     if (quiets.size() > 4 + depth * depth / (2 - improving)) {
                         continue;
                     }
@@ -166,7 +167,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
 
-                int see_margin = chessmove.is_quiet() ? -77 * depth : -35 * depth * depth;
+                int see_margin = is_quiet ? -77 * depth : -35 * depth * depth;
                 if (depth < 6 && !see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
@@ -207,7 +208,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         auto to = chessmove.get_to();
         auto piece = chessboard.get_piece(from);
         data.prev_moves[data.get_ply()] = { piece, from, to };
-        make_move<color>(chessboard, chessmove);
+        make_move<color, true>(chessboard, chessmove);
         tt.prefetch(chessboard.get_hash_key());
         data.augment_ply();
 
@@ -219,7 +220,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             // late move reduction
             bool do_full_search = true;
             if (depth >= 3 && movelist[moves_searched] < 1'000'000) {
-                if (chessmove.is_quiet()) {
+                if (is_quiet) {
                     reduction += !is_pv + !improving;  
                     reduction -= chessboard.in_check();
                     reduction -= movelist[moves_searched] / 12'000;
@@ -241,7 +242,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        undo_move<color>(chessboard);
+        undo_move<color>(chessboard, chessmove);
         data.reduce_ply();
 
         if constexpr (is_root) {
@@ -260,7 +261,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 if (alpha >= beta) {
                     flag = Bound::LOWER;
                     int bonus = history_bonus(depth);
-                    if (chessmove.is_quiet()) {
+                    if (is_quiet) {
                         data.update_killer(chessmove);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                     }
@@ -270,10 +271,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        if (chessmove.is_quiet()) {
-            quiets.add(chessmove);
+        if (is_quiet) {
+            quiets.push_back(chessmove);
         } else {
-            captures.add(chessmove);
+            captures.push_back(chessmove);
         }
     }
 
