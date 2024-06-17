@@ -75,7 +75,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             eval = tt_eval;
         }
     } else {
-        eval = static_eval = evaluate<color>(chessboard) + correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
+        eval = static_eval = evaluate<color>(chessboard);
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
         }

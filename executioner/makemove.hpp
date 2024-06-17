@@ -3,6 +3,7 @@
 
 #include "../chess_board/board.hpp"
 #include "../evaluation/nnue.hpp"
+#include "../search/tables/history_table.hpp"
 
 template <Color color>
 std::int16_t evaluate(board& chessboard) {
@@ -18,7 +19,7 @@ std::int16_t evaluate(board& chessboard) {
 
     return network.evaluate<color>() * (68 + game_phase) / 74;
 */
-    return network.evaluate<color>();
+    return network.evaluate<color>() + correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
 }
 
 void set_position(board& chessboard) {
