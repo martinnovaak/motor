@@ -34,6 +34,7 @@ struct board_info {
     Piece captured_piece = Piece::Null_Piece;
     chess_move move = {};
     zobrist hash_key = {};
+    zobrist pawn_key = {};
     std::uint64_t threats[6] = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
@@ -111,6 +112,17 @@ public:
         state->hash_key.update_enpassant_hash(state->enpassant);
 
         update_bitboards();
+
+        std::uint64_t white_pawns = get_pieces(White, Pawn);
+        std::uint64_t black_pawns = get_pieces(Black, Pawn);
+        while(white_pawns) {
+            const Square psquare = pop_lsb(white_pawns);
+            state->pawn_key.update_psqt_hash(White, Pawn, psquare);
+        }
+        while(black_pawns) {
+            const Square psquare = pop_lsb(black_pawns);
+            state->pawn_key.update_psqt_hash(Black, Pawn, psquare);
+        }
     }
 
     template <Color our_color>
@@ -297,6 +309,7 @@ public:
         state->hash_key = old_info->hash_key;
         state->hash_key.update_side_hash();
         state->hash_key.update_enpassant_hash(old_info->enpassant);
+        state->pawn_key = old_info->pawn_key;
         state->enpassant = Square::Null_Square;
         state->fifty_move_clock++;
         state->castling_rights = old_info->castling_rights;
@@ -316,6 +329,10 @@ public:
 
     [[nodiscard]] std::uint64_t get_hash_key() const {
         return state->hash_key.get_key();
+    }
+
+    [[nodiscard]] std::uint64_t get_pawn_key() const {
+        return state->pawn_key.get_key();
     }
 
     [[nodiscard]] chess_move get_last_played_move() const {
@@ -395,6 +412,10 @@ public:
 
     void update_hash(Color color, Piece piece, Square square) {
         state->hash_key.update_psqt_hash(color, piece, square);
+    }
+
+    void update_pawn_hash(Color color, Square square) {
+        state->pawn_key.update_psqt_hash(color, Pawn, square);
     }
 
     bool is_quiet(const chess_move & move) {
