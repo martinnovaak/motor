@@ -75,7 +75,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             eval = tt_eval;
         }
     } else {
-        eval = static_eval = evaluate<color>(chessboard);
+        eval = static_eval = evaluate<color>(chessboard) + correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
         }
@@ -257,10 +257,15 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
                 if (alpha >= beta) {
                     flag = Bound::LOWER;
-                    int bonus = history_bonus(depth);
                     if (is_quiet) {
                         data.update_killer(chessmove);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
+
+                        int & corrhist_value = correction_table[color][chessboard.get_hash_key() % 16384];
+                        int newvalue = std::min(depth + 1, 16);
+                        corrhist_value *= 256 - newvalue;
+                        corrhist_value += (score - eval) * 256 * newvalue;
+                        corrhist_value = std::clamp(corrhist_value / 256, -8000, 8000);
                     }
                     update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;
