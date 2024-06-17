@@ -145,7 +145,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             continue;
         }
 
-        std::uint64_t start_nodes = data.nodes();
+        std::uint64_t start_nodes = data.get_nodes();
 
         int reduction = lmr_table[depth][moves_searched];
         bool is_quiet = chessboard.is_quiet(chessmove);
@@ -218,7 +218,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             bool do_full_search = true;
             if (depth >= 3 && movelist[moves_searched] < 1'000'000) {
                 if (is_quiet) {
-                    reduction += !is_pv + !improving;  
+                    reduction += !is_pv + !improving;
                     reduction -= chessboard.in_check();
                     reduction -= movelist[moves_searched] / 12'000;
                 }
