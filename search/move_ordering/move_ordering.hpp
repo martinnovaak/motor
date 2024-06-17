@@ -17,7 +17,7 @@ constexpr static int mvv_lva[7][6] = {
         {25, 0, 0, 0, 0, 0}
 };
 
-constexpr int noisy_base = 0;
+constexpr int noisy_base = -500;
 
 constexpr int mvv[7] = { 200, 450, 500, 880, 1200, 0, 1100 };
 

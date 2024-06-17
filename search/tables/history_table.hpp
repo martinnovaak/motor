@@ -90,7 +90,7 @@ template <Color color>
 int get_history(board & chessboard, search_data & data, Square from, Square to, Piece piece) {
     const std::uint64_t pawn_key = chessboard.get_pawn_key() & 0b1111111111111;
     int move_score = history_table[color][from][to];
-    move_score += pawn_table[pawn_key][piece][to] - 400;
+    move_score += pawn_table[pawn_key][piece][to] - 500;
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
         move_score += continuation_table[prev.piece_type][prev.to][piece][to];

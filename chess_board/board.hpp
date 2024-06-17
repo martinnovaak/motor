@@ -67,6 +67,7 @@ public:
         state = &history[0];
         side = Color::White;
         state->hash_key = zobrist();
+        state->pawn_key = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
 
