@@ -119,8 +119,12 @@ public:
         nodes_searched = 0;
     }
 
+    [[nodiscard]] std::uint64_t get_nodes() const {
+        return nodes_searched;
+    }
+
     void update_node_count(int from, int to, std::uint64_t node_count) {
-        timekeeper.update_node_count(from, to, nodes() - node_count);
+        timekeeper.update_node_count(from, to, nodes_searched - node_count);
     }
 
     std::uint64_t nps() {

@@ -52,8 +52,12 @@ public:
             return false;
         }
 
-        
-        double opt_scale = 1.0; // preparation for node_tm
+        double opt_scale = 1.0;
+        if (depth > 6) {
+            double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
+            opt_scale = bm_frac * 2.0 + 0.5;
+        }
+
 
         if (elapsed() >= optimal_time_limit * opt_scale) {
             stop = true;
