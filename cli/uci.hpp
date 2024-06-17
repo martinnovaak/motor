@@ -68,7 +68,7 @@ void position_uci(board & b, const std::string & command) {
         i++;
         if (i > 200) {
             b.shift_history();
-            i -= 200;
+            i -= 100;
         }
     }
 
