@@ -19,7 +19,7 @@ std::int16_t evaluate(board& chessboard) {
 
     return network.evaluate<color>() * (68 + game_phase) / 74;
 */
-    return network.evaluate<color>() + correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
+    return network.evaluate<color>();
 }
 
 void set_position(board& chessboard) {
@@ -120,7 +120,7 @@ void make_move(board & b, chess_move m) {
                 b.reset_fifty_move_clock();
                 b.update_castling_rights(to);
                 if (capture == Pawn) {
-                    b.update_pawn_hash(their_side, to);
+                //    b.update_pawn_hash(their_side, to);
                 }
             }
 
@@ -130,8 +130,8 @@ void make_move(board & b, chess_move m) {
 
             if (piece == Pawn) {
                 b.reset_fifty_move_clock();
-                b.update_pawn_hash(side, from);
-                b.update_pawn_hash(side, to);
+                //b.update_pawn_hash(side, from);
+                //b.update_pawn_hash(side, to);
 
                 if ((int(from) ^ int(to)) == int(NORTH_2)) {
                     const Square epsq = to - PawnDirection;
@@ -167,7 +167,7 @@ void make_move(board & b, chess_move m) {
                 unset_piece<their_side, update_nnue>(b, b.get_piece(to), to, wking, bking);
                 b.update_castling_rights(to);
             }
-            b.update_pawn_hash(side, from);
+            //b.update_pawn_hash(side, from);
             b.update_hash(side, Pawn, from);
             b.update_hash(side, promotionType, to);
             unset_piece<side, update_nnue>(b, Pawn, from, wking, bking);
@@ -179,9 +179,9 @@ void make_move(board & b, chess_move m) {
             b.update_hash(their_side, Pawn, epsq);
             b.update_hash(side, Pawn, from);
             b.update_hash(side, Pawn, to);
-            b.update_pawn_hash(their_side, epsq);
-            b.update_pawn_hash(side, from);
-            b.update_pawn_hash(side, to);
+            //b.update_pawn_hash(their_side, epsq);
+            //b.update_pawn_hash(side, from);
+            //b.update_pawn_hash(side, to);
             unset_piece<their_side, update_nnue>(b, Pawn, epsq, wking, bking);
             move_piece<side, update_nnue>(b, Pawn, from, to, wking, bking);
 

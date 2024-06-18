@@ -53,7 +53,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     chess_move best_move;
     chess_move tt_move = {};
-    std::int16_t eval, static_eval;
+    std::int16_t eval, static_eval, raw_eval;
 
     if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
@@ -78,6 +78,16 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         eval = static_eval = evaluate<color>(chessboard);
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
+        }
+    }
+
+    raw_eval = static_eval;
+
+    if (!in_check && data.singular_move == 0) {
+        if (std::abs(eval) < 8000) {
+            eval += correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
+            eval = std::clamp(int(eval), int(data.mate_value()), -data.mate_value());
+            static_eval = eval;
         }
     }
 
@@ -260,12 +270,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
-
-                        int & corrhist_value = correction_table[color][chessboard.get_hash_key() % 16384];
-                        int newvalue = std::min(depth + 1, 16);
-                        corrhist_value *= 256 - newvalue;
-                        corrhist_value += (score - eval) * 256 * newvalue;
-                        corrhist_value = std::clamp(corrhist_value / 256, -8000, 8000);
                     }
                     update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;
@@ -280,8 +284,19 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if (data.singular_move == 0)
-        tt[zobrist_key] = { flag, depth, best_score, static_eval, best_move, zobrist_key };
+    if (data.singular_move == 0) {
+        tt[zobrist_key] = {flag, depth, best_score, raw_eval, best_move, zobrist_key};
+
+        if (!in_check && (best_move.get_value() == 0 || chessboard.is_quiet(best_move))
+            && !(flag == Bound::UPPER && best_score >= static_eval) && !(flag == Bound::LOWER && best_score <= static_eval)) {
+
+            int & corrhist_value = correction_table[color][chessboard.get_pawn_key() % 16384];
+            int newvalue = std::min(depth + 1, 16);
+            corrhist_value *= 256 - newvalue;
+            corrhist_value += (best_score - eval) * 256 * newvalue;
+            corrhist_value = std::clamp(corrhist_value / 256, -8000, 8000);
+        }
+    }
 
     return best_score;
 }

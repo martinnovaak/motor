@@ -37,6 +37,16 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         static_eval = eval = evaluate<color>(chessboard);
     }
 
+    std::int16_t raw_eval = static_eval;
+
+    if (!chessboard.in_check()) {
+        if (std::abs(eval) < 8000) {
+            eval += correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
+            eval = std::clamp(int(eval), int(data.mate_value()), -data.mate_value());
+            static_eval = eval;
+        }
+    }
+
     if (eval >= beta) {
         return eval;
     }
@@ -81,7 +91,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     }
 
-    tt[zobrist_key] = { flag, 0, eval, static_eval, best_move, zobrist_key };
+    tt[zobrist_key] = { flag, 0, eval, raw_eval, best_move, zobrist_key };
     return eval;
 }
 
