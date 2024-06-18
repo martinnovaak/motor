@@ -413,10 +413,6 @@ public:
 
     void update_hash(Color color, Piece piece, Square square) {
         state->hash_key.update_psqt_hash(color, piece, square);
-
-        if (piece == Pawn) {
-            state->pawn_key.update_psqt_hash(color, piece, square);
-        }
     }
 
     void update_pawn_hash(Color color, Square square) {

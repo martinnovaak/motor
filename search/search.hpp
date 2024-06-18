@@ -87,7 +87,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (std::abs(eval) < 8000) {
             eval += correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
             eval = std::clamp(int(eval), int(data.mate_value()), -data.mate_value());
-            static_eval = eval;
+            static_eval += correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
+            static_eval = std::clamp(int(static_eval), int(data.mate_value()), -data.mate_value());
         }
     }
 
