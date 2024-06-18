@@ -87,7 +87,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
 
-    if constexpr (!is_root) {
+    if constexpr (!is_pv) {
         if (!in_check && std::abs(beta) < 9'000) {
             // razoring
             if (depth < 4 && eval + 470 * depth <= alpha) {
