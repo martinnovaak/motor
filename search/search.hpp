@@ -84,12 +84,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     raw_eval = static_eval;
 
     if (!in_check && data.singular_move == 0) {
-        if (std::abs(eval) < 8000) {
-            eval += correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
-            eval = std::clamp(int(eval), int(data.mate_value()), -data.mate_value());
-            static_eval += correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
-            static_eval = std::clamp(int(static_eval), int(data.mate_value()), -data.mate_value());
-        }
+        if (std::abs(eval) < 5000)
+        eval += correction_table[chessboard.get_pawn_key() % 16384] / 128;
     }
 
     data.improving[data.get_ply()] = static_eval;
@@ -146,6 +142,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     std::int16_t best_score = -INF;
+    bool best_move_quiet = false;
+
     score_moves<color>(chessboard, movelist, data, best_move);
     const chess_move previous_move = chessboard.get_last_played_move();
 
@@ -261,6 +259,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             best_score = score;
             best_move = chessmove;
             data.update_pv(chessmove);
+            best_move_quiet = is_quiet;
 
             if (score > alpha) {
                 alpha = score;
@@ -288,14 +287,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if (data.singular_move == 0) {
         tt[zobrist_key] = {flag, depth, best_score, raw_eval, best_move, zobrist_key};
 
-        if (!in_check && (best_move.get_value() == 0 || chessboard.is_quiet(best_move))
+        if (!in_check && best_move_quiet
             && !(flag == Bound::UPPER && best_score >= static_eval) && !(flag == Bound::LOWER && best_score <= static_eval)) {
 
-            int & corrhist_value = correction_table[color][chessboard.get_pawn_key() % 16384];
-            int newvalue = std::min(depth + 1, 16);
-            corrhist_value *= 256 - newvalue;
-            corrhist_value += (best_score - eval) * 256 * newvalue;
-            corrhist_value = std::clamp(corrhist_value / 256, -8000, 8000);
+            int & pawn_score = correction_table[chessboard.get_pawn_key() % 16384];
+            int diff = std::clamp(128 * (best_score - static_eval), -4096, 4096);
+            if constexpr (color == Black) diff = -diff;
+            int new_weight = std::min(depth + 1, 16);
+            pawn_score = (pawn_score * (256 - new_weight) + diff * new_weight) / 256;
         }
     }
 
