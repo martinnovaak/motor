@@ -83,7 +83,7 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
 }
 
 template <Color color>
-int get_history(search_data & data, Square from, Square to, Piece piece) {
+int get_history(board & chessboard, search_data & data, Square from, Square to, Piece piece) {
     int move_score = history_table[color][from][to];
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
@@ -96,6 +96,25 @@ int get_history(search_data & data, Square from, Square to, Piece piece) {
                 move_score += continuation_table[prev.piece_type][prev.to][piece][to];
             }
         }
+    }
+
+    auto threats = chessboard.get_threats();
+    switch(piece) {
+        case Knight:
+        case Bishop:
+            if (threats[Bishop] && bb(to)) move_score -= 2000;
+            if (threats[Bishop] && bb(from)) move_score += 2000;
+            break;
+        case Rook:
+            if (threats[Rook] && bb(to)) move_score -= 2000;
+            if (threats[Rook] && bb(from)) move_score += 2000;
+            break;
+        case Queen:
+            if (threats[Queen] && bb(to)) move_score -= 5000;
+            if (threats[Queen] && bb(from)) move_score += 5000;
+            break;
+        default:
+            break;
     }
     return move_score;
 }
