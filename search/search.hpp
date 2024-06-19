@@ -54,6 +54,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval;
+    bool would_prune = false;
 
     if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
@@ -61,12 +62,21 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         std::int16_t tt_eval = tt_entry.score;
         eval = static_eval = tt_entry.static_eval;
 
-        if (tt_entry.depth >= depth * (1 + is_pv)) {
-            if ((tt_entry.bound == Bound::EXACT) ||
-                (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
-                (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
-                return tt_eval;
+        if constexpr (!is_root) {
+            if (tt_entry.depth >= depth + is_pv * 2) {
+                if ((tt_entry.bound == Bound::EXACT) ||
+                    (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
+                    (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
+                    would_prune = true;
+                }
             }
+        }
+
+        if (would_prune) {
+            if (!is_pv)
+                return tt_eval;
+            else
+                depth --;
         }
 
         if (!((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
@@ -274,7 +284,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if (data.singular_move == 0)
+    if (data.singular_move == 0 && !would_prune)
         tt[zobrist_key] = { flag, depth, best_score, static_eval, best_move, zobrist_key };
 
     return best_score;
