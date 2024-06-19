@@ -60,13 +60,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         eval = static_eval = tt_entry.static_eval;
-        if constexpr (!is_pv) {
-            if (tt_entry.depth >= depth) {
-                if ((tt_entry.bound == Bound::EXACT) ||
-                    (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
-                    (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
-                    return tt_eval;
-                }
+
+        if (tt_entry.depth >= depth * (1 + is_pv)) {
+            if ((tt_entry.bound == Bound::EXACT) ||
+                (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
+                (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
+                return tt_eval;
             }
         }
 
