@@ -42,7 +42,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         } else if (move == counter_move) {
             move_score = 1'000'000;
         } else {
-            move_score = get_history<color>(data, from, to, chessboard.get_piece(from));
+            move_score = get_history<color>(chessboard, data, from, to, chessboard.get_piece(from));
         }
         
         movelist[move_index] = move_score;

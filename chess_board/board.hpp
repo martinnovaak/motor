@@ -34,7 +34,7 @@ struct board_info {
     Piece captured_piece = Piece::Null_Piece;
     chess_move move = {};
     zobrist hash_key = {};
-    std::uint64_t threats[6] = {};
+    std::array<std::uint64_t, 6> threats = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
     std::uint64_t pin_diagonal = {};
@@ -413,6 +413,10 @@ public:
         std::fill(history.begin() + (index - 100 + 1), history.begin() + (index + 1), default_value);
 
         state -= 100;
+    }
+
+    std::uint64_t get_threats() {
+        return state->threats[King];
     }
 };
 

@@ -7,7 +7,7 @@
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
 
-std::array<std::array<std::array<int, 64>, 64>, 2> history_table = {};
+std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 
@@ -37,9 +37,12 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
 
-    if (chessboard.is_quiet(best_move)) {
+    std::uint64_t threats = chessboard.get_threats();
 
-        update_history(history_table[color][from][to], bonus);
+    if (chessboard.is_quiet(best_move)) {
+        bool threat_from = (threats & bb(from));
+        bool threat_to = (threats & bb(to));
+        update_history(history_table[color][threat_from][threat_to][from][to], bonus);
 
         if constexpr (!is_root) {
             prev = data.prev_moves[data.get_ply() - 1];
@@ -59,7 +62,9 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
             auto qpiece = chessboard.get_piece(qfrom);
-            update_history(history_table[color][qfrom][qto], malus);
+            bool qthreat_from = (threats & bb(qfrom));
+            bool qthreat_to = (threats & bb(qto));
+            update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
 
             if constexpr (!is_root) {
                 update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], malus);
@@ -83,8 +88,12 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
 }
 
 template <Color color>
-int get_history(search_data & data, Square from, Square to, Piece piece) {
-    int move_score = history_table[color][from][to];
+int get_history(board & chessboard, search_data & data, Square from, Square to, Piece piece) {
+    std::uint64_t threats = chessboard.get_threats();
+    bool threat_from = (threats & bb(from));
+    bool threat_to = (threats & bb(to));
+
+    int move_score = history_table[color][threat_from][threat_to][from][to];
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
         move_score += continuation_table[prev.piece_type][prev.to][piece][to];
@@ -97,6 +106,7 @@ int get_history(search_data & data, Square from, Square to, Piece piece) {
             }
         }
     }
+
     return move_score;
 }
 
