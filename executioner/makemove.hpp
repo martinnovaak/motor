@@ -6,13 +6,13 @@
 
 template <Color color>
 std::int16_t evaluate(board& chessboard) {
-    int material =
-            (popcount(chessboard.get_pieces(White, Knight) + chessboard.get_pieces(Black, Knight))) * 450 +
-            (popcount(chessboard.get_pieces(White, Bishop) + chessboard.get_pieces(Black, Bishop))) * 450 +
-            (popcount(chessboard.get_pieces(White, Rook) + chessboard.get_pieces(Black, Rook))) * 700 +
-            (popcount(chessboard.get_pieces(White, Queen) + chessboard.get_pieces(Black, Queen))) * 1300;
+    int phase =
+            (popcount(chessboard.get_pieces(White, Knight) + chessboard.get_pieces(Black, Knight))) * 3 +
+            (popcount(chessboard.get_pieces(White, Bishop) + chessboard.get_pieces(Black, Bishop))) * 3 +
+            (popcount(chessboard.get_pieces(White, Rook) + chessboard.get_pieces(Black, Rook))) * 5 +
+            (popcount(chessboard.get_pieces(White, Queen) + chessboard.get_pieces(Black, Queen))) * 10;
 
-    return network.evaluate<color>() * (700 + material / 32) / 1024;
+    return network.evaluate<color>() * (192 + phase) / 256;
 
     // return network.evaluate<color>();
 }
