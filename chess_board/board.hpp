@@ -415,8 +415,8 @@ public:
         state -= 100;
     }
 
-    std::array<std::uint64_t, 6> get_threats() {
-        return state->threats;
+    std::uint64_t get_threats() {
+        return state->threats[King];
     }
 };
 
