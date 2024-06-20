@@ -14,7 +14,7 @@ class time_keeper {
 public:
     time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
 
-    void reset(int time, int increment = 0, int movestogo = 0) {
+    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1) {
         start_time = std::chrono::steady_clock::now();
         stop = false;
         const int time_minus_threshold = time - 50;
@@ -27,11 +27,12 @@ public:
             inf_time = true;
         }
         else if(movestogo == 0) {
+            double moves_left = 40 * std::pow(1.0 + 1.5 * std::pow(double(move_count) / 40, 2), 0.5) - move_count;
+
             int total = time_minus_threshold / 25 + 3 * increment / 4;
-            optimal_time_limit = total * 6 / 10;
-            time_limit = std::min(time_minus_threshold, total * 2);
-        }
-        else {
+            optimal_time_limit = std::clamp(0.8 * (time_minus_threshold / moves_left + increment), 0.0, std::max(0.0001, time_minus_threshold / 2.0));
+            time_limit = std::clamp(time_minus_threshold / sqrt(moves_left) + increment, 0.0, std::max(0.0001, time_minus_threshold / 2.0));
+        } else {
             time_limit = increment + 950 * time / movestogo / 1000;
             optimal_time_limit = time_limit / 4 * 3;
         }
@@ -58,8 +59,7 @@ public:
             opt_scale = bm_frac * 2.0 + 0.5;
         }
 
-
-        if (elapsed() >= optimal_time_limit * opt_scale) {
+        if (elapsed() >= std::min(optimal_time_limit * opt_scale, time_limit)) {
             stop = true;
         }
         return stop;
