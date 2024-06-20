@@ -91,9 +91,6 @@ void make_move(board & b, chess_move m) {
     const Piece piece = b.get_piece(from);
     const Piece capture = b.get_piece(to);
 
-    b.make_state<their_side>(capture, m);
-    b.update_castling_rights(from);
-
     int wking = lsb(b.get_pieces(White, King));
     int bking = lsb(b.get_pieces(Black, King));
 
@@ -106,10 +103,14 @@ void make_move(board & b, chess_move m) {
             } else {
                 bking = to;
             }
+            make_move<side, false>(b, m);
             update_bucket<side>(b, wking, bking);
+            return;
         }
     }
 
+    b.make_state<their_side>(capture, m);
+    b.update_castling_rights(from);
 
     switch(m.get_move_type()) {
         case NORMAL: {
