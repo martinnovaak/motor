@@ -1,11 +1,11 @@
 #ifndef MOTOR_LMR_TABLE_HPP
 #define MOTOR_LMR_TABLE_HPP
 
-#include <array>
+#include "../chess_board/types.hpp"
 #include <cmath>
 
-std::array<std::array<int, 218>, 96> initializeReductions(int lmr = 550) {
-    std::array<std::array<int, 218>, 96> reductions = {};
+nested_array<int, 96, 220> initializeReductions(int lmr = 550) {
+    nested_array<int, 96, 220> reductions = {};
 
     for (int i = 1; i < 96; i++) {
         for (int j = 1; j < 218; j++) {

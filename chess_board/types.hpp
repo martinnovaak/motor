@@ -2,6 +2,7 @@
 #define MOTOR_TYPES_HPP
 
 #include <cstdint>
+#include <array>
 
 constexpr static std::uint64_t full_board = 0xffffffffffffffffull;
 
@@ -124,6 +125,32 @@ constexpr std::uint64_t CastlingKingPath[16] = {
         bb(E8) | bb(F8) | bb(G8),  // BLACK_KING_SIDE  = 4,
         0ull,0ull,0ull,
         bb(E8) | bb(D8) | bb(C8)   // BLACK_QUEEN_SIDE = 8,
+};
+
+// primary template for nested_array
+template <typename T, size_t N, std::size_t... DIMENSIONS>
+struct nested_array {
+    nested_array() { reset(); }
+    // Reset constructor to allow nested_array<T, N, DIMENSIONS...> = {}
+    nested_array(std::initializer_list<nested_array<T, DIMENSIONS...>>) : nested_array() {}
+    nested_array<T, DIMENSIONS...> &operator[](std::size_t index) { return data[index]; }
+    const nested_array<T, DIMENSIONS...> &operator[](std::size_t index) const { return data[index]; }
+    void reset() { data.fill({}); }
+
+    std::array<nested_array<T, DIMENSIONS...>, N> data;
+};
+
+// Specialization for the base case when no dimensions remain
+template <typename T, std::size_t N>
+struct nested_array<T, N> {
+    nested_array() { reset(); }
+    // Reset constructor to allow nested_array<T, N> = {}
+    nested_array(std::initializer_list<T>) : nested_array() {}
+    T &operator[](std::size_t index) { return data[index]; }
+    const T &operator[](std::size_t index) const { return data[index]; }
+    void reset() { data.fill({}); }
+
+    std::array<T, N> data;
 };
 
 #endif //MOTOR_TYPES_HPP

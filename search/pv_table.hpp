@@ -37,8 +37,8 @@ public:
     }
 
 private:
-    std::uint8_t pv_length[96];
-    chess_move triangular_pv_table[96][96];
+    std::array<std::uint8_t, 96> pv_length;
+    nested_array<chess_move, 96, 96> triangular_pv_table;
 };
 
 #endif //MOTOR_PV_TABLE_HPP

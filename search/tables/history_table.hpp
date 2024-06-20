@@ -7,9 +7,9 @@
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
 
-std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
-std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
-std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
+nested_array<int, 2, 2, 2, 64, 64> history_table = {};
+nested_array<int, 6, 64, 6, 64> continuation_table = {};
+nested_array<int, 6, 64, 7> capture_table = {};
 
 constexpr int noisy_mul = 30;
 constexpr int noisy_max = 500;

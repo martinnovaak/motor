@@ -2,7 +2,6 @@
 #define MOTOR_SEARCH_DATA_HPP
 
 #include <cstdint>
-
 #include "pv_table.hpp"
 #include "time_keeper.hpp"
 #include "tables/transposition_table.hpp"
@@ -20,12 +19,12 @@ enum class Bound : std::uint8_t {
 };
 
 struct TT_entry {
-    Bound bound;            // 8 bits
-    std::int8_t depth;      // 8 bits
-    std::int16_t score;     // 16 bits
+    Bound bound;              // 8 bits
+    std::int8_t depth;        // 8 bits
+    std::int16_t score;       // 16 bits
     std::int16_t static_eval; // 16 bits
-    chess_move tt_move;     // 16 bits
-    std::uint64_t zobrist;  // 64 bits
+    chess_move tt_move;       // 16 bits
+    std::uint64_t zobrist;    // 64 bits
 };
 
 transposition_table<TT_entry> tt(32 * 1024 * 1024);
@@ -131,15 +130,15 @@ public:
         return timekeeper.NPS(nodes_searched);
     }
 
-    int improving[96] = {};
+    std::array<int, 96> improving = {};
 
-    history_move prev_moves[96];
+    std::array<history_move, 96> prev_moves;
     
 
-    chess_move counter_moves[64][64] = {};
+    nested_array<chess_move, 64, 64> counter_moves = {};
     std::uint32_t singular_move = {};
     int stack_eval = {};
-    int double_extension[96] = {};
+    std::array<int, 96> double_extension = {};
 private:
     std::int16_t ply;
 
@@ -148,7 +147,7 @@ private:
     time_keeper timekeeper;
 
     std::uint64_t nodes_searched;
-    chess_move killer_moves[96][2] = {};
+    nested_array<chess_move, 96, 2> killer_moves = {};
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP
