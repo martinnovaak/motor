@@ -2,7 +2,9 @@
 #define MOTOR_NNUE_HPP
 
 #include <algorithm>
-
+#include <array>
+#include <vector>
+#include <tuple>
 #include "incbin.hpp"
 
 #include <immintrin.h>
@@ -48,6 +50,8 @@ class perspective_network
 public:
     std::array<std::array<std::int16_t, hidden_size>, 128> white_accumulator_stack;
     std::array<std::array<std::int16_t, hidden_size>, 128> black_accumulator_stack;
+    std::array<std::vector<std::tuple<Color, Piece, Square, int, int>>, 128> adds;
+    std::array<std::vector<std::tuple<Color, Piece, Square, int, int>>, 128> subs;
     unsigned int index;
 
     perspective_network() {
@@ -56,16 +60,32 @@ public:
 
     void refresh_current_accumulator() {
         white_accumulator_stack[index] = black_accumulator_stack[index] = weights.feature_bias;
+        adds[index].clear();
+        subs[index].clear();
+        for (auto& vec : adds) {
+            vec.reserve(32);
+        }
+        for (auto& vec : subs) {
+            vec.reserve(32);
+        }
     }
 
     void refresh() {
         white_accumulator_stack[0] = black_accumulator_stack[0] = weights.feature_bias;
+        for (auto& vec : adds) {
+            vec.clear();
+        }
+        for (auto& vec : subs) {
+            vec.clear();
+        }
         index = 0;
     }
 
     void push() {
         white_accumulator_stack[index + 1] = white_accumulator_stack[index];
         black_accumulator_stack[index + 1] = black_accumulator_stack[index];
+        adds[index + 1] = adds[index];
+        subs[index + 1] = subs[index];
         index++;
     }
 
@@ -79,6 +99,15 @@ public:
 
     template<Operation operation>
     void update_accumulator(const Piece piece, const Color color, const Square square, int wking, int bking) {
+        if constexpr (operation == Operation::Set) {
+            adds[index].emplace_back(color, piece, square, wking, bking);
+        } else {
+            subs[index].emplace_back(color, piece, square, wking, bking);
+        }
+    }
+
+    template<Operation operation>
+    void update(const Piece piece, const Color color, const Square square, int wking, int bking) {
         const auto& white_weights = weights.feature_weight[color][piece][get_square_index(square, wking)];
         const auto& black_weights = weights.feature_weight[color ^ 1][piece][get_square_index(square, bking) ^ 56];
 
@@ -90,8 +119,7 @@ public:
                 white_accumulator[i] += white_weights[i];
                 black_accumulator[i] += black_weights[i];
             }
-        }
-        else {
+        } else {
             for (std::size_t i = 0; i < hidden_size; i++) {
                 white_accumulator[i] -= white_weights[i];
                 black_accumulator[i] -= black_weights[i];
@@ -102,6 +130,20 @@ public:
 #ifndef __AVX2__ 
     template <Color color>
     std::int32_t evaluate() {
+        auto& current_adds = adds[index];
+        auto& current_subs = subs[index];
+
+        for (const auto & [side, piece, square, wking, bking] : current_adds) {
+            update<Operation::Set>(piece, side, square, wking, bking);
+        }
+
+        for (const auto & [side, piece, square, wking, bking] : current_subs) {
+            update<Operation::Unset>(piece, side, square, wking, bking);
+        }
+
+        current_adds.clear();
+        current_subs.clear();
+
         std::int32_t sum = 0;
 
         const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
@@ -117,6 +159,20 @@ public:
 #else
     template <Color color>
     std::int32_t evaluate() {
+        auto& current_adds = adds[index];
+        auto& current_subs = subs[index];
+
+        for (const auto & [side, piece, square, wking, bking] : current_adds) {
+            update<Operation::Set>(piece, side, square, wking, bking);
+        }
+
+        for (const auto & [side, piece, square, wking, bking] : current_subs) {
+            update<Operation::Unset>(piece, side, square, wking, bking);
+        }
+
+        current_adds.clear();
+        current_subs.clear();
+
         const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
         const auto& nstm_accumulator = color == White ? black_accumulator_stack[index] : white_accumulator_stack[index];
 
