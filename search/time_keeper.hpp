@@ -59,7 +59,7 @@ public:
             opt_scale = bm_frac * 2.0 + 0.5;
         }
 
-        if (elapsed() >= std::min(optimal_time_limit * opt_scale, time_limit)) {
+        if (elapsed() >= std::min(optimal_time_limit * opt_scale, double(time_limit))) {
             stop = true;
         }
         return stop;
