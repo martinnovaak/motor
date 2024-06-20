@@ -62,8 +62,14 @@ void position_uci(board & b, const std::string & command) {
         moves.push_back(string_move);
     }
 
+    int i = 0;
     for (const std::string & m : moves) {
         if (!parse_move(b, m)) return;
+        i++;
+        if (i > 200) {
+            b.shift_history();
+            i -= 100;
+        }
     }
 
     set_position(b);

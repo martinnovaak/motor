@@ -47,7 +47,7 @@ class board {
     std::array<std::uint64_t, 2> side_occupancy; // occupancy bitboards
     std::uint64_t occupancy;
     board_info * state;
-    std::array<board_info, 2000> history;
+    std::array<board_info, 384> history;
     Color  side; // side to move
 public:
     board (const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
@@ -403,7 +403,6 @@ public:
         return true;
     }
 
-    /*
     void shift_history() {
         const int index = state - history.data();
         for (int i = 100; i <= index; ++i) {
@@ -415,7 +414,6 @@ public:
 
         state -= 100;
     }
-     */
 
     std::uint64_t get_threats() {
         return state->threats[King];
