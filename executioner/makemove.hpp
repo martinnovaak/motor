@@ -96,17 +96,6 @@ void make_move(board & b, chess_move m) {
 
     if constexpr (update_nnue) {
         network.push();
-
-        if (piece == King && buckets[from] != buckets[to]) {
-            if constexpr (side == White) {
-                wking = to;
-            } else {
-                bking = to;
-            }
-            make_move<side, false>(b, m);
-            update_bucket<side>(b, wking, bking);
-            return;
-        }
     }
 
     b.make_state<their_side>(capture, m);
@@ -179,6 +168,17 @@ void make_move(board & b, chess_move m) {
 
             b.reset_fifty_move_clock();
             break;
+        }
+    }
+
+    if constexpr (update_nnue) {
+        if (piece == King && buckets[from] != buckets[to]) {
+            if constexpr (side == White) {
+                wking = to;
+            } else {
+                bking = to;
+            }
+            update_bucket<side>(b, wking, bking);
         }
     }
 
