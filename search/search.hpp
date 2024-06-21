@@ -63,7 +63,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         eval = static_eval = tt_entry.static_eval;
 
         if constexpr (!is_root) {
-            if (tt_entry.depth >= depth + is_pv) {
+            if (tt_entry.depth >= depth + 3 * is_pv) {
                 if ((tt_entry.bound == Bound::EXACT) ||
                     (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
                     (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
