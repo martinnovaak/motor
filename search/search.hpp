@@ -322,20 +322,21 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
 template <Color color>
 void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
     std::string best_move;
-    int score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, 1);
-    for (int depth = 2; depth <= max_depth; depth++) {
-        if (data.time_is_up(depth)) {
+
+    int score;
+
+    for (int depth = 1; depth <= max_depth; depth++) {
+        if (depth > 1 && data.time_is_up(depth)) {
             break;
         }
 
         if (depth < 6) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth);
-        }
-        else {
+        } else {
             score = aspiration_window<color>(chessboard, data, score, depth);
         }
 
-        if (data.time_stopped()) {
+        if (depth > 1 && data.time_stopped()) {
             break;
         }
 
