@@ -20,7 +20,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
-    if (data.should_end()) {
+    if (!(is_root && depth < 3) && data.should_end()) {
         return beta;
     }
 
@@ -322,8 +322,8 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
 template <Color color>
 void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
     std::string best_move;
-    int score;
-    for (int depth = 1; depth <= max_depth; depth++) {
+    int score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, 1);
+    for (int depth = 2; depth <= max_depth; depth++) {
         if (data.time_is_up(depth)) {
             break;
         }
