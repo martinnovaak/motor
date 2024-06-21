@@ -121,6 +121,19 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
+        std::cout << "option name mvv_pawn type spin default "<< mvv[Pawn] <<" min -4000 max 2000" << std::endl;
+        std::cout << "option name mvv_knight type spin default "<< mvv[Knight] <<" min -2000 max 4000" << std::endl;
+        std::cout << "option name mvv_bishop type spin default "<< mvv[Bishop] <<" min -2000 max 4000" << std::endl;
+        std::cout << "option name mvv_rook type spin default "<< mvv[Rook] <<" min -1000 max 7000" << std::endl;
+        std::cout << "option name mvv_queen type spin default "<< mvv[Queen] <<" min 0 max 12000" << std::endl;
+        std::cout << "option name mvv_promotion type spin default "<< mvv[Null_Piece] <<" min 0 max 12000" << std::endl;
+        std::cout << "option name quiet_mul type spin default "<< quiet_mul <<" min 100 max 800" << std::endl;
+        std::cout << "option name quiet_max type spin default "<< quiet_max <<" min 1000 max 8000" << std::endl;
+        std::cout << "option name noisy_base type spin default "<< noisy_base <<" min -5000 max 5000" << std::endl;
+        std::cout << "option name noisy_lin_mul type spin default "<< noisy_lin_mul <<" min 20 max 800" << std::endl;
+        std::cout << "option name noisy_quad_mul type spin default "<< noisy_quad_mul <<" min 0 max 100" << std::endl;
+        std::cout << "option name noisy_max type spin default "<< noisy_max <<" min 500 max 10000" << std::endl;
+        std::cout << "option name noisy_gravity type spin default "<< noisy_gravity <<" min 4096 max 32768" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
@@ -138,7 +151,33 @@ void uci_process(board& b, const std::string& line) {
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
-            } 
+            } else if (tokens[1] == "mvv_pawn") {
+                mvv[Pawn] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_knight") {
+                mvv[Knight] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_bishop") {
+                mvv[Bishop] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_rook") {
+                mvv[Rook] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_queen") {
+                mvv[Queen] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_promotion") {
+                mvv[Null_Piece] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_base") {
+                noisy_base = std::stoi(tokens[3]);
+            } else if (tokens[1] == "quiet_mul") {
+                quiet_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "quiet_max") {
+                quiet_max = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_lin_mul") {
+                noisy_lin_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_quad_mul") {
+                noisy_quad_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_max") {
+                noisy_max = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_gravity") {
+                noisy_gravity = std::stoi(tokens[3]);
+            }
         } else {
             std::cout << "Command not found." << std::endl;
         }
