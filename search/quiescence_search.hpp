@@ -38,7 +38,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     if (std::abs(eval) < 7000) {
-        eval += pawn_correction_table[color][chessboard.get_pawn_key() % 16384] / 128;
+        eval += pawn_correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
     }
 
     if (eval >= beta) {

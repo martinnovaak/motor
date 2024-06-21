@@ -83,7 +83,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     if (std::abs(eval) < 7000 && data.singular_move == 0) {
-        eval += pawn_correction_table[color][chessboard.get_pawn_key() % 16384] / 128;
+        eval += pawn_correction_table[color][chessboard.get_pawn_key() % 16384] / 256;
     }
 
     data.improving[data.get_ply()] = static_eval;
@@ -293,8 +293,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
             int & pawn_score = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
             int weight = std::min(depth + 1, 16);
-            int diff = 128 * (best_score - static_eval);
-            int update = (pawn_score * (128 - weight) + diff * weight) / 128;
+            int diff = 256 * (best_score - static_eval);
+            int update = (pawn_score * (256 - weight) + diff * weight) / 256;
 
             pawn_score = std::clamp(update, -8192, 8192);
         }
