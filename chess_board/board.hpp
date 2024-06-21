@@ -420,6 +420,11 @@ public:
     std::uint64_t get_threats() {
         return state->threats[King];
     }
+
+    int move_count() {
+        const int current_index = state - history.data();
+        return (current_index + 1) / 2;
+    }
 };
 
 #endif //MOTOR_BOARD_HPP
