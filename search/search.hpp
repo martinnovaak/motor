@@ -53,7 +53,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     chess_move best_move;
     chess_move tt_move = {};
-    std::int16_t eval, static_eval;
+    std::int16_t eval, static_eval, raw_eval;
 
     if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
@@ -80,6 +80,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (data.singular_move == 0 && depth >= 4) {
             depth--;
         }
+    }
+
+    if (std::abs(eval) < 7000 && data.singular_move == 0) {
+        eval += pawn_correction_table[color][chessboard.get_pawn_key() % 16384] / 128;
     }
 
     data.improving[data.get_ply()] = static_eval;
@@ -135,6 +139,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
+    bool best_move_quiet = false;
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
     const chess_move previous_move = chessboard.get_last_played_move();
@@ -251,6 +256,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             best_score = score;
             best_move = chessmove;
             data.update_pv(chessmove);
+            best_move_quiet = is_quiet;
             if constexpr (is_root) {
                 data.best_move = chessmove.to_string();
             }
@@ -279,8 +285,20 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if (data.singular_move == 0)
-        tt[zobrist_key] = { flag, depth, best_score, static_eval, best_move, zobrist_key };
+    if (data.singular_move == 0) {
+        tt[zobrist_key] = {flag, depth, best_score, static_eval, best_move, zobrist_key};
+
+        if (!in_check && best_move_quiet
+            && (flag == Bound::EXACT || (flag == Bound::UPPER && best_score < static_eval) || (flag == Bound::LOWER && best_score > static_eval))) {
+
+            int & pawn_score = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
+            int weight = std::min(depth + 1, 16);
+            int diff = 128 * (best_score - static_eval);
+            int update = (pawn_score * (128 - weight) + diff * weight) / 128;
+
+            pawn_score = std::clamp(update, -8192, 8192);
+        }
+    }
 
     return best_score;
 }

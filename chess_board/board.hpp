@@ -34,6 +34,7 @@ struct board_info {
     Piece captured_piece = Piece::Null_Piece;
     chess_move move = {};
     zobrist hash_key = {};
+    zobrist pawn_key = {};
     std::array<std::uint64_t, 6> threats = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
@@ -47,7 +48,7 @@ class board {
     std::array<std::uint64_t, 2> side_occupancy; // occupancy bitboards
     std::uint64_t occupancy;
     board_info * state;
-    std::array<board_info, 2000> history;
+    std::array<board_info, 384> history;
     Color  side; // side to move
 public:
     board (const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
@@ -66,6 +67,7 @@ public:
         state = &history[0];
         side = Color::White;
         state->hash_key = zobrist();
+        state->pawn_key = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
 
@@ -111,6 +113,21 @@ public:
         state->hash_key.update_enpassant_hash(state->enpassant);
 
         update_bitboards();
+        calculate_pawn_hash();
+    }
+
+    void calculate_pawn_hash() {
+        std::uint64_t white_pawns = get_pieces(White, Pawn);
+        while(white_pawns) {
+            Square square = pop_lsb(white_pawns);
+            state->pawn_key.update_psqt_hash(White, Pawn, square);
+        }
+
+        std::uint64_t black_pawns = get_pieces(Black, Pawn);
+        while(black_pawns) {
+            Square square = pop_lsb(black_pawns);
+            state->pawn_key.update_psqt_hash(Black, Pawn, square);
+        }
     }
 
     template <Color our_color>
@@ -318,6 +335,10 @@ public:
         return state->hash_key.get_key();
     }
 
+    [[nodiscard]] std::uint64_t get_pawn_key() const {
+        return state->pawn_key.get_key();
+    }
+
     [[nodiscard]] chess_move get_last_played_move() const {
         return history.back().move;
     }
@@ -382,6 +403,7 @@ public:
     template <Color color>
     void make_state(Piece captured_piece, chess_move played_move) {
         board_info * oldState = state++;
+        state->pawn_key = oldState->pawn_key;
         state->hash_key = oldState->hash_key;
         state->hash_key.update_enpassant_hash(oldState->enpassant);
         state->hash_key.update_side_hash();
@@ -397,13 +419,16 @@ public:
         state->hash_key.update_psqt_hash(color, piece, square);
     }
 
+    void update_pawn_hash(Color color, Square square) {
+        state->pawn_key.update_psqt_hash(color, Pawn, square);
+    }
+
     bool is_quiet(const chess_move & move) {
         if (move.get_move_type() == PROMOTION || move.get_move_type() == EN_PASSANT || pieces[move.get_to()] != Null_Piece)
             return false;
         return true;
     }
 
-    /*
     void shift_history() {
         const int index = state - history.data();
         for (int i = 100; i <= index; ++i) {
@@ -415,7 +440,6 @@ public:
 
         state -= 100;
     }
-     */
 
     std::uint64_t get_threats() {
         return state->threats[King];
