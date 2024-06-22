@@ -11,12 +11,12 @@ std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2>
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 
-int noisy_quad_mul = 30;
-int noisy_lin_mul = 110;
-int noisy_max = 3020;
-int noisy_gravity = 20919;
-int quiet_mul = 370;
-int quiet_max = 2015;
+int noisy_quad_mul = 14;
+int noisy_lin_mul = 100;
+int noisy_max = 3001;
+int noisy_gravity = 16384;
+int quiet_mul = 304;
+int quiet_max = 2041;
 
 int history_bonus(int depth) {
     return std::min(quiet_max, quiet_mul * depth);
