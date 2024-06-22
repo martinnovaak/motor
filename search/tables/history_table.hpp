@@ -11,12 +11,12 @@ std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2>
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 
-int noisy_quad_mul = 16;
-int noisy_lin_mul = 128;
-int noisy_max = 3000;
-int noisy_gravity = 24576;
-int quiet_mul = 200;
-int quiet_max = 2000;
+int noisy_quad_mul = 14;
+int noisy_lin_mul = 100;
+int noisy_max = 3001;
+int noisy_gravity = 16384;
+int quiet_mul = 304;
+int quiet_max = 2041;
 
 int history_bonus(int depth) {
     return std::min(quiet_max, quiet_mul * depth);
@@ -78,7 +78,7 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
             }
         }
     } else {
-         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
+        update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
     }
 
     for (const auto &capture: captures) {
