@@ -121,6 +121,51 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
+
+        std::cout << "option name mvv_pawn type spin default "<< mvv[Pawn] <<" min -4000 max 2000" << std::endl;
+        std::cout << "option name mvv_knight type spin default "<< mvv[Knight] <<" min -2000 max 4000" << std::endl;
+        std::cout << "option name mvv_bishop type spin default "<< mvv[Bishop] <<" min -2000 max 4000" << std::endl;
+        std::cout << "option name mvv_rook type spin default "<< mvv[Rook] <<" min -1000 max 7000" << std::endl;
+        std::cout << "option name mvv_queen type spin default "<< mvv[Queen] <<" min 0 max 12000" << std::endl;
+        std::cout << "option name mvv_promotion type spin default "<< mvv[Null_Piece] <<" min 0 max 12000" << std::endl;
+
+        std::cout << "option name quiet_mul type spin default "<< quiet_mul <<" min 100 max 800" << std::endl;
+        std::cout << "option name quiet_max type spin default "<< quiet_max <<" min 1000 max 8000" << std::endl;
+        std::cout << "option name noisy_base type spin default "<< noisy_base <<" min -5000 max 5000" << std::endl;
+        std::cout << "option name noisy_mul type spin default "<< noisy_mul <<" min 10 max 800" << std::endl;
+        std::cout << "option name noisy_max type spin default "<< noisy_max <<" min 200 max 10000" << std::endl;
+        std::cout << "option name noisy_gravity type spin default "<< noisy_gravity <<" min 512 max 32768" << std::endl;
+
+        std::cout << "option name iir_depth type spin default "<< iir_depth <<" min 2 max 8" << std::endl;
+        std::cout << "option name razoring type spin default "<< razoring <<" min 200 max 1000" << std::endl;
+        std::cout << "option name razoring_depth type spin default "<< razoring_depth <<" min 2 max 8" << std::endl;
+        std::cout << "option name rfp type spin default "<< rfp <<" min 80 max 300" << std::endl;
+        std::cout << "option name rfp_depth type spin default "<< rfp_depth <<" min 5 max 12" << std::endl;
+        std::cout << "option name nmp type spin default "<< nmp <<" min 1 max 5" << std::endl;
+        std::cout << "option name nmp_div type spin default "<< nmp_div <<" min 1 max 6" << std::endl;
+        std::cout << "option name nmp_depth type spin default "<< nmp_depth <<" min 2 max 5" << std::endl;
+        std::cout << "option name lmp_base type spin default "<< lmp_base <<" min 2 max 6" << std::endl;
+        std::cout << "option name fp_base type spin default "<< fp_base <<" min 50 max 250" << std::endl;
+        std::cout << "option name fp_mul type spin default "<< fp_mul <<" min 100 max 700" << std::endl;
+        std::cout << "option name fp_depth type spin default "<< fp_depth <<" min 5 max 10" << std::endl;
+        std::cout << "option name see_quiet type spin default "<< see_quiet <<" min 40 max 120" << std::endl;
+        std::cout << "option name see_noisy type spin default "<< see_noisy <<" min 20 max 80" << std::endl;
+        std::cout << "option name see_depth type spin default "<< see_depth <<" min 4 max 10" << std::endl;
+
+        std::cout << "option name se_mul type spin default "<< se_mul <<" min 5 max 30" << std::endl;
+        std::cout << "option name se_depth type spin default "<< se_depth <<" min 5 max 10" << std::endl;
+        std::cout << "option name se_depth_margin type spin default "<< se_depth_margin <<" min 2 max 5" << std::endl;
+        std::cout << "option name double_margin type spin default "<< double_margin <<" min 10 max 50" << std::endl;
+        std::cout << "option name double_exts type spin default "<< double_exts <<" min 2 max 20" << std::endl;
+
+        std::cout << "option name lmr_depth type spin default "<< lmr_depth <<" min 2 max 5" << std::endl;
+        std::cout << "option name lmr_quiet_history type spin default "<< lmr_quiet_history <<" min 8000 max 20000" << std::endl;
+        std::cout << "option name asp_window type spin default "<< asp_window <<" min 10 max 40" << std::endl;
+        std::cout << "option name asp_window_mul type spin default "<< asp_window_mul <<" min 8 max 32" << std::endl;
+        std::cout << "option name asp_window_max type spin default "<< asp_window_max <<" min 300 max 1000" << std::endl;
+        std::cout << "option name asp_depth type spin default "<< asp_depth <<" min 4 max 10" << std::endl;
+        std::cout << "option name lmr type spin default "<< 550 <<" min 200 max 1000" << std::endl;
+
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
@@ -138,7 +183,85 @@ void uci_process(board& b, const std::string& line) {
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
-            } 
+            } else if (tokens[1] == "mvv_pawn") {
+                mvv[Pawn] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_knight") {
+                mvv[Knight] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_bishop") {
+                mvv[Bishop] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_rook") {
+                mvv[Rook] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_queen") {
+                mvv[Queen] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "mvv_promotion") {
+                mvv[Null_Piece] = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_base") {
+                noisy_base = std::stoi(tokens[3]);
+            } else if (tokens[1] == "quiet_mul") {
+                quiet_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "quiet_max") {
+                quiet_max = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_mul") {
+                noisy_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_max") {
+                noisy_max = std::stoi(tokens[3]);
+            } else if (tokens[1] == "noisy_gravity") {
+                noisy_gravity = std::stoi(tokens[3]);
+            } else if (tokens[1] == "iir_depth") {
+                iir_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "razoring") {
+                razoring = std::stoi(tokens[3]);
+            } else if (tokens[1] == "razoring_depth") {
+                razoring_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "rfp") {
+                rfp = std::stoi(tokens[3]);
+            } else if (tokens[1] == "rfp_depth") {
+                rfp_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "nmp") {
+                nmp = std::stoi(tokens[3]);
+            } else if (tokens[1] == "nmp_div") {
+                nmp_div = std::stoi(tokens[3]);
+            } else if (tokens[1] == "nmp_depth") {
+                nmp_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "lmp_base") {
+                lmp_base = std::stoi(tokens[3]);
+            } else if (tokens[1] == "fp_base") {
+                fp_base = std::stoi(tokens[3]);
+            } else if (tokens[1] == "fp_mul") {
+                fp_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "fp_depth") {
+                fp_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "see_quiet") {
+                see_quiet = std::stoi(tokens[3]);
+            } else if (tokens[1] == "see_noisy") {
+                see_noisy = std::stoi(tokens[3]);
+            } else if (tokens[1] == "see_depth") {
+                see_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "se_mul") {
+                se_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "se_depth") {
+                se_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "se_depth_margin") {
+                se_depth_margin = std::stoi(tokens[3]);
+            } else if (tokens[1] == "double_margin") {
+                double_margin = std::stoi(tokens[3]);
+            } else if (tokens[1] == "double_exts") {
+                double_exts = std::stoi(tokens[3]);
+            } else if (tokens[1] == "lmr_depth") {
+                lmr_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "lmr_quiet_history") {
+                lmr_quiet_history = std::stoi(tokens[3]);
+            } else if (tokens[1] == "asp_window") {
+                asp_window = std::stoi(tokens[3]);
+            } else if (tokens[1] == "asp_window_mul") {
+                asp_window_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "asp_window_max") {
+                asp_window_max = std::stoi(tokens[3]);
+            } else if (tokens[1] == "asp_depth") {
+                asp_depth = std::stoi(tokens[3]);
+            } else if (tokens[1] == "lmr") {
+                lmr_table = initializeReductions(std::stoi(tokens[3]));
+            }
         } else {
             std::cout << "Command not found." << std::endl;
         }
