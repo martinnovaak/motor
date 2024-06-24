@@ -14,34 +14,34 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
-int iir_depth = 4;
-int razoring = 470;
-int razoring_depth = 4;
-int rfp = 170;
-int rfp_depth = 9;
-int nmp = 3;
-int nmp_div = 3;
-int nmp_depth = 3;
-int lmp_base = 4;
-int fp_base = 110;
-int fp_mul = 320;
-int fp_depth = 7;
-int see_quiet = 77;
-int see_noisy = 35;
-int see_depth = 6;
+constexpr int iir_depth = 3;
+constexpr int razoring = 530;
+constexpr int razoring_depth = 3;
+constexpr int rfp = 162;
+constexpr int rfp_depth = 9;
+constexpr int nmp = 3;
+constexpr int nmp_div = 36;
+constexpr int nmp_depth = 2;
+constexpr int lmp_base = 2;
+constexpr int fp_base = 114;
+constexpr int fp_mul = 332;
+constexpr int fp_depth = 7;
+constexpr int see_quiet = 87;
+constexpr int see_noisy = 38;
+constexpr int see_depth = 6;
 
-int se_depth = 8;
-int se_depth_margin = 3;
-int se_mul = 16;
-int double_margin = 19;
-int double_exts = 5;
+constexpr int se_depth = 7;
+constexpr int se_depth_margin = 2;
+constexpr int se_mul = 125;
+constexpr int double_margin = 20;
+constexpr int double_exts = 4;
 
-int lmr_depth = 3;
-int lmr_quiet_history = 12'000;
-int asp_window = 22;
-int asp_window_mul = 16;
-int asp_window_max = 500;
-int asp_depth = 6;
+constexpr int lmr_depth = 2;
+constexpr int lmr_quiet_history = 12600;
+constexpr int asp_window = 21;
+constexpr int asp_window_mul = 15;
+constexpr int asp_window_max = 650;
+constexpr int asp_depth = 7;
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
@@ -136,7 +136,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving;
+                int R = nmp + depth * 10 / nmp_div + improving;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R);
                 data.reduce_ply();
@@ -212,7 +212,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 data.singular_move == 0 &&
                 std::abs(tt_entry.score) < 9'000)
             {
-                int s_beta = tt_entry.score - se_mul * depth / 8;
+                int s_beta = tt_entry.score - se_mul * depth / 80;
                 data.singular_move = chessmove.get_value();
                 int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2);
                 data.singular_move = 0;

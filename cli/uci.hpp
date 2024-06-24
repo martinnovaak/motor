@@ -121,7 +121,7 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
-
+/*
         std::cout << "option name mvv_pawn type spin default "<< mvv[Pawn] <<" min -4000 max 2000" << std::endl;
         std::cout << "option name mvv_knight type spin default "<< mvv[Knight] <<" min -2000 max 4000" << std::endl;
         std::cout << "option name mvv_bishop type spin default "<< mvv[Bishop] <<" min -2000 max 4000" << std::endl;
@@ -165,7 +165,7 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "option name asp_window_max type spin default "<< asp_window_max <<" min 300 max 1000" << std::endl;
         std::cout << "option name asp_depth type spin default "<< asp_depth <<" min 4 max 10" << std::endl;
         std::cout << "option name lmr type spin default "<< 550 <<" min 200 max 1000" << std::endl;
-
+*/
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
@@ -183,7 +183,9 @@ void uci_process(board& b, const std::string& line) {
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
-            } else if (tokens[1] == "mvv_pawn") {
+            }
+            /*
+            else if (tokens[1] == "mvv_pawn") {
                 mvv[Pawn] = std::stoi(tokens[3]);
             } else if (tokens[1] == "mvv_knight") {
                 mvv[Knight] = std::stoi(tokens[3]);
@@ -262,6 +264,7 @@ void uci_process(board& b, const std::string& line) {
             } else if (tokens[1] == "lmr") {
                 lmr_table = initializeReductions(std::stoi(tokens[3]));
             }
+             */
         } else {
             std::cout << "Command not found." << std::endl;
         }
