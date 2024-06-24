@@ -12,9 +12,9 @@ std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_t
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 
 constexpr int noisy_mul = 37;
-constexpr int noisy_max = 386;
-constexpr int noisy_gravity = 1969;
-constexpr int quiet_mul = 259;
+constexpr int noisy_max = 400;
+constexpr int noisy_gravity = 1865;
+constexpr int quiet_mul = 263;
 constexpr int quiet_max = 2041;
 
 int history_bonus(int depth) {
