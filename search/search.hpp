@@ -15,33 +15,33 @@
 #include "../executioner/makemove.hpp"
 
 constexpr int iir_depth = 3;
-constexpr int razoring = 530;
+constexpr int razoring = 525;
 constexpr int razoring_depth = 3;
 constexpr int rfp = 162;
 constexpr int rfp_depth = 9;
 constexpr int nmp = 3;
-constexpr int nmp_div = 36;
+constexpr int nmp_div = 4;
 constexpr int nmp_depth = 2;
 constexpr int lmp_base = 2;
-constexpr int fp_base = 114;
-constexpr int fp_mul = 332;
+constexpr int fp_base = 113;
+constexpr int fp_mul = 312;
 constexpr int fp_depth = 7;
-constexpr int see_quiet = 87;
-constexpr int see_noisy = 38;
+constexpr int see_quiet = 88;
+constexpr int see_noisy = 37;
 constexpr int see_depth = 6;
 
 constexpr int se_depth = 7;
-constexpr int se_depth_margin = 2;
+constexpr int se_depth_margin = 3;
 constexpr int se_mul = 125;
-constexpr int double_margin = 20;
-constexpr int double_exts = 4;
+constexpr int double_margin = 21;
+constexpr int double_exts = 3;
 
 constexpr int lmr_depth = 2;
-constexpr int lmr_quiet_history = 12600;
-constexpr int asp_window = 21;
-constexpr int asp_window_mul = 15;
-constexpr int asp_window_max = 650;
-constexpr int asp_depth = 7;
+constexpr int lmr_quiet_history = 13344;
+constexpr int asp_window = 20;
+constexpr int asp_window_mul = 16;
+constexpr int asp_window_max = 662;
+constexpr int asp_depth = 8;
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
@@ -136,7 +136,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth * 10 / nmp_div + improving;
+                int R = nmp + depth / nmp_div + improving;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R);
                 data.reduce_ply();
