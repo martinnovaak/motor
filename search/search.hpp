@@ -15,32 +15,32 @@
 #include "../executioner/makemove.hpp"
 
 constexpr int iir_depth = 3;
-constexpr int razoring = 520;
-constexpr int razoring_depth = 3;
-constexpr int rfp = 160;
+constexpr int razoring = 470;
+constexpr int razoring_depth = 4;
+constexpr int rfp = 153;
 constexpr int rfp_depth = 9;
 constexpr int nmp = 3;
-constexpr int nmp_div = 4;
+constexpr int nmp_div = 36;
 constexpr int nmp_depth = 2;
 constexpr int lmp_base = 2;
-constexpr int fp_base = 102;
-constexpr int fp_mul = 305;
+constexpr int fp_base = 128;
+constexpr int fp_mul = 289;
 constexpr int fp_depth = 7;
-constexpr int see_quiet = 91;
-constexpr int see_noisy = 39;
+constexpr int see_quiet = 94;
+constexpr int see_noisy = 40;
 constexpr int see_depth = 6;
 
 constexpr int se_depth = 7;
 constexpr int se_depth_margin = 2;
-constexpr int se_mul = 120;
+constexpr int se_mul = 118;
 constexpr int double_margin = 20;
 constexpr int double_exts = 4;
 
 constexpr int lmr_depth = 2;
-constexpr int lmr_quiet_history = 14420;
+constexpr int lmr_quiet_history = 12900;
 constexpr int asp_window = 20;
-constexpr int asp_window_mul = 16;
-constexpr int asp_window_max = 669;
+constexpr int asp_window_mul = 15;
+constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
 template <Color color, NodeType node_type>
@@ -136,7 +136,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving;
+                int R = nmp + depth * 10/ nmp_div + improving;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R);
                 data.reduce_ply();

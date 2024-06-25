@@ -17,9 +17,9 @@ constexpr static int mvv_lva[7][6] = {
         {25, 0, 0, 0, 0, 0}
 };
 
-constexpr int noisy_base = -353;
+constexpr int noisy_base = -400;
 
-constexpr int mvv[7] = { 175, 410, 355, 1038, 1205, 0, 1087 };
+constexpr int mvv[7] = { 150, 450, 330, 1020, 1210, 0, 1060 };
 
 template <Color color>
 void score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
