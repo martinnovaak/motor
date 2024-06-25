@@ -15,30 +15,30 @@
 #include "../executioner/makemove.hpp"
 
 constexpr int iir_depth = 3;
-constexpr int razoring = 470;
+constexpr int razoring = 457;
 constexpr int razoring_depth = 4;
-constexpr int rfp = 153;
+constexpr int rfp = 154;
 constexpr int rfp_depth = 9;
 constexpr int nmp = 3;
-constexpr int nmp_div = 36;
+constexpr int nmp_div = 40;
 constexpr int nmp_depth = 2;
 constexpr int lmp_base = 2;
-constexpr int fp_base = 128;
-constexpr int fp_mul = 289;
+constexpr int fp_base = 129;
+constexpr int fp_mul = 286;
 constexpr int fp_depth = 7;
-constexpr int see_quiet = 94;
-constexpr int see_noisy = 40;
+constexpr int see_quiet = 93;
+constexpr int see_noisy = 39;
 constexpr int see_depth = 6;
 
 constexpr int se_depth = 7;
 constexpr int se_depth_margin = 2;
-constexpr int se_mul = 118;
+constexpr int se_mul = 114;
 constexpr int double_margin = 20;
 constexpr int double_exts = 4;
 
 constexpr int lmr_depth = 2;
-constexpr int lmr_quiet_history = 12900;
-constexpr int asp_window = 20;
+constexpr int lmr_quiet_history = 12600;
+constexpr int asp_window = 19;
 constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
