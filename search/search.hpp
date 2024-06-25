@@ -15,32 +15,32 @@
 #include "../executioner/makemove.hpp"
 
 constexpr int iir_depth = 3;
-constexpr int razoring = 520;
-constexpr int razoring_depth = 3;
-constexpr int rfp = 160;
+constexpr int razoring = 467;
+constexpr int razoring_depth = 4;
+constexpr int rfp = 153;
 constexpr int rfp_depth = 9;
 constexpr int nmp = 3;
 constexpr int nmp_div = 4;
 constexpr int nmp_depth = 2;
 constexpr int lmp_base = 2;
-constexpr int fp_base = 102;
-constexpr int fp_mul = 305;
+constexpr int fp_base = 125;
+constexpr int fp_mul = 300;
 constexpr int fp_depth = 7;
-constexpr int see_quiet = 91;
-constexpr int see_noisy = 39;
+constexpr int see_quiet = 94;
+constexpr int see_noisy = 40;
 constexpr int see_depth = 6;
 
 constexpr int se_depth = 7;
 constexpr int se_depth_margin = 2;
-constexpr int se_mul = 120;
-constexpr int double_margin = 20;
+constexpr int se_mul = 124;
+constexpr int double_margin = 21;
 constexpr int double_exts = 4;
 
 constexpr int lmr_depth = 2;
-constexpr int lmr_quiet_history = 14420;
+constexpr int lmr_quiet_history = 13470;
 constexpr int asp_window = 20;
-constexpr int asp_window_mul = 16;
-constexpr int asp_window_max = 669;
+constexpr int asp_window_mul = 15;
+constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
 template <Color color, NodeType node_type>
