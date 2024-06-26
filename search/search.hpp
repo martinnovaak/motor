@@ -206,7 +206,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if constexpr (!is_root) {
             if (depth >= se_depth &&
                 moves_searched == 0 &&
-                movelist[moves_searched] == 214748364 &&
+                movelist[moves_searched] == 214'748'364 &&
                 tt_entry.depth >= depth - se_depth_margin &&
                 tt_entry.bound != Bound::UPPER &&
                 data.singular_move == 0 &&
