@@ -11,11 +11,11 @@ std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2>
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 
-constexpr int noisy_mul = 30;
-constexpr int noisy_max = 500;
-constexpr int noisy_gravity = 2048;
-constexpr int quiet_mul = 200;
-constexpr int quiet_max = 2000;
+constexpr int noisy_mul = 41;
+constexpr int noisy_max = 375;
+constexpr int noisy_gravity = 1779;
+constexpr int quiet_mul = 236;
+constexpr int quiet_max = 2040;
 
 int history_bonus(int depth) {
     return std::min(quiet_max, quiet_mul * depth);

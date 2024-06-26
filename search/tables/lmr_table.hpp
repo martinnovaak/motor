@@ -4,7 +4,7 @@
 #include <array>
 #include <cmath>
 
-std::array<std::array<int, 218>, 96> initializeReductions(int lmr = 550) {
+std::array<std::array<int, 218>, 96> initializeReductions(int lmr = 515) {
     std::array<std::array<int, 218>, 96> reductions = {};
 
     for (int i = 1; i < 96; i++) {
