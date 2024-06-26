@@ -31,7 +31,7 @@ void update_cap_history(int& value, int bonus) {
 }
 
 int see_bonus(int depth) {
-    return std::min(2000, 64 * depth);
+    return std::min(2048, 10 * depth);
 }
 
 void update_see_history(int& value, int bonus) {
@@ -86,7 +86,7 @@ void update_quiet_history(search_data & data, board & chessboard, const chess_mo
             }
         }
     } else {
-         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
+        update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
     }
 
     for (const auto &capture: captures) {

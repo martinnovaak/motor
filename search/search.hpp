@@ -279,10 +279,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
 
         if constexpr (is_pv) {
-            if (score - 50 * depth > old_alpha && movelist[moves_searched] < 50'000) {
-                update_see_history(capture_table[piece][to][chessboard.get_piece(to)], see_bonus(std::abs(old_alpha - score) / 50 + depth));
+            if (score - 30 * depth > old_alpha && movelist[moves_searched] < 50'000) {
+                update_see_history(see_correction_table[piece][to][chessboard.get_piece(to)], see_bonus(depth));
             } else if (score + 50 * depth < old_alpha && movelist[moves_searched] > 50'000){
-                update_see_history(capture_table[piece][to][chessboard.get_piece(to)], -see_bonus(std::abs(old_alpha - score) / 50 + depth));
+                update_see_history(see_correction_table[piece][to][chessboard.get_piece(to)], -see_bonus(depth * depth));
             }
         }
 
@@ -304,6 +304,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
+                    } else {
+                        if (movelist[moves_searched] > 50'000)
+                        see_correction_table[piece][to][chessboard.get_piece(to)] = 0;
                     }
                     update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;
