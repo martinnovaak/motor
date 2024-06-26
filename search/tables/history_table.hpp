@@ -10,6 +10,7 @@
 std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
+std::array<std::array<std::array<int, 7>, 64>, 6> see_correction_table = {};
 
 constexpr int noisy_mul = 41;
 constexpr int noisy_max = 375;
@@ -27,6 +28,14 @@ void update_history(int& value, int bonus) {
 
 void update_cap_history(int& value, int bonus) {
     value += bonus - (value * std::abs(bonus) / noisy_gravity);
+}
+
+int see_bonus(int depth) {
+    return std::min(2000, 64 * depth);
+}
+
+void update_see_history(int& value, int bonus) {
+    value += bonus - (value * std::abs(bonus) / 16384);
 }
 
 template <Color color, bool is_root>

@@ -99,7 +99,7 @@ public:
         }
     }
 
-#ifndef __AVX2__ 
+#ifndef __AVX2__
     template <Color color>
     std::int32_t evaluate() {
         std::int32_t sum = 0;

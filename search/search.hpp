@@ -49,6 +49,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
+    int old_alpha = alpha;
+
     if (!(is_root && depth < 3) && data.should_end()) {
         return beta;
     }
@@ -274,6 +276,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if constexpr (is_root) {
             data.update_node_count(from, to, start_nodes);
+        }
+
+        if constexpr (is_pv) {
+            if (score - 50 * depth > old_alpha && movelist[moves_searched] < 50'000) {
+                update_see_history(capture_table[piece][to][chessboard.get_piece(to)], see_bonus(std::abs(old_alpha - score) / 50 + depth));
+            } else if (score + 50 * depth < old_alpha && movelist[moves_searched] > 50'000){
+                update_see_history(capture_table[piece][to][chessboard.get_piece(to)], -see_bonus(std::abs(old_alpha - score) / 50 + depth));
+            }
         }
 
         if (score > best_score) {
