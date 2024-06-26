@@ -280,9 +280,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if constexpr (is_pv) {
             if (score - 30 * depth > old_alpha && movelist[moves_searched] < 50'000) {
-                update_see_history(see_correction_table[piece][to][chessboard.get_piece(to)], see_bonus(depth));
+                update_see_history(see_bonus_table[piece][to][chessboard.get_piece(to)], see_bonus(depth), 16384);
             } else if (score + 50 * depth < old_alpha && movelist[moves_searched] > 50'000){
-                update_see_history(see_correction_table[piece][to][chessboard.get_piece(to)], -see_bonus(depth * depth));
+                update_see_history(see_penalty_table[piece][to][chessboard.get_piece(to)], -see_malus(depth), 10'000'000);
             }
         }
 
@@ -306,7 +306,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                     } else {
                         if (movelist[moves_searched] > 50'000)
-                        see_correction_table[piece][to][chessboard.get_piece(to)] = 0;
+                        see_penalty_table[piece][to][chessboard.get_piece(to)] = 0;
                     }
                     update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;

@@ -10,7 +10,8 @@
 std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
-std::array<std::array<std::array<int, 7>, 64>, 6> see_correction_table = {};
+std::array<std::array<std::array<int, 7>, 64>, 6> see_bonus_table = {};
+std::array<std::array<std::array<int, 7>, 64>, 6> see_penalty_table = {};
 
 constexpr int noisy_mul = 41;
 constexpr int noisy_max = 375;
@@ -30,12 +31,16 @@ void update_cap_history(int& value, int bonus) {
     value += bonus - (value * std::abs(bonus) / noisy_gravity);
 }
 
-int see_bonus(int depth) {
-    return std::min(2048, 10 * depth);
+int see_malus(int depth) {
+    return std::min(1'000'000, 100'000 * depth);
 }
 
-void update_see_history(int& value, int bonus) {
-    value += bonus - (value * std::abs(bonus) / 16384);
+int see_bonus(int depth) {
+    return std::min(2'000, 250 * depth);
+}
+
+void update_see_history(int& value, int bonus, int gravity) {
+    value += bonus - (value * std::abs(bonus) / gravity);
 }
 
 template <Color color, bool is_root>
