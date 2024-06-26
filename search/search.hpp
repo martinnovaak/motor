@@ -44,7 +44,7 @@ constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
 template <Color color, NodeType node_type>
-std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth) {
+std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode = false) {
     constexpr Color enemy_color = color == White ? Black : White;
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
@@ -106,7 +106,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     } else {
         eval = static_eval = evaluate<color>(chessboard);
-        if (data.singular_move == 0 && depth >= iir_depth) {
+        if ((is_pv || cutnode) && data.singular_move == 0 && depth >= iir_depth + 2 * cutnode) {
             depth--;
         }
     }
@@ -136,9 +136,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth * 10/ nmp_div + improving;
+                int R = nmp + depth * 10 / nmp_div + improving;
                 data.augment_ply();
-                std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R);
+                std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
                 chessboard.undo_null_move<color>();
                 if (nullmove_score >= beta) {
@@ -214,7 +214,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             {
                 int s_beta = tt_entry.score - se_mul * depth / 80;
                 data.singular_move = chessmove.get_value();
-                int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2);
+                int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
                 data.singular_move = 0;
                 if (s_score < s_beta) {
                     ext = 1;
@@ -224,8 +224,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                             data.double_extension[data.get_ply()]++;
                         }
                     }
-                }
-                else if (s_beta >= beta) {
+                } else if (s_beta >= beta) {
                     return s_beta;
                 }
             }
@@ -241,7 +240,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         std::int16_t score;
         if (moves_searched == 0) {
-            score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext);
+            score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext, false);
         }
         else {
             // late move reduction
@@ -255,17 +254,17 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
                 reduction = std::clamp(reduction, 0, depth - 2);
 
-                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1 + ext);
+                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1 + ext, !cutnode);
                 do_full_search = score > alpha && reduction > 0;
             }
 
             if (do_full_search) {
-                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1 + ext);
+                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1 + ext, !cutnode);
             }
 
 
             if (is_pv && score > alpha) {
-                score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext);
+                score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext, false);
             }
         }
 
@@ -330,12 +329,10 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
             beta = (alpha + beta) / 2;
             alpha = std::max(static_cast<std::int16_t>(-INF), static_cast<std::int16_t>(alpha - window));
             search_depth = depth;
-        }
-        else if (score >= beta) {
+        } else if (score >= beta) {
             beta = std::min(INF, static_cast<std::int16_t>(beta + window));
             search_depth = std::max(1, search_depth - 1);
-        }
-        else {
+        } else {
             break;
         }
 
