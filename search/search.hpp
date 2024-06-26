@@ -49,6 +49,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
+    int old_alpha = alpha;
+
     if (!(is_root && depth < 3) && data.should_end()) {
         return beta;
     }
@@ -242,8 +244,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         std::int16_t score;
         if (moves_searched == 0) {
             score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext);
-        }
-        else {
+        } else {
             // late move reduction
             bool do_full_search = true;
             if (depth >= lmr_depth && movelist[moves_searched] < 1'000'000) {
@@ -276,6 +277,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             data.update_node_count(from, to, start_nodes);
         }
 
+        if (!is_quiet ) {
+            if (((score - 10 * depth > old_alpha) || (score > beta)) && movelist[moves_searched] < 15'000) {
+                see_history_table[piece][to][chessboard.get_piece(to)] += (score > beta) ? 1'000 * depth : 100 * depth;
+            } else if (score + 20 * depth < old_alpha && movelist[moves_searched] > 15'000) {
+                see_history_table[piece][to][chessboard.get_piece(to)] -= 200 * depth;
+            }
+        }
+
         if (score > best_score) {
             best_score = score;
             best_move = chessmove;
@@ -296,6 +305,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                     }
                     update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
+
                     break;
                 }
             }
