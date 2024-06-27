@@ -81,7 +81,10 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     }
 
-    tt[zobrist_key] = { flag, 0, eval, static_eval, best_move, zobrist_key };
+    if (zobrist_key != tt_entry.zobrist)
+    {
+        tt[zobrist_key] = { flag, 0, eval, static_eval, best_move, zobrist_key };
+    }
     return eval;
 }
 

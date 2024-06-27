@@ -308,8 +308,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if (data.singular_move == 0)
-        tt[zobrist_key] = { flag, depth, best_score, static_eval, best_move, zobrist_key };
+    if (data.singular_move == 0) {
+        if (!(flag != Bound::EXACT && zobrist_key == tt_entry.zobrist && depth < tt_entry.depth - 4))
+        {
+            if (zobrist_key == tt_entry.zobrist && best_move.get_value() == 0)
+                best_move = tt_entry.tt_move;
+            tt[zobrist_key] = {flag, depth, best_score, static_eval, best_move, zobrist_key};
+        }
+    }
 
     return best_score;
 }
