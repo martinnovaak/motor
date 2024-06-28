@@ -9,7 +9,7 @@
 
 constexpr unsigned int HIDDEN_SIZE = 1024;
 constexpr int QA = 403;
-constexpr int QB = 64;
+constexpr int QB = 81;
 
 constexpr std::array<int, 64> buckets = {
     0, 0, 0, 0, 1, 1, 1, 1,
@@ -30,7 +30,7 @@ struct Weights {
     std::int16_t output_bias;
 };
 
-INCBIN(Weights, "nnue.bin");
+INCBIN(Weights, "1024-403-81.bin");
 const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
 
 enum class Operation {
