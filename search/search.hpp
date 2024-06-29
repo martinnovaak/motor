@@ -313,13 +313,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     if (data.singular_move == 0) {
-        if (!in_check && chessboard.is_quiet(best_move) && std::abs(best_score) < 8'000 && (flag == Bound::EXACT
-        || (flag == Bound::LOWER && best_score >= static_eval) || (flag == Bound::UPPER && best_score <= static_eval))) {
+        if (!in_check && chessboard.is_quiet(best_move) && std::abs(best_score) < 8'000
+        && !(flag == Bound::LOWER && best_score <= static_eval) && !(flag == Bound::UPPER && best_score >= static_eval)) {
             int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-            int scaled_diff = std::clamp((best_score - static_eval) * 256, -16000, 16000);
-            int weight = std::min(16, depth + 1);
+            int scaled_diff = (best_score - static_eval) * 256;
+            int weight = depth;
 
-            entry = (entry * 255 + scaled_diff) / 256;
+            entry = std::clamp((entry * (512 - weight) + scaled_diff * weight) / 512, -8192, 8192);
         }
 
         tt[zobrist_key] = {flag, depth, best_score, raw_eval, best_move, zobrist_key};
