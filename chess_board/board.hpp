@@ -34,7 +34,7 @@ struct board_info {
     Piece captured_piece = Piece::Null_Piece;
     chess_move move = {};
     zobrist hash_key = {};
-    std::array<std::uint64_t, 6> threats = {};
+    std::uint64_t threats = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
     std::uint64_t pin_diagonal = {};
@@ -47,7 +47,7 @@ class board {
     std::array<std::uint64_t, 2> side_occupancy; // occupancy bitboards
     std::uint64_t occupancy;
     board_info * state;
-    std::array<board_info, 2000> history;
+    std::array<board_info, 384> history;
     Color  side; // side to move
 public:
     board (const std::string & fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
@@ -118,7 +118,6 @@ public:
         constexpr Color their_color = our_color == White ? Black : White;
 
         std::uint64_t threatened = pawn_attacks<their_color>(bitboards[their_color][Pawn]);
-        state->threats[Bishop] = state->threats[Knight] = threatened;
 
         std::uint64_t knights = bitboards[their_color][Knight];
         while (knights) {
@@ -130,13 +129,11 @@ public:
         while (bishops) {
             threatened |= attacks<Ray::BISHOP>(pop_lsb(bishops), occupied); // x-ray through king
         }
-        state->threats[Rook] = threatened;
 
         std::uint64_t rooks = bitboards[their_color][Rook];
         while (rooks) {
             threatened |= attacks<Ray::ROOK>(pop_lsb(rooks), occupied);
         }
-        state->threats[Queen] = threatened;
 
         std::uint64_t queens = bitboards[their_color][Queen];
         while (queens) {
@@ -144,12 +141,12 @@ public:
         }
 
         threatened |= KING_ATTACKS[lsb(bitboards[their_color][King])];
-        state->threats[King] = threatened;
+        state->threats = threatened;
     }
 
     template <Color our_color>
     void calculate_checkers() {
-        // state->checkers = (state->threats[King] & bitboards[our_color][King]) != 0ull ? attackers<our_color>(lsb(bitboards[our_color][King])) : 0ull;
+        // state->checkers = (state->threats & bitboards[our_color][King]) != 0ull ? attackers<our_color>(lsb(bitboards[our_color][King])) : 0ull;
         state->checkers = attackers<our_color>(lsb(bitboards[our_color][King]));
     }
 
@@ -340,7 +337,7 @@ public:
     [[nodiscard]] std::uint64_t pin_diagonal() const { return state->pin_diagonal; }
     [[nodiscard]] std::uint64_t pin_orthogonal() const { return state->pin_orthogonal; }
     [[nodiscard]] std::uint64_t checkers() const { return state->checkers; }
-    [[nodiscard]] std::uint64_t checked_squares() const { return state->threats[King]; }
+    [[nodiscard]] std::uint64_t checked_squares() const { return state->threats; }
 
     [[nodiscard]] bool can_castle(CastlingRight cr) const { return state->castling_rights & cr; }
 
@@ -403,7 +400,6 @@ public:
         return true;
     }
 
-    /*
     void shift_history() {
         const int index = state - history.data();
         for (int i = 100; i <= index; ++i) {
@@ -415,10 +411,9 @@ public:
 
         state -= 100;
     }
-     */
 
     std::uint64_t get_threats() {
-        return state->threats[King];
+        return state->threats;
     }
 
     int move_count() {
