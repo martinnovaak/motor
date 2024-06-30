@@ -19,11 +19,11 @@ constexpr int quiet_mul = 236;
 constexpr int quiet_max = 2040;
 
 int see_bonus(int depth) {
-    return std::min(8192, 800 * depth);
+    return std::min(1000, 50 * depth);
 }
 
 void update_see_history(int& value, int bonus) {
-    value += bonus - (value * std::abs(bonus) / 49152);
+    value += bonus - (value * std::abs(bonus) / 4096);
 }
 
 int history_bonus(int depth) {

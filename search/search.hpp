@@ -278,7 +278,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             data.update_node_count(from, to, start_nodes);
         }
 
-        if (score + 50 * depth < old_alpha && movelist[moves_searched] > 50'000){
+        if (score + 100 * depth < old_alpha && movelist[moves_searched] > 50'000){
             update_see_history(see_penalty_table[piece][to][chessboard.get_piece(to)], -see_bonus(depth));
         }
 
