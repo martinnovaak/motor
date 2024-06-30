@@ -20,7 +20,7 @@ constexpr int razoring_depth = 4;
 constexpr int rfp = 154;
 constexpr int rfp_depth = 9;
 constexpr int nmp = 3;
-constexpr int nmp_div = 4;
+constexpr int nmp_div = 40;
 constexpr int nmp_depth = 2;
 constexpr int lmp_base = 2;
 constexpr int fp_base = 129;
@@ -136,7 +136,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving;
+                int R = nmp + depth * 10/ nmp_div + improving;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R);
                 data.reduce_ply();
@@ -206,7 +206,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if constexpr (!is_root) {
             if (depth >= se_depth &&
                 moves_searched == 0 &&
-                movelist.get_move_score(moves_searched) == 214'748'364 &&
+                movelist[moves_searched] == 214'748'364 &&
                 tt_entry.depth >= depth - se_depth_margin &&
                 tt_entry.bound != Bound::UPPER &&
                 data.singular_move == 0 &&
@@ -246,11 +246,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         else {
             // late move reduction
             bool do_full_search = true;
-            if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
+            if (depth >= lmr_depth && movelist[moves_searched] < 1'000'000) {
                 if (is_quiet) {
                     reduction += !is_pv + !improving;
                     reduction -= chessboard.in_check();
-                    reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
+                    reduction -= movelist[moves_searched] / lmr_quiet_history;
                 }
 
                 reduction = std::clamp(reduction, 0, depth - 2);
@@ -295,7 +295,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         data.update_killer(chessmove);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                     }
-                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
+                    update_quiet_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;
                 }
             }

@@ -30,8 +30,7 @@ public:
     }
 
     const TT_ENTRY & operator[](const std::uint64_t zobrist_hash) const {
-        std::uint64_t index = static_cast<std::uint64_t>((static_cast<__int128>(zobrist_hash) * static_cast<__int128>(bucket_count)) >> 64);
-        return tt_table[index];
+        return tt_table[zobrist_hash & mask];
     }
 private:
     std::vector<TT_ENTRY> tt_table;

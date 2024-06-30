@@ -43,10 +43,6 @@ public:
         return move_score[index];
     }
 
-    std::int32_t get_move_score(int index) {
-        return move_score[index];
-    }
-
     typedef chess_move* iterator;
     typedef const chess_move* const_iterator;
 
