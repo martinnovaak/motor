@@ -7,19 +7,19 @@
 
 #include <immintrin.h>
 
-constexpr unsigned int HIDDEN_SIZE = 1024;
+constexpr unsigned int HIDDEN_SIZE = 1536;
 constexpr int QA = 403;
-constexpr int QB = 64;
+constexpr int QB = 81;
 
 constexpr std::array<int, 64> buckets = {
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
 };
 
 struct Weights {
@@ -99,7 +99,7 @@ public:
         }
     }
 
-#ifndef __AVX2__ 
+#ifndef __AVX2__
     template <Color color>
     std::int32_t evaluate() {
         std::int32_t sum = 0;
