@@ -59,9 +59,11 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
 
         make_move<color>(chessboard, chessmove);
+        data.augment_ply();
         tt.prefetch(chessboard.get_hash_key());
         std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha);
         undo_move<color>(chessboard, chessmove);
+        data.reduce_ply();
 
         if (score <= eval) {
             continue;
