@@ -374,7 +374,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
 
         best_move = data.best_move;
 
-        if (depth > 3 && std::abs(score) > 8'000) {
+        if (depth > 20 && std::abs(score) > 19'900) {
             break;
         }
     }
