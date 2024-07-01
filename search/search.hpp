@@ -65,6 +65,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             return 0;
         }
 
+        // mate distance pruning
+        alpha = std::max(data.mate_value(), alpha);
+        beta = std::min(static_cast<std::int16_t>(-data.mate_value() - 1), beta);
+        if (alpha >= beta) {
+            return alpha;
+        }
+
         in_check = chessboard.in_check();
         if (in_check) {
             depth++;
@@ -374,7 +381,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
 
         best_move = data.best_move;
 
-        if (depth > 3 && std::abs(score) > 8'000) {
+        if (depth > 10 && std::abs(score) > 19'000) {
             break;
         }
     }
