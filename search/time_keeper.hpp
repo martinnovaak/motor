@@ -12,7 +12,7 @@ struct time_info {
 
 class time_keeper {
 public:
-    time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
+    time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{}, old_bm{}, stability_counter{} {}
 
     void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1) {
         start_time = std::chrono::steady_clock::now();
@@ -22,6 +22,8 @@ public:
         total_nodes = 0;
         inf_time = false;
         node_count = {};
+        old_bm = {};
+        stability_counter = {};
 
         if (time == -1) {
             inf_time = true;
@@ -51,13 +53,19 @@ public:
             return false;
         }
 
-        double opt_scale = 1.0;
+        double stability_scale = 1.0;
+        double node_tm_scale = 1.0;
         if (depth > 6) {
+            std::string new_bm = best_move.to_string();
+            stability_counter = new_bm == old_bm ? stability_counter + 1 : 0;
+            old_bm = new_bm;
+            stability_scale = 1.3 - 0.04 * std::min(10, stability_counter);
+
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
-            opt_scale = bm_frac * 2.0 + 0.5;
+            node_tm_scale = bm_frac * 2.0 + 0.5;
         }
 
-        if (elapsed() >= std::min(optimal_time_limit * opt_scale, double(time_limit))) {
+        if (elapsed() >= std::min(optimal_time_limit * node_tm_scale * stability_scale, double(time_limit))) {
             stop = true;
         }
         return stop;
@@ -115,6 +123,8 @@ private:
     int max_nodes;
     std::uint64_t total_nodes;
     std::array<std::array<int, 64>, 64> node_count;
+    std::string old_bm;
+    int stability_counter;
 };
 
 #endif //MOTOR_TIME_KEEPER_HPP
