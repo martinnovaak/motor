@@ -136,7 +136,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving;
+                int R = nmp + depth / nmp_div + improving + std::min(3, (eval - beta) / 256);
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R);
                 data.reduce_ply();
