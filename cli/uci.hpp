@@ -127,6 +127,11 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
+        std::cout << "option name see_bonus_mul type spin default "<< see_bonus_mul <<" min 20 max 800" << std::endl;
+        std::cout << "option name see_bonus_max type spin default "<< see_bonus_max <<" min 200 max 8000" << std::endl;
+        std::cout << "option name see_bonus_gravity type spin default "<< see_bonus_gravity <<" min 2000 max 50000" << std::endl;
+        std::cout << "option name see_penalty_mul type spin default "<< see_penalty_mul <<" min 10 max 250" << std::endl;
+        std::cout << "option name see_penalty_treshold type spin default "<< see_penalty_treshold <<" min 10000 max 60000" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
@@ -145,6 +150,16 @@ void uci_process(board& b, const std::string& line) {
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
+            } else if (tokens[1] == "see_bonus_mul") {
+                see_bonus_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "see_bonus_max") {
+                see_bonus_max = std::stoi(tokens[3]);
+            } else if (tokens[1] == "see_bonus_gravity") {
+                see_bonus_gravity = std::stoi(tokens[3]);
+            } else if (tokens[1] == "see_penalty_mul") {
+                see_penalty_mul = std::stoi(tokens[3]);
+            } else if (tokens[1] == "see_penalty_treshold") {
+                see_penalty_treshold = std::stoi(tokens[3]);
             }
         } else {
             std::cout << "Command not found." << std::endl;
