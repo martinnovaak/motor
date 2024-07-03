@@ -218,11 +218,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 data.singular_move = 0;
                 if (s_score < s_beta) {
                     ext = 1;
-                    if constexpr(!is_pv) {
-                        if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
-                            ext = 2;
-                            data.double_extension[data.get_ply()]++;
-                        }
+                    if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
+                        ext = 2;
+                        data.double_extension[data.get_ply()]++;
                     }
                 }
                 else if (s_beta >= beta) {
