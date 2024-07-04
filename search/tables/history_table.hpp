@@ -18,9 +18,9 @@ constexpr int noisy_gravity = 1779;
 constexpr int quiet_mul = 236;
 constexpr int quiet_max = 2040;
 
-int see_bonus_mul = 100;
-int see_bonus_max = 1000;
-int see_bonus_gravity = 16384;
+constexpr int see_bonus_mul = 150;
+constexpr int see_bonus_max = 1250;
+constexpr int see_bonus_gravity = 24'576;
 
 int see_bonus(int depth) {
     return std::min(see_bonus_max, see_bonus_mul * depth);

@@ -14,8 +14,8 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
-int see_penalty_mul = 50;
-int see_penalty_treshold = 50'000;
+constexpr int see_penalty_mul = 60;
+constexpr int see_penalty_treshold = 45'000;
 
 constexpr int iir_depth = 3;
 constexpr int razoring = 457;

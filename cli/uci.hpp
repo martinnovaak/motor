@@ -150,7 +150,9 @@ void uci_process(board& b, const std::string& line) {
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
                 tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
-            } else if (tokens[1] == "see_bonus_mul") {
+            }
+            /*
+            else if (tokens[1] == "see_bonus_mul") {
                 see_bonus_mul = std::stoi(tokens[3]);
             } else if (tokens[1] == "see_bonus_max") {
                 see_bonus_max = std::stoi(tokens[3]);
@@ -161,6 +163,7 @@ void uci_process(board& b, const std::string& line) {
             } else if (tokens[1] == "see_penalty_treshold") {
                 see_penalty_treshold = std::stoi(tokens[3]);
             }
+             */
         } else {
             std::cout << "Command not found." << std::endl;
         }
