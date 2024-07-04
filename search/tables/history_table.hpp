@@ -19,12 +19,12 @@ constexpr int noisy_gravity = 1779;
 constexpr int quiet_mul = 236;
 constexpr int quiet_max = 2040;
 
-int see_bonus_mul = 150;
-int see_penalty_mul = 150;
-int see_bonus_max = 1250;
-int see_penalty_max = 1250;
-int see_bonus_gravity = 24'576;
-int see_penalty_gravity = 24'576;
+constexpr int see_bonus_mul = 116;
+constexpr int see_penalty_mul = 171;
+constexpr int see_bonus_max = 902;
+constexpr int see_penalty_max = 1414;
+constexpr int see_bonus_gravity = 15245;
+constexpr int see_penalty_gravity = 34927;
 
 int see_bonus(int depth) {
     return std::min(see_bonus_max, see_bonus_mul * depth);
