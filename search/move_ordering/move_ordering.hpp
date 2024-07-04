@@ -36,6 +36,8 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
             move_score = mvv[chessboard.get_piece(to)] + capture_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
             if (see<color>(chessboard, move)) {
                 move_score += 75539 + see_penalty_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
+            } else {
+                move_score += see_bonus_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
             }
         } else if (data.get_killer(0) == move){
             move_score = 65539;

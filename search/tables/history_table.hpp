@@ -11,6 +11,7 @@ std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2>
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> see_penalty_table = {};
+std::array<std::array<std::array<int, 7>, 64>, 6> see_bonus_table = {};
 
 constexpr int noisy_mul = 41;
 constexpr int noisy_max = 375;
@@ -18,16 +19,23 @@ constexpr int noisy_gravity = 1779;
 constexpr int quiet_mul = 236;
 constexpr int quiet_max = 2040;
 
-constexpr int see_bonus_mul = 150;
-constexpr int see_bonus_max = 1250;
-constexpr int see_bonus_gravity = 24'576;
+int see_bonus_mul = 150;
+int see_penalty_mul = 150;
+int see_bonus_max = 1250;
+int see_penalty_max = 1250;
+int see_bonus_gravity = 24'576;
+int see_penalty_gravity = 24'576;
 
 int see_bonus(int depth) {
     return std::min(see_bonus_max, see_bonus_mul * depth);
 }
 
-void update_see_history(int& value, int bonus) {
-    value += bonus - (value * std::abs(bonus) / see_bonus_gravity);
+int see_penalty(int depth) {
+    return std::min(see_penalty_max, see_penalty_mul * depth);
+}
+
+void update_see_history(int& value, int bonus, int see_gravity) {
+    value += bonus - (value * std::abs(bonus) / see_gravity);
 }
 
 int history_bonus(int depth) {
