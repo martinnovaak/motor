@@ -60,7 +60,7 @@ template <Color color>
 std::uint64_t bench_iterative_deepening(board& chessboard, int max_depth) {
     search_data data;
     time_info info;
-    data.set_timekeeper(info.wtime, info.winc, info.movestogo, 1);
+    data.set_timekeeper(info.wtime, info.winc, info.movestogo, 1, INT_MAX / 2);
 
     int score;
     for (int depth = 1; depth <= max_depth; depth++) {

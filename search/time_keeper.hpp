@@ -7,18 +7,18 @@
 #include "../chess_board/chess_move.hpp"
 
 struct time_info {
-    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64;
+    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64, max_nodes = INT_MAX / 2;
 };
 
 class time_keeper {
 public:
     time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
 
-    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1) {
+    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, int nodes = INT_MAX / 2) {
         start_time = std::chrono::steady_clock::now();
         stop = false;
         const int time_minus_threshold = time - 50;
-        max_nodes = INT_MAX / 2;
+        max_nodes = nodes;
         total_nodes = 0;
         inf_time = false;
         node_count = {};
@@ -47,6 +47,10 @@ public:
             return true;
         }
 
+        if (total_nodes >= max_nodes) {
+            return true;
+        }
+
         if (inf_time) {
             return false;
         }
@@ -64,7 +68,7 @@ public:
     }
 
     bool should_end(std::uint64_t nodes = 0) { // called in alphabeta
-        if (stop) {
+        if (stop || total_nodes >= max_nodes) {
             return true;
         }
 
@@ -73,7 +77,7 @@ public:
         }
 
         if((nodes & 1023) == 0) {
-            stop = elapsed() >= time_limit || total_nodes >= max_nodes;
+            stop = elapsed() >= time_limit;
         }
         return stop;
     }

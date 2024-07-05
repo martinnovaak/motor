@@ -102,6 +102,8 @@ void uci_go(board& b, const std::string& command) {
             // info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
         } else if (tokens[i] == "infinite") {
             // info.infinite = true;                      
+        } else if (tokens[i] == "nodes") {
+            info.max_nodes = std::stoi(tokens[i + 1]);
         }
     }
 

@@ -40,8 +40,8 @@ class search_data {
 public:
     search_data() : ply(0), principal_variation_table(), timekeeper(), nodes_searched(0)  {}
 
-    void set_timekeeper(int time, int bonus, int movestogo, int move_count) {
-        timekeeper.reset(time, bonus, movestogo, move_count);
+    void set_timekeeper(int time, int bonus, int movestogo, int move_count, int max_nodes) {
+        timekeeper.reset(time, bonus, movestogo, move_count, max_nodes);
     }
 
     bool should_end() {
