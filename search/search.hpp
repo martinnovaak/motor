@@ -14,9 +14,9 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
-constexpr int bonus_mul = 56;
-constexpr int penalty_mul = 54;
-constexpr int see_penalty_treshold = 42000;
+constexpr int bonus_mul = 43;
+constexpr int penalty_mul = 59;
+constexpr int see_penalty_treshold = 42900;
 constexpr int see_bonus_treshold = 41800;
 
 constexpr int iir_depth = 3;
