@@ -386,10 +386,10 @@ void find_best_move(board& chessboard, time_info& info) {
     search_data data;
 
     if (chessboard.get_side() == White) {
-        data.set_timekeeper(info.wtime, info.winc, info.movestogo, chessboard.move_count());
+        data.set_timekeeper(info.wtime, info.winc, info.movestogo, chessboard.move_count(), info.max_nodes);
         iterative_deepening<White>(chessboard, data, info.max_depth);
     } else {
-        data.set_timekeeper(info.btime, info.binc, info.movestogo, chessboard.move_count());
+        data.set_timekeeper(info.btime, info.binc, info.movestogo, chessboard.move_count(), info.max_nodes);
         iterative_deepening<Black>(chessboard, data, info.max_depth);
     }
 }
