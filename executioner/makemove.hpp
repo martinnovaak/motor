@@ -100,7 +100,7 @@ void make_move(board & b, chess_move m) {
     if constexpr (update_nnue) {
         network.push();
 
-        if (piece == King && buckets[from] != buckets[to]) {
+        if (piece == King && (((side == White) && buckets[from] != buckets[to]) || ((side == Black) && buckets[from ^ 56] != buckets[to ^ 56]))) {
             if constexpr (side == White) {
                 wking = to;
             } else {
