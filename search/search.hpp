@@ -66,9 +66,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
 
         in_check = chessboard.in_check();
-        if (in_check) {
-            depth++;
-        }
     }
 
     if (depth <= 0) {
@@ -105,14 +102,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             eval = tt_eval;
         }
     } else {
-        eval = static_eval = evaluate<color>(chessboard);
+        eval = static_eval = in_check ? -INF : evaluate<color>(chessboard);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
     }
 
     data.improving[data.get_ply()] = static_eval;
-    int improving = data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+    int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
@@ -201,7 +198,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        int ext = 0;
+        int ext = in_check;
 
         if constexpr (!is_root) {
             if (depth >= se_depth &&
