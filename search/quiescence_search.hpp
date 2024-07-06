@@ -55,7 +55,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     move_list movelist;
-    if (in_check && depth > -2) {
+    if (in_check) {
         generate_all_moves<color, false>(chessboard, movelist);
         if (movelist.size() == 0) {
             return data.mate_value();
@@ -100,7 +100,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     }
 
-    tt[zobrist_key] = { flag, depth, eval, static_eval, best_move, zobrist_key };
+    tt[zobrist_key] = { flag, 0, eval, static_eval, best_move, zobrist_key };
     return eval;
 }
 
