@@ -8,29 +8,29 @@
 #include <immintrin.h>
 
 constexpr unsigned int HIDDEN_SIZE = 1024;
-constexpr int QA = 255;
-constexpr int QB = 64;
+constexpr int QA = 403;
+constexpr int QB = 81;
 
 constexpr std::array<int, 64> buckets = {
-        0, 0, 1, 1, 5, 5, 4, 4,
-        2, 2, 2, 2, 6, 6, 6, 6,
-        3, 3, 3, 3, 7, 7, 7, 7,
-        3, 3, 3, 3, 7, 7, 7, 7,
-        3, 3, 3, 3, 7, 7, 7, 7,
-        3, 3, 3, 3, 7, 7, 7, 7,
-        3, 3, 3, 3, 7, 7, 7, 7,
-        3, 3, 3, 3, 7, 7, 7, 7,
+        0, 1, 2, 3, 10, 9, 8, 7,
+        4, 4, 5, 5, 12, 12, 11, 11,
+        6, 6, 6, 6, 13, 13, 13, 13,
+        6, 6, 6, 6, 13, 13, 13, 13,
+        6, 6, 6, 6, 13, 13, 13, 13,
+        6, 6, 6, 6, 13, 13, 13, 13,
+        6, 6, 6, 6, 13, 13, 13, 13,
+        6, 6, 6, 6, 13, 13, 13, 13,
 };
 
 struct Weights {
-    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 4> feature_weight;
+    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 7> feature_weight;
     std::array<std::int16_t, HIDDEN_SIZE> feature_bias;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM;
     std::int16_t output_bias;
 };
 
-INCBIN(Weights, "nnue.bin");
+INCBIN(Weights, "7_1024_403_81hm_9.bin");
 const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
 
 enum class Operation {
@@ -79,8 +79,8 @@ public:
 
     template<Operation operation>
     void update_accumulator(const Piece piece, const Color color, const Square square, int wking, int bking) {
-        const auto& white_weights = weights.feature_weight[buckets[wking] % 4][color][piece][get_square_index(square, wking)];
-        const auto& black_weights = weights.feature_weight[buckets[bking] % 4][color ^ 1][piece][get_square_index(square, bking) ^ 56];
+        const auto& white_weights = weights.feature_weight[buckets[wking] % 7][color][piece][get_square_index(square, wking)];
+        const auto& black_weights = weights.feature_weight[buckets[bking ^ 56] % 7][color ^ 1][piece][get_square_index(square, bking) ^ 56];
 
         auto& white_accumulator = white_accumulator_stack[index];
         auto& black_accumulator = black_accumulator_stack[index];
