@@ -54,6 +54,14 @@ public:
         refresh();
     }
 
+    template <Color color>
+    void current_accumulator() {
+        if (color == White)
+            white_accumulator_stack[index] = weights.feature_bias;
+        else
+            black_accumulator_stack[index] = weights.feature_bias;
+    }
+
     void refresh_current_accumulator() {
         white_accumulator_stack[index] = black_accumulator_stack[index] = weights.feature_bias;
     }
@@ -75,6 +83,17 @@ public:
 
     int get_square_index(int square, int king_square) {
         return (king_square % 8 > 3) ? square ^ 7 : square;
+    }
+
+    template<Color side>
+    void add_to_accumulator(const Piece piece, const Color color, const Square square, int king) {
+        const auto& side_weights = side == White ? weights.feature_weight[buckets[king] % 7][color][piece][get_square_index(square, king)] : weights.feature_weight[buckets[king ^ 56] % 7][color ^ 1][piece][get_square_index(square, king) ^ 56];
+
+        auto& accumulator = side == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
+
+        for (std::size_t i = 0; i < hidden_size; i++) {
+            accumulator[i] += side_weights[i];
+        }
     }
 
     template<Operation operation>
