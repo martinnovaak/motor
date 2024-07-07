@@ -134,6 +134,7 @@ void uci_process(board& b, const std::string& line) {
         history_table = {};
         continuation_table = {};
         capture_table = {};
+        correction_table = {};
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
@@ -154,6 +155,7 @@ void uci_process(board& b, const std::string& line) {
         history_table = {};
         continuation_table = {};
         capture_table = {};
+        correction_table = {};
         tt.clear();
         bench(13);
     } else if (command == "perft") {

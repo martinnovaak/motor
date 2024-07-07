@@ -34,6 +34,7 @@ struct board_info {
     Piece captured_piece = Piece::Null_Piece;
     chess_move move = {};
     zobrist hash_key = {};
+    zobrist pawn_key = {};
     std::uint64_t threats = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
@@ -66,6 +67,7 @@ public:
         state = &history[0];
         side = Color::White;
         state->hash_key = zobrist();
+        state->pawn_key = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
 
@@ -82,7 +84,7 @@ public:
                 auto [color, piece] = get_color_and_piece(fen_char);
                 const auto piece_square = static_cast<Square>(square);
                 bitboards[color][piece] |= bb(piece_square);
-                state->hash_key.update_psqt_hash(color, piece, piece_square);
+                update_hash(color, piece, piece_square);
                 pieces[square] = piece;
                 square += 1;
             }
@@ -294,6 +296,7 @@ public:
         state->hash_key = old_info->hash_key;
         state->hash_key.update_side_hash();
         state->hash_key.update_enpassant_hash(old_info->enpassant);
+        state->pawn_key = old_info->pawn_key;
         state->enpassant = Square::Null_Square;
         state->fifty_move_clock++;
         state->castling_rights = old_info->castling_rights;
@@ -313,6 +316,10 @@ public:
 
     [[nodiscard]] std::uint64_t get_hash_key() const {
         return state->hash_key.get_key();
+    }
+
+    [[nodiscard]] std::uint64_t get_pawn_key() const {
+        return state->pawn_key.get_key();
     }
 
     [[nodiscard]] chess_move get_last_played_move() const {
@@ -378,13 +385,14 @@ public:
 
     template <Color color>
     void make_state(Piece captured_piece, chess_move played_move) {
-        board_info * oldState = state++;
-        state->hash_key = oldState->hash_key;
-        state->hash_key.update_enpassant_hash(oldState->enpassant);
+        board_info * old_state = state++;
+        state->hash_key = old_state->hash_key;
+        state->hash_key.update_enpassant_hash(old_state->enpassant);
         state->hash_key.update_side_hash();
+        state->pawn_key = old_state->pawn_key;
         state->enpassant = Null_Square;
-        state->castling_rights = oldState->castling_rights;
-        state->fifty_move_clock = oldState->fifty_move_clock + 1;
+        state->castling_rights = old_state->castling_rights;
+        state->fifty_move_clock = old_state->fifty_move_clock + 1;
         state->captured_piece = captured_piece;
         state->move = played_move;
         side = color;
@@ -392,6 +400,10 @@ public:
 
     void update_hash(Color color, Piece piece, Square square) {
         state->hash_key.update_psqt_hash(color, piece, square);
+
+        if (piece == Pawn) {
+            state->pawn_key.update_psqt_hash(color, piece, square);
+        }
     }
 
     bool is_quiet(const chess_move & move) {
