@@ -330,6 +330,10 @@ public:
         this->state->fifty_move_clock = 0;
     }
 
+    int get_half_moves() {
+        return this->state->fifty_move_clock;
+    }
+
     void set_enpassant(Square square) {
         this->state->enpassant = square;
         state->hash_key.update_enpassant_hash(state->enpassant);

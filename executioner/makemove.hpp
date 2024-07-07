@@ -18,7 +18,7 @@ std::int16_t evaluate(board& chessboard) {
 
     return network.evaluate<color>() * (68 + game_phase) / 74;
 */
-    return network.evaluate<color>();
+    return network.evaluate<color>() * (200 - chessboard.get_half_moves()) / 200;
 }
 
 void set_position(board& chessboard) {
