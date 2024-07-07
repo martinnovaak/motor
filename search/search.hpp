@@ -43,6 +43,13 @@ constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
+template <Color color>
+std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
+    if (std::abs(raw_eval) > 8'000) return raw_eval;
+    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    return raw_eval + entry / 256;
+}
+
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
     constexpr Color enemy_color = color == White ? Black : White;
@@ -79,13 +86,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     chess_move best_move;
     chess_move tt_move = {};
-    std::int16_t eval, static_eval;
+    std::int16_t eval, static_eval, raw_eval;
 
     if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
-        eval = static_eval = tt_entry.static_eval;
+        raw_eval = tt_entry.static_eval;
+        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
 
         if constexpr (!is_pv) {
             if (tt_entry.depth >= depth) {
@@ -102,7 +110,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             eval = tt_eval;
         }
     } else {
-        eval = static_eval = in_check ? -INF : evaluate<color>(chessboard);
+        raw_eval = in_check ? -INF : evaluate<color>(chessboard);
+        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -306,8 +315,21 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if (data.singular_move == 0)
-        tt[zobrist_key] = { flag, depth, best_score, static_eval, best_move, zobrist_key };
+    if (data.singular_move == 0) {
+        if (!(in_check || !chessboard.is_quiet(best_move)
+            || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
+        ) {
+            int diff = (best_score - raw_eval) * 256;
+            int weight = flag == Bound::EXACT ? std::min(4 * depth * depth + 8 * depth + 4, 512)
+                                              : std::min(3 * depth * depth + 6 * depth + 3, 384);
+
+            int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+            entry = (entry * (4096 - weight) + diff * weight) / 4096;
+            entry = std::clamp(entry, -16'384, 16'384);
+        }
+
+        tt[zobrist_key] = {flag, depth, best_score, raw_eval, best_move, zobrist_key};
+    }
 
     return best_score;
 }

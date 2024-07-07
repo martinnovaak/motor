@@ -10,6 +10,7 @@
 std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
+std::array<std::array<int, 16384>, 2> correction_table = {};
 
 constexpr int noisy_mul = 41;
 constexpr int noisy_max = 375;
