@@ -78,12 +78,13 @@ void incheck_score_moves(board & chessboard, move_list & movelist, search_data &
     }
 }
 
-void qs_score_moves(board & chessboard, move_list & movelist) {
+void qs_score_moves(board & chessboard, move_list & movelist, const chess_move & tt_move) {
     int move_index = 0;
     for(chess_move & move : movelist) {
         const std::uint8_t from = move.get_from();
-        const std::uint8_t to   = move.get_to();
-        movelist[move_index] = mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)];
+        const std::uint8_t to = move.get_to();
+        int bonus = move == tt_move ? 100000 : 0;
+        movelist[move_index] = bonus + mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)];
         move_index++;
     }
 }
