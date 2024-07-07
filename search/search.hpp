@@ -188,6 +188,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         continue;
                     }
+
+                    if (depth < 5 && movelist[moves_searched] < -2500 * depth) {
+                        continue;
+                    }
                 }
 
 
