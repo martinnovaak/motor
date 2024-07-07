@@ -50,12 +50,31 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
     }
 }
 
-void qs_score_moves(board & chessboard, move_list & movelist) {
+template <Color color>
+void qs_score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
     int move_index = 0;
-    for(chess_move & move : movelist) {
-        const std::uint8_t from = move.get_from();
-        const std::uint8_t to   = move.get_to();
-        movelist[move_index] = mvv_lva[chessboard.get_piece(to)][chessboard.get_piece(from)];
+    for (chess_move & move : movelist) {
+        const Square from = move.get_from();
+        const Square to   = move.get_to();
+        const chess_move previous_move = chessboard.get_last_played_move();
+        const chess_move counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
+        int move_score;
+        if (move == tt_move) {
+            move_score = 214748364;
+        } else if (!chessboard.is_quiet(move)) {
+            move_score = 10'000'000 + mvv[chessboard.get_piece(to)];
+            move_score += capture_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
+        } else if (data.get_killer(0) == move){
+            move_score = 1'000'002;
+        } else if (data.get_killer(1) == move){
+            move_score = 1'000'001;
+        } else if (move == counter_move) {
+            move_score = 1'000'000;
+        } else {
+            move_score = get_history<color>(chessboard, data, from, to, chessboard.get_piece(from));
+        }
+
+        movelist[move_index] = move_score;
         move_index++;
     }
 }
