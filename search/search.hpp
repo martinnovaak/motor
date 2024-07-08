@@ -193,8 +193,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         continue;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction);
-                    if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth + 100 * improving <= alpha) {
+                    int lmr_depth = std::max(0, depth - reduction - improving);
+                    if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth<= alpha) {
                         continue;
                     }
                 }
