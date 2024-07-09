@@ -87,8 +87,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
+    bool tt_hit = false;
 
     if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
+        tt_hit = true;
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
@@ -148,7 +150,40 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 data.reduce_ply();
                 chessboard.undo_null_move<color>();
                 if (nullmove_score >= beta) {
-                    return nullmove_score;
+                    return nullmove_score > 10'000 ? beta : nullmove_score;
+                }
+            }
+
+            const auto probcut_beta = beta + 350;
+            if (depth >= 7 && !(tt_hit && tt_entry.depth > depth - 3 && tt_entry.score < probcut_beta)) {
+                const auto see_treshold = probcut_beta - static_eval;
+                move_list movelist;
+                generate_all_moves<color, true>(chessboard, movelist);
+                qs_score_moves(chessboard, movelist);
+
+                for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
+                    chess_move &chessmove = movelist.get_next_move(moves_searched);
+
+                    if (!see<color>(chessboard, chessmove)) {
+                        continue;
+                    }
+
+                    make_move<color>(chessboard, chessmove);
+                    data.augment_ply();
+                    tt.prefetch(chessboard.get_hash_key());
+                    std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -probcut_beta, -probcut_beta + 1);
+
+                    if (score >= probcut_beta) {
+                        score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -probcut_beta, -probcut_beta + 1, depth - 4, !cutnode);
+                    }
+
+                    undo_move<color>(chessboard, chessmove);
+                    data.reduce_ply();
+
+                    if (score >= probcut_beta) {
+                        tt[zobrist_key] = {Bound::LOWER, std::int8_t(depth - 3), score, raw_eval, chessmove, zobrist_key};
+                        return score;
+                    }
                 }
             }
         }
