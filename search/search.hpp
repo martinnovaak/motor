@@ -271,7 +271,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1 + ext, !cutnode);
             }
 
-
             if (is_pv && score > alpha) {
                 score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext, false);
             }
