@@ -7,9 +7,9 @@
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
 
-std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
+std::array<std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
-std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
+std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 2> capture_table = {};
 std::array<std::array<int, 16384>, 2> correction_table = {};
 
 constexpr int noisy_mul = 41;
@@ -39,11 +39,12 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     history_move prev = {}, prev2 = {}, prev4 = {};
 
     std::uint64_t threats = chessboard.get_threats();
+    bool in_check = chessboard.in_check();
 
     if (chessboard.is_quiet(best_move)) {
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
-        update_history(history_table[color][threat_from][threat_to][from][to], bonus);
+        update_history(history_table[in_check][color][threat_from][threat_to][from][to], bonus);
 
         if constexpr (!is_root) {
             prev = data.prev_moves[data.get_ply() - 1];
@@ -65,7 +66,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             auto qpiece = chessboard.get_piece(qfrom);
             bool qthreat_from = (threats & bb(qfrom));
             bool qthreat_to = (threats & bb(qto));
-            update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
+            update_history(history_table[in_check][color][qthreat_from][qthreat_to][qfrom][qto], malus);
 
             if constexpr (!is_root) {
                 update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], malus);
@@ -78,13 +79,13 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             }
         }
     } else {
-        update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
+        update_cap_history(capture_table[in_check][piece][to][chessboard.get_piece(to)], cap_bonus);
     }
 
     for (const auto &capture: captures) {
         int malus = -cap_bonus;
         auto cap_to = capture.get_to();
-        update_cap_history(capture_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], malus);
+        update_cap_history(capture_table[in_check][chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], malus);
     }
 }
 
@@ -93,8 +94,9 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     std::uint64_t threats = chessboard.get_threats();
     bool threat_from = (threats & bb(from));
     bool threat_to = (threats & bb(to));
+    bool in_check = chessboard.in_check();
 
-    int move_score = history_table[color][threat_from][threat_to][from][to];
+    int move_score = history_table[in_check][color][threat_from][threat_to][from][to];
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
         move_score += continuation_table[prev.piece_type][prev.to][piece][to];
