@@ -252,7 +252,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
         else {
             // late move reduction
-            bool do_full_search = true;
             if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
                 if (is_quiet) {
                     reduction += !is_pv + !improving;
@@ -262,12 +261,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
                 reduction = std::clamp(reduction, 0, depth - 2);
-
-                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1 + ext, true);
-                do_full_search = score > alpha && reduction > 0;
+            } else {
+                reduction = 0;
             }
 
-            if (do_full_search) {
+            score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1 + ext, true);
+
+            if (score > alpha && reduction > 0) {
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1 + ext, !cutnode);
             }
 
