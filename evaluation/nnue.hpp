@@ -30,7 +30,7 @@ struct Weights {
     std::int16_t output_bias;
 };
 
-INCBIN(Weights, "nnue.bin");
+INCBIN(Weights, "nnue_beta.bin");
 const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
 
 enum class Operation {
