@@ -151,7 +151,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if (tt_move.get_value() == 0 && data.singular_move == 0 && depth >= iir_depth) {
+    if (tt_move.get_value() == 0 && data.singular_move == 0 && depth >= iir_depth && (is_pv || cutnode)) {
         depth--;
     }
 
