@@ -32,11 +32,13 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
     const TT_entry& tt_entry = tt[zobrist_key];
+    chess_move tt_move = {};
 
     if (tt_entry.zobrist == zobrist_key) {
         std::int16_t tt_eval = tt_entry.score;
         static_eval = tt_entry.static_eval;
         eval = tt_eval;
+        tt_move = tt_entry.tt_move;
         if ((tt_entry.bound == Bound::EXACT) ||
             (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
             (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
@@ -60,11 +62,11 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         if (movelist.size() == 0) {
             return data.mate_value();
         }
+        score_moves<color>(chessboard, movelist, data, tt_move);
     } else {
         generate_all_moves<color, true>(chessboard, movelist);
+        qs_score_moves(chessboard, movelist);
     }
-
-    qs_score_moves(chessboard, movelist);
 
     chess_move best_move;
 
