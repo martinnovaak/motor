@@ -139,16 +139,16 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // NULL MOVE PRUNING
-            if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
+            if (node_type != NodeType::Null && depth >= nmp_depth + is_pv && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 256, 3);
+                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 256, 3) - is_pv;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
                 chessboard.undo_null_move<color>();
                 if (nullmove_score >= beta) {
-                    return nullmove_score;
+                    return nullmove_score > 10'000 ? beta : nullmove_score;
                 }
             }
         }
