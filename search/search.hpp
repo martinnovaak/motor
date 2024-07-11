@@ -121,7 +121,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     int eval_diff = data.get_ply() > 1 && data.improving[data.get_ply() - 2] != -INF ? static_eval - data.improving[data.get_ply() - 2] : 0;
     const int improving = in_check || eval_diff == 0 ? 0 :
                            eval_diff > 0 ? 1 :
-                           eval_diff < 80 ? -1 : 0;
+                           eval_diff < -200 ? -1 : 0;
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
