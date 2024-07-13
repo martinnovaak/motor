@@ -82,13 +82,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
-    const TT_entry& tt_entry = tt[zobrist_key];
+    const TT_entry& tt_entry = tt.retrieve(zobrist_key);
 
     chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
 
-    if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
+    if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
@@ -328,7 +328,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             entry = std::clamp(entry, -16'384, 16'384);
         }
 
-        tt[zobrist_key] = {flag, depth, best_score, raw_eval, best_move, zobrist_key};
+        tt.store(flag, depth, best_score, raw_eval, best_move, zobrist_key);
     }
 
     return best_score;

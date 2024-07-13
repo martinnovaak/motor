@@ -13,21 +13,6 @@ enum class NodeType : std::uint8_t {
     Root, PV, Non_PV, Null
 };
 
-enum class Bound : std::uint8_t {
-    EXACT, // Type 1 - score is exact
-    LOWER, // Type 2 - score is bigger than beta (fail-high) - Beta node
-    UPPER  // Type 3 - score is lower than alpha (fail-low)  - Alpha node
-};
-
-struct TT_entry {
-    Bound bound;            // 8 bits
-    std::int8_t depth;      // 8 bits
-    std::int16_t score;     // 16 bits
-    std::int16_t static_eval; // 16 bits
-    chess_move tt_move;     // 16 bits
-    std::uint64_t zobrist;  // 64 bits
-};
-
 transposition_table<TT_entry> tt(32 * 1024 * 1024);
 
 struct history_move {
