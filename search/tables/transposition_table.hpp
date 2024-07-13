@@ -58,11 +58,11 @@ public:
             if (best_score < -19'000) return static_cast<int16_t>(best_score - ply);
             return best_score;
         }();
-        tt[zobrist_key] = { flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
+        (*this)[zobrist_key] = TT_ENTRY{ flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
     }
 
     TT_ENTRY retrieve(const uint64_t zobrist_key, const int16_t ply) {
-        TT_ENTRY tt_entry = tt[zobrist_key];
+        TT_ENTRY tt_entry = (*this)[zobrist_key];
 
         tt_entry.score = [&] {
             if (tt_entry.score > 19'000) return static_cast<int16_t>(tt_entry.score - ply);
