@@ -148,7 +148,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 data.reduce_ply();
                 chessboard.undo_null_move<color>();
                 if (nullmove_score >= beta) {
-                    return nullmove_score;
+                    return std::abs(nullmove_score) > 19'000 ? beta : nullmove_score;
                 }
             }
         }
