@@ -193,11 +193,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         continue;
                     }
 
-                    if (!is_pv && depth < 5 && movelist.get_move_score(moves_searched) < -2'500 * depth) {
+                    int lmr_depth = std::max(0, depth - reduction);
+
+                    if (!is_pv && lmr_depth < 4 && movelist.get_move_score(moves_searched) < -10'000 * depth) {
                         continue;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction);
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         continue;
                     }
