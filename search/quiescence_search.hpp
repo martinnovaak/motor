@@ -31,9 +31,9 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
-    const TT_entry& tt_entry = tt[zobrist_key];
+    const TT_entry& tt_entry = tt.retrieve(zobrist_key, data.get_ply());
 
-    if (tt_entry.zobrist == zobrist_key) {
+    if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         std::int16_t tt_eval = tt_entry.score;
         static_eval = tt_entry.static_eval;
         eval = tt_eval;
@@ -100,7 +100,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     }
 
-    tt[zobrist_key] = { flag, 0, eval, static_eval, best_move, zobrist_key };
+    tt.store(flag, 0, eval, static_eval, best_move, data.get_ply(), zobrist_key);
     return eval;
 }
 

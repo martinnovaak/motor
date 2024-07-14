@@ -82,13 +82,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
-    const TT_entry& tt_entry = tt[zobrist_key];
+    const TT_entry& tt_entry = tt.retrieve(zobrist_key, data.get_ply());
 
     chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
 
-    if (data.singular_move == 0 && tt_entry.zobrist == zobrist_key) {
+    if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
@@ -148,7 +148,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 data.reduce_ply();
                 chessboard.undo_null_move<color>();
                 if (nullmove_score >= beta) {
-                    return nullmove_score;
+                    return std::abs(nullmove_score) > 19'000 ? beta : nullmove_score;
                 }
             }
         }
@@ -215,8 +215,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 movelist.get_move_score(moves_searched) == 214'748'364 &&
                 tt_entry.depth >= depth - se_depth_margin &&
                 tt_entry.bound != Bound::UPPER &&
-                data.singular_move == 0 &&
-                std::abs(tt_entry.score) < 9'000)
+                data.singular_move == 0)
             {
                 int s_beta = tt_entry.score - se_mul * depth / 80;
                 data.singular_move = chessmove.get_value();
@@ -328,7 +327,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             entry = std::clamp(entry, -16'384, 16'384);
         }
 
-        tt[zobrist_key] = {flag, depth, best_score, raw_eval, best_move, zobrist_key};
+        tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), zobrist_key);
     }
 
     return best_score;
