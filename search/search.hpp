@@ -252,11 +252,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         else {
             // late move reduction
             if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000 && is_quiet) {
-                reduction += !improving;
+                reduction += !is_pv + !improving;
                 reduction -= chessboard.in_check();
                 reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                 reduction += cutnode * 2;
-                reduction += std::clamp((alpha - static_eval) / 400, 0, 2);
 
                 reduction = std::clamp(reduction, 0, depth - 2);
             } else {
