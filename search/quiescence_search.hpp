@@ -55,16 +55,16 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     move_list movelist;
-    if (in_check) {
+    if (in_check || depth > -2) {
         generate_all_moves<color, false>(chessboard, movelist);
         if (movelist.size() == 0) {
-            return data.mate_value();
+            return in_check ? data.mate_value() : 0;
         }
+        incheck_score_moves<color>(chessboard, movelist, data);
     } else {
         generate_all_moves<color, true>(chessboard, movelist);
+        qs_score_moves(chessboard, movelist);
     }
-
-    qs_score_moves(chessboard, movelist);
 
     chess_move best_move;
 
@@ -76,6 +76,12 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
 
         make_move<color>(chessboard, chessmove);
+
+        if (!in_check && depth <= -2 && chessboard.is_quiet(chessmove)) {
+            undo_move<color>(chessboard, chessmove);
+            continue;
+        }
+
         data.augment_ply();
         tt.prefetch(chessboard.get_hash_key());
         std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha, depth - 1);
