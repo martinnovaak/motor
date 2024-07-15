@@ -95,7 +95,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         raw_eval = tt_entry.static_eval;
         eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
 
-        if constexpr (!is_pv) {
+        if constexpr (!is_root) {
             if (tt_entry.depth >= depth) {
                 if ((tt_entry.bound == Bound::EXACT) ||
                     (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
