@@ -50,6 +50,27 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
     }
 }
 
+template <Color color>
+void score_moves(board & chessboard, move_list & movelist, search_data & data) {
+    int move_index = 0;
+    for (chess_move & move : movelist) {
+        const Square from = move.get_from();
+        const Square to   = move.get_to();
+        const chess_move previous_move = chessboard.get_last_played_move();
+        const chess_move counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
+        int move_score;
+        if (!chessboard.is_quiet(move)) {
+            move_score = 10'000'000 + mvv[chessboard.get_piece(to)];
+            move_score += capture_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
+        } else {
+            move_score = get_history<color>(chessboard, data, from, to, chessboard.get_piece(from));
+        }
+
+        movelist[move_index] = move_score;
+        move_index++;
+    }
+}
+
 void qs_score_moves(board & chessboard, move_list & movelist) {
     int move_index = 0;
     for(chess_move & move : movelist) {
