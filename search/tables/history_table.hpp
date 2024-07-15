@@ -36,7 +36,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     int cap_bonus = std::min(noisy_max, noisy_mul * depth);
 
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
-    history_move prev = {}, prev2 = {}, prev4 = {};
+    history_move prev = {}, prev2 = {}, prev3 = {}, prev4 = {};
 
     std::uint64_t threats = chessboard.get_threats();
 
@@ -51,9 +51,13 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             if (data.get_ply() > 1) {
                 prev2 = data.prev_moves[data.get_ply() - 2];
                 update_history(continuation_table[prev2.piece_type][prev2.to][piece][to], bonus);
-                if (data.get_ply() > 3) {
-                    prev4 = data.prev_moves[data.get_ply() - 4];
-                    update_history(continuation_table[prev4.piece_type][prev4.to][piece][to], bonus);
+                if (data.get_ply() > 2) {
+                    prev3 = data.prev_moves[data.get_ply() - 3];
+                    update_history(continuation_table[prev3.piece_type][prev3.to][piece][to], bonus);
+                    if (data.get_ply() > 3) {
+                        prev4 = data.prev_moves[data.get_ply() - 4];
+                        update_history(continuation_table[prev4.piece_type][prev4.to][piece][to], bonus);
+                    }
                 }
             }
         }
@@ -71,8 +75,11 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
                 update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], malus);
                 if (data.get_ply() > 1) {
                     update_history(continuation_table[prev2.piece_type][prev2.to][qpiece][qto], malus);
-                    if (data.get_ply() > 3) {
-                        update_history(continuation_table[prev4.piece_type][prev4.to][qpiece][qto], malus);
+                    if (data.get_ply() > 2) {
+                        update_history(continuation_table[prev3.piece_type][prev3.to][qpiece][qto], malus);
+                        if (data.get_ply() > 3) {
+                            update_history(continuation_table[prev4.piece_type][prev4.to][qpiece][qto], malus);
+                        }
                     }
                 }
             }
@@ -98,12 +105,16 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
         move_score += continuation_table[prev.piece_type][prev.to][piece][to];
-        if (data.get_ply()) {
+        if (data.get_ply() > 1) {
             prev = data.prev_moves[data.get_ply() - 2];
             move_score += continuation_table[prev.piece_type][prev.to][piece][to];
-            if (data.get_ply()) {
-                prev = data.prev_moves[data.get_ply() - 4];
-                move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+            if (data.get_ply() > 2) {
+                prev = data.prev_moves[data.get_ply() - 3];
+                move_score += continuation_table[prev.piece_type][prev.to][piece][to] / 2;
+                if (data.get_ply() > 3) {
+                    prev = data.prev_moves[data.get_ply() - 4];
+                    move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+                }
             }
         }
     }
