@@ -66,7 +66,7 @@ public:
                 stability_count = 0;
                 last_best_move = best_move;
             }
-            stability_scale = (50.0 - std::min(10, stability_count)) / 50.0;
+            stability_scale = (53.0 - std::min(10, stability_count)) / 50.0;
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
             opt_scale = bm_frac * 2.0 + 0.5;
