@@ -55,7 +55,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     move_list movelist;
-    if (in_check || depth > -2) {
+    if (in_check || depth == 0) {
         generate_all_moves<color, false>(chessboard, movelist);
         if (movelist.size() == 0) {
             return in_check ? data.mate_value() : 0;
@@ -77,7 +77,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
 
         make_move<color>(chessboard, chessmove);
 
-        if (!in_check && depth <= -2 && chessboard.is_quiet(chessmove)) {
+        if (!in_check && depth != 0 && chessboard.is_quiet(chessmove)) {
             undo_move<color>(chessboard, chessmove);
             continue;
         }
