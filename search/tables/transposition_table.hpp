@@ -31,10 +31,12 @@ public:
         bucket_count = byte_size / sizeof(TT_ENTRY);
         mask = bucket_count - 1;
         tt_table.resize(bucket_count);
+        generation = 0;
     }
 
     void clear() {
         tt_table = std::vector<TT_ENTRY>(bucket_count);
+        generation = 0;
     }
 
     void prefetch(const std::uint64_t zobrist_hash) {
@@ -42,7 +44,8 @@ public:
     }
 
     TT_ENTRY & operator[](const std::uint64_t zobrist_hash) {
-        return tt_table[zobrist_hash & mask];
+        std::uint64_t index = static_cast<std::uint64_t>((static_cast<__int128>(zobrist_hash) * static_cast<__int128>(bucket_count)) >> 64);
+        return tt_table[index];
     }
 
     const TT_ENTRY & operator[](const std::uint64_t zobrist_hash) const {
@@ -53,12 +56,19 @@ public:
     void store(const Bound flag, const int8_t depth, const int16_t best_score, const int16_t raw_eval, const chess_move best_move,
         const int16_t ply, const uint64_t zobrist_key) {
 
+        const std::uint64_t key = static_cast<std::uint64_t>((static_cast<__int128>(zobrist_key) * static_cast<__int128>(bucket_count)) >> 64);
+        const std::uint32_t age = generation * 2 + depth;
+        auto & tt_entry = tt_table[key];
+
         const int16_t stored_score = [&] {
             if (best_score > 19'000) return static_cast<int16_t>(best_score + ply);
             if (best_score < -19'000) return static_cast<int16_t>(best_score - ply);
             return best_score;
         }();
-        (*this)[zobrist_key] = TT_ENTRY{ flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
+
+        if (age >= tt_entry.age) {
+            tt_entry = { flag, depth, stored_score, raw_eval, best_move, age, upper(zobrist_key) };
+        }
     }
 
     TT_ENTRY retrieve(const uint64_t zobrist_key, const int16_t ply) {
@@ -76,10 +86,15 @@ public:
         return (zobrist_key & 0xFFFFFFFF00000000) >> 32;
     }
 
+    void increase_age() {
+        generation++;
+    }
+
 private:
     std::vector<TT_ENTRY> tt_table;
     std::uint64_t bucket_count;
     std::uint64_t mask; // mask == bucket_count - 1
+    std::uint32_t generation;
 };
 
 #endif //MOTOR_TRANSPOSITION_TABLE_HPP
