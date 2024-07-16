@@ -40,29 +40,33 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
 
     std::vector<int> ply_offsets = {1, 2, 4};
 
-    auto update_continuation_table = [&, piece, to](int bonus_or_malus) {
-        for (int ply_offset : ply_offsets) {
-            if (data.get_ply() >= ply_offset) {
-                auto prev = data.prev_moves[data.get_ply() - ply_offset];
-                update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus_or_malus);
-            }
-        }
-    };
-
     if (chessboard.is_quiet(best_move)) {
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
         update_history(history_table[color][threat_from][threat_to][from][to], bonus);
-        update_continuation_table(bonus);
+
+        for (int ply_offset : ply_offsets) {
+            if (data.get_ply() >= ply_offset) {
+                auto prev = data.prev_moves[data.get_ply() - ply_offset];
+                update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
+            }
+        }
 
         for (const auto &quiet : quiets) {
             int malus = -bonus;
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
+            auto qpiece = chessboard.get_piece(qfrom);
             bool qthreat_from = (threats & bb(qfrom));
             bool qthreat_to = (threats & bb(qto));
             update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
-            update_continuation_table(malus);
+
+            for (int ply_offset : ply_offsets) {
+                if (data.get_ply() >= ply_offset) {
+                    auto prev = data.prev_moves[data.get_ply() - ply_offset];
+                    update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], malus);
+                }
+            }
         }
     } else {
         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
@@ -76,8 +80,6 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
         update_cap_history(capture_table[cap_piece][cap_to][chessboard.get_piece(cap_to)], malus);
     }
 }
-
-
 
 template <Color color>
 int get_history(board & chessboard, search_data & data, Square from, Square to, Piece piece) {
