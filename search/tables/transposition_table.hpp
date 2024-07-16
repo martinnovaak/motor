@@ -57,7 +57,7 @@ public:
         const int16_t ply, const uint64_t zobrist_key) {
 
         const std::uint64_t key = static_cast<std::uint64_t>((static_cast<__int128>(zobrist_key) * static_cast<__int128>(bucket_count)) >> 64);
-        const std::uint32_t stored_key = upper(zobrist_key);
+        const std::uint32_t age = generation + depth;
         auto & tt_entry = tt_table[key];
 
         const int16_t stored_score = [&] {
@@ -66,8 +66,8 @@ public:
             return best_score;
         }();
 
-        if (generation != tt_entry.age || flag == Bound::EXACT || stored_key != tt_entry.zobrist || depth + 5 > tt_entry.depth) {
-            tt_entry = { flag, depth, stored_score, raw_eval, best_move, generation, stored_key };
+        if (age >= tt_entry.age) {
+            tt_entry = { flag, depth, stored_score, raw_eval, best_move, age, upper(zobrist_key) };
         }
     }
 
