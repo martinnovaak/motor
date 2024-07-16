@@ -7,23 +7,23 @@
 
 #include <immintrin.h>
 
-constexpr unsigned int HIDDEN_SIZE = 1024;
+constexpr unsigned int HIDDEN_SIZE = 1536;
 constexpr int QA = 403;
 constexpr int QB = 81;
 
 constexpr std::array<int, 64> buckets = {
-        0, 0, 1, 1, 4, 4, 3, 3,
-        0, 0, 1, 1, 4, 4, 3, 3,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
+        0, 0, 1, 1, 5, 5, 4, 4,
+        2, 2, 2, 2, 6, 6, 6, 6,
+        2, 2, 2, 2, 6, 6, 6, 6,
+        3, 3, 3, 3, 7, 7, 7, 7,
+        3, 3, 3, 3, 7, 7, 7, 7,
+        3, 3, 3, 3, 7, 7, 7, 7,
+        3, 3, 3, 3, 7, 7, 7, 7,
+        3, 3, 3, 3, 7, 7, 7, 7,
 };
 
 struct Weights {
-    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 3> feature_weight;
+    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 4> feature_weight;
     std::array<std::int16_t, HIDDEN_SIZE> feature_bias;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM;
@@ -79,8 +79,8 @@ public:
 
     template<Operation operation>
     void update_accumulator(const Piece piece, const Color color, const Square square, int wking, int bking) {
-        const auto& white_weights = weights.feature_weight[buckets[wking] % 3][color][piece][get_square_index(square, wking)];
-        const auto& black_weights = weights.feature_weight[buckets[bking ^ 56] % 3][color ^ 1][piece][get_square_index(square, bking) ^ 56];
+        const auto& white_weights = weights.feature_weight[buckets[wking] % 4][color][piece][get_square_index(square, wking)];
+        const auto& black_weights = weights.feature_weight[buckets[bking ^ 56] % 4][color ^ 1][piece][get_square_index(square, bking) ^ 56];
 
         auto& white_accumulator = white_accumulator_stack[index];
         auto& black_accumulator = black_accumulator_stack[index];
