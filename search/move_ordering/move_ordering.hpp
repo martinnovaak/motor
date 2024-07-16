@@ -29,13 +29,16 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         const Square to   = move.get_to();
         const chess_move previous_move = chessboard.get_last_played_move();
         const chess_move counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
+        const std::uint64_t threats = chessboard.get_threats();
+        const bool threat_from = (threats & bb(from));
+        const bool threat_to = (threats & bb(to));
         int move_score;
         if (move == tt_move) {
             move_score = 214748364;
         } else if (!chessboard.is_quiet(move)) {
             move_score = 10'000'000 * see<color>(chessboard, move) + mvv[chessboard.get_piece(to)];
             move_score += capture_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
-        } else if (data.get_killer() == move){
+        } else if (data.get_killer(threat_from, threat_to) == move){
             move_score = 1'000'002;
         } else if (move == counter_move) {
             move_score = 1'000'000;

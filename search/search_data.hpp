@@ -71,16 +71,19 @@ public:
         ply++;
     }
 
-    void update_killer(chess_move move) {
-        killer_moves[ply] = move;
+    void update_killer(int threat_from, int threat_to, chess_move move) {
+        killer_moves[threat_from][threat_to][ply] = move;
     }
 
     void reset_killers() {
-        killer_moves[ply + 2] = {};
+        killer_moves[0][0][ply + 2] = {};
+        killer_moves[0][1][ply + 2] = {};
+        killer_moves[1][0][ply + 2] = {};
+        killer_moves[1][1][ply + 2] = {};
     }
 
-    chess_move get_killer() {
-        return killer_moves[ply];
+    chess_move get_killer(int threat_from, int threat_to) {
+        return killer_moves[threat_from][threat_to][ply];
     }
 
 
@@ -130,7 +133,7 @@ private:
     time_keeper timekeeper;
 
     std::uint64_t nodes_searched;
-    chess_move killer_moves[96] = {};
+    chess_move killer_moves[2][2][96] = {};
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP

@@ -298,7 +298,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     flag = Bound::LOWER;
                     int bonus = history_bonus(depth);
                     if (is_quiet) {
-                        data.update_killer(chessmove);
+                        std::uint64_t threats = chessboard.get_threats();
+                        bool threat_from = (threats & bb(from));
+                        bool threat_to = (threats & bb(to));
+                        data.update_killer(threat_from, threat_to, chessmove);
                         data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                     }
                     update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
