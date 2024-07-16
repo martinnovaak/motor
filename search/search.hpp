@@ -172,7 +172,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
-    const chess_move previous_move = chessboard.get_last_played_move();
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
@@ -296,10 +295,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
                 if (alpha >= beta) {
                     flag = Bound::LOWER;
-                    int bonus = history_bonus(depth);
                     if (is_quiet) {
                         data.update_killer(chessmove);
-                        data.counter_moves[previous_move.get_from()][previous_move.get_to()] = chessmove;
                     }
                     update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
                     break;
