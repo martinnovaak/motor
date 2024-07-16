@@ -57,7 +57,7 @@ public:
         const int16_t ply, const uint64_t zobrist_key) {
 
         const std::uint64_t key = static_cast<std::uint64_t>((static_cast<__int128>(zobrist_key) * static_cast<__int128>(bucket_count)) >> 64);
-        const std::uint32_t age = generation * 2 + depth;
+        const std::uint32_t age = generation * 4 + depth;
         auto & tt_entry = tt_table[key];
 
         const int16_t stored_score = [&] {
