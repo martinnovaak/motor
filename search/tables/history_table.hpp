@@ -53,18 +53,18 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
         }
 
         for (const auto &quiet : quiets) {
-            int malus = -bonus;
+            int penalty = -bonus;
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
             auto qpiece = chessboard.get_piece(qfrom);
             bool qthreat_from = (threats & bb(qfrom));
             bool qthreat_to = (threats & bb(qto));
-            update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
+            update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
 
             for (int ply_offset : ply_offsets) {
                 if (data.get_ply() >= ply_offset) {
                     auto prev = data.prev_moves[data.get_ply() - ply_offset];
-                    update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], malus);
+                    update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], penalty);
                 }
             }
         }
@@ -73,11 +73,11 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     }
 
     for (const auto &capture : captures) {
-        int malus = -cap_bonus;
+        int penalty = -cap_bonus;
         auto cap_from = capture.get_from();
         auto cap_to = capture.get_to();
         auto cap_piece = chessboard.get_piece(cap_from);
-        update_cap_history(capture_table[cap_piece][cap_to][chessboard.get_piece(cap_to)], malus);
+        update_cap_history(capture_table[cap_piece][cap_to][chessboard.get_piece(cap_to)], penalty);
     }
 }
 
