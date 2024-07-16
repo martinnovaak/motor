@@ -31,6 +31,7 @@ public:
         bucket_count = byte_size / sizeof(TT_ENTRY);
         mask = bucket_count - 1;
         tt_table.resize(bucket_count);
+        generation = 0;
     }
 
     void clear() {
@@ -51,14 +52,20 @@ public:
     }
 
     void store(const Bound flag, const int8_t depth, const int16_t best_score, const int16_t raw_eval, const chess_move best_move,
-        const int16_t ply, const uint64_t zobrist_key) {
+        const std::int16_t ply, const std::uint64_t zobrist_key) {
 
-        const int16_t stored_score = [&] {
-            if (best_score > 19'000) return static_cast<int16_t>(best_score + ply);
-            if (best_score < -19'000) return static_cast<int16_t>(best_score - ply);
-            return best_score;
-        }();
-        (*this)[zobrist_key] = TT_ENTRY{ flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
+        const std::uint64_t key = zobrist_key & mask;
+        const std::uint16_t age = generation * 2 + depth;
+        auto & entry = tt_table[key];
+
+        //if (age >= entry.age) {
+            const int16_t stored_score = [&] {
+                if (best_score > 19'000) return static_cast<int16_t>(best_score + ply);
+                if (best_score < -19'000) return static_cast<int16_t>(best_score - ply);
+                return best_score;
+            }();
+            entry = TT_ENTRY{ flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
+        //}
     }
 
     TT_ENTRY retrieve(const uint64_t zobrist_key, const int16_t ply) {
@@ -72,14 +79,19 @@ public:
         return tt_entry;
     }
 
-    uint32_t upper(const uint64_t zobrist_key) const {
+    std::uint32_t upper(const uint64_t zobrist_key) const {
         return (zobrist_key & 0xFFFFFFFF00000000) >> 32;
+    }
+
+    void new_generation() {
+        generation++;
     }
 
 private:
     std::vector<TT_ENTRY> tt_table;
     std::uint64_t bucket_count;
     std::uint64_t mask; // mask == bucket_count - 1
+    std::uint16_t generation;
 };
 
 #endif //MOTOR_TRANSPOSITION_TABLE_HPP
