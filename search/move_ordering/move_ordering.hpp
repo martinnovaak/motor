@@ -27,8 +27,6 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
     for (chess_move & move : movelist) {
         const Square from = move.get_from();
         const Square to   = move.get_to();
-        const chess_move previous_move = chessboard.get_last_played_move();
-        const chess_move counter_move = data.counter_moves[previous_move.get_from()][previous_move.get_to()];
         int move_score;
         if (move == tt_move) {
             move_score = 214748364;

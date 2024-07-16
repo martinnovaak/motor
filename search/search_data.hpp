@@ -38,7 +38,6 @@ public:
     }
 
     bool time_is_up(int depth) {
-        //timekeeper.can_end(nodes(), principal_variation_table.get_best_move());
         return timekeeper.can_end(nodes(), principal_variation_table.get_best_move(), depth);
     }
 
@@ -115,9 +114,7 @@ public:
     int improving[96] = {};
 
     history_move prev_moves[96];
-    
 
-    chess_move counter_moves[64][64] = {};
     std::uint32_t singular_move = {};
     int stack_eval = {};
     int double_extension[96] = {};
