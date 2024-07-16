@@ -371,10 +371,10 @@ template <Color color>
 void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
     std::string best_move;
 
-    int score;
+    int score = 0;
 
     for (int depth = 1; depth <= max_depth; depth++) {
-        if (depth > 1 && data.time_is_up(depth)) {
+        if (depth > 1 && data.time_is_up(depth, score)) {
             break;
         }
 

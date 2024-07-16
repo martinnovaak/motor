@@ -23,7 +23,9 @@ public:
         inf_time = false;
         node_count = {};
         last_best_move = {};
-        stability_count = 0;
+        bm_stability_count = 0;
+        eval_stability_count = 0;
+        previous_score = 0;
 
         if (time == -1) {
             inf_time = true;
@@ -44,7 +46,7 @@ public:
         return stop;
     }
 
-    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth) { // called in iterative deepening
+    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth, int score) { // called in iterative deepening
         if (stop) {
             return true;
         }
@@ -57,23 +59,38 @@ public:
             return false;
         }
 
+        previous_score = score;
+
         double opt_scale = 1.0;
-        double stability_scale = 1.0;
+        double bm_stability_scale = 1.0;
+        double eval_stability_scale = 1.0;
         if (depth > 6) {
             if (last_best_move == best_move) {
-                stability_count++;
+                bm_stability_count++;
             } else {
-                stability_count = 0;
+                bm_stability_count = 0;
                 last_best_move = best_move;
             }
+
+            if (std::abs(previous_score - score) < 10) {
+                eval_stability_count++;
+            } else {
+                eval_stability_count = 0;
+            }
+            previous_score = score;
+
             constexpr std::array<double, 7> stability_values = {2.2, 1.6, 1.4, 1.1, 1.0, 0.95, 0.9};
-            stability_scale = stability_values[std::min(6, stability_count)];
+            bm_stability_scale = stability_values[std::min(6, bm_stability_count)];
+
+            // alex eval stability values
+            constexpr std::array<double, 5> eval_values = {1.25, 1.15, 1.00, 0.94, 0.88};
+            eval_stability_scale = eval_values[std::min(4, eval_stability_count)];
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
             opt_scale = bm_frac * 2.0 + 0.5;
         }
 
-        if (elapsed() >= std::min(optimal_time_limit * opt_scale * stability_scale, double(time_limit))) {
+        if (elapsed() >= std::min(optimal_time_limit * opt_scale * bm_stability_scale, double(time_limit))) {
             stop = true;
         }
         return stop;
@@ -132,7 +149,9 @@ private:
     std::uint64_t total_nodes;
     std::array<std::array<int, 64>, 64> node_count;
     chess_move last_best_move;
-    int stability_count;
+    int bm_stability_count;
+    int eval_stability_count;
+    int previous_score;
 };
 
 #endif //MOTOR_TIME_KEEPER_HPP
