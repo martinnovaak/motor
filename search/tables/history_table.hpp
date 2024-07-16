@@ -59,7 +59,6 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             int malus = -bonus;
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
-            auto qpiece = chessboard.get_piece(qfrom);
             bool qthreat_from = (threats & bb(qfrom));
             bool qthreat_to = (threats & bb(qto));
             update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
@@ -77,6 +76,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
         update_cap_history(capture_table[cap_piece][cap_to][chessboard.get_piece(cap_to)], malus);
     }
 }
+
 
 
 template <Color color>
