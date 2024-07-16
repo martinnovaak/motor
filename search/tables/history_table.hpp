@@ -38,7 +38,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     std::uint64_t threats = chessboard.get_threats();
 
-    std::vector<int> ply_offsets = {1, 2, 4};
+    std::vector<int> ply_offsets = {1, 2, 4, 6};
 
     if (chessboard.is_quiet(best_move)) {
         bool threat_from = (threats & bb(from));
@@ -87,14 +87,12 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     bool threat_from = (threats & bb(from));
     bool threat_to = (threats & bb(to));
 
-    int move_score = 2 * history_table[color][threat_from][threat_to][from][to];
+    int move_score = history_table[color][threat_from][threat_to][from][to];
 
-    std::vector<std::pair<int, int>> ply_offsets = {{1, 2}, {2, 1}, {4, 1}};
-
-    for (const auto& [ply_offset, weight] : ply_offsets) {
+    for (int ply_offset : {1, 2, 4, 6}) {
         if (data.get_ply() >= ply_offset) {
             auto prev = data.prev_moves[data.get_ply() - ply_offset];
-            move_score += weight * continuation_table[prev.piece_type][prev.to][piece][to];
+            move_score += continuation_table[prev.piece_type][prev.to][piece][to];
         }
     }
 
