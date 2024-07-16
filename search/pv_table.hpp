@@ -27,6 +27,9 @@ public:
         return line.str();
     }
 
+    bool previous_search_hit(const chess_move move) {
+        return triangular_pv_table[0][1] == move;
+    }
 
     [[nodiscard]] chess_move get_best_move() const {
         return triangular_pv_table[0][0];

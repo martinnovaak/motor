@@ -14,7 +14,7 @@ class time_keeper {
 public:
     time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
 
-    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, int nodes = INT_MAX / 2) {
+    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, int nodes = INT_MAX / 2, bool previous_search_hit = false) {
         start_time = std::chrono::steady_clock::now();
         stop = false;
         const int time_minus_threshold = time - 50;
@@ -29,8 +29,7 @@ public:
 
         if (time == -1) {
             inf_time = true;
-        }
-        else if(movestogo == 0) {
+        } else if(movestogo == 0) {
             double time_divider = 40 * std::pow(1.0 + 1.5 * std::pow(double(move_count) / 40, 2), 0.5) - move_count;
             optimal_time_limit = std::clamp(0.8 * (time_minus_threshold / time_divider + increment), 10.0, std::max(50.0, time_minus_threshold / 2.0));
             time_limit = std::clamp(time_minus_threshold / sqrt(time_divider) + increment, 10.0, std::max(50.0, time_minus_threshold / 2.0));
@@ -38,6 +37,13 @@ public:
             time_limit = increment + 950 * time / movestogo / 1000;
             optimal_time_limit = time_limit / 4 * 3;
         }
+
+        if (previous_search_hit) {
+            optimal_time_limit *= 0.9;
+        } else {
+            optimal_time_limit *= 1.1;
+        }
+
         optimal_time_limit = std::min(optimal_time_limit, time_minus_threshold);
         time_limit = std::min(time_limit, time_minus_threshold);
     }
@@ -83,8 +89,8 @@ public:
             bm_stability_scale = stability_values[std::min(6, bm_stability_count)];
 
             // alex eval stability values
-            constexpr std::array<double, 5> eval_values = {1.25, 1.15, 1.00, 0.94, 0.88};
-            eval_stability_scale = eval_values[std::min(4, eval_stability_count)];
+            // constexpr std::array<double, 5> eval_values = {1.25, 1.15, 1.00, 0.94, 0.88};
+            // eval_stability_scale = eval_values[std::min(4, eval_stability_count)];
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
             opt_scale = bm_frac * 2.0 + 0.5;

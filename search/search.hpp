@@ -402,12 +402,13 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
 
 void find_best_move(board& chessboard, time_info& info) {
     search_data data;
+    chess_move last_move = chessboard.get_last_played_move();
 
     if (chessboard.get_side() == White) {
-        data.set_timekeeper(info.wtime, info.winc, info.movestogo, chessboard.move_count(), info.max_nodes);
+        data.set_timekeeper(info.wtime, info.winc, info.movestogo, chessboard.move_count(), info.max_nodes, last_move);
         iterative_deepening<White>(chessboard, data, info.max_depth);
     } else {
-        data.set_timekeeper(info.btime, info.binc, info.movestogo, chessboard.move_count(), info.max_nodes);
+        data.set_timekeeper(info.btime, info.binc, info.movestogo, chessboard.move_count(), info.max_nodes, last_move);
         iterative_deepening<Black>(chessboard, data, info.max_depth);
     }
 }

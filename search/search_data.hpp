@@ -25,8 +25,9 @@ class search_data {
 public:
     search_data() : ply(0), principal_variation_table(), timekeeper(), nodes_searched(0)  {}
 
-    void set_timekeeper(int time, int bonus, int movestogo, int move_count, int max_nodes) {
-        timekeeper.reset(time, bonus, movestogo, move_count, max_nodes);
+    void set_timekeeper(int time, int bonus, int movestogo, int move_count, int max_nodes, chess_move last_move) {
+        bool hit = principal_variation_table.previous_search_hit(last_move);
+        timekeeper.reset(time, bonus, movestogo, move_count, max_nodes, hit);
     }
 
     bool should_end() {
