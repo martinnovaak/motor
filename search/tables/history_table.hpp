@@ -40,7 +40,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
 
     std::vector<int> ply_offsets = {1, 2, 4};
 
-    auto update_continuation_table = [&](int bonus_or_malus) {
+    auto update_continuation_table = [&, piece, to](int bonus_or_malus) {
         for (int ply_offset : ply_offsets) {
             if (data.get_ply() >= ply_offset) {
                 auto prev = data.prev_moves[data.get_ply() - ply_offset];
@@ -56,26 +56,28 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
         update_continuation_table(bonus);
 
         for (const auto &quiet : quiets) {
-            int penalty = -bonus;
+            int malus = -bonus;
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
+            auto qpiece = chessboard.get_piece(qfrom);
             bool qthreat_from = (threats & bb(qfrom));
             bool qthreat_to = (threats & bb(qto));
-            update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
-            update_continuation_table(penalty);
+            update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
+            update_continuation_table(malus);
         }
     } else {
         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
     }
 
     for (const auto &capture : captures) {
-        int penalty = -cap_bonus;
+        int malus = -cap_bonus;
         auto cap_from = capture.get_from();
         auto cap_to = capture.get_to();
         auto cap_piece = chessboard.get_piece(cap_from);
-        update_cap_history(capture_table[cap_piece][cap_to][chessboard.get_piece(cap_to)], penalty);
+        update_cap_history(capture_table[cap_piece][cap_to][chessboard.get_piece(cap_to)], malus);
     }
 }
+
 
 template <Color color>
 int get_history(board & chessboard, search_data & data, Square from, Square to, Piece piece) {
