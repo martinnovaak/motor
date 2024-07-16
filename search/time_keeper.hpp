@@ -22,6 +22,8 @@ public:
         total_nodes = 0;
         inf_time = false;
         node_count = {};
+        last_best_move = {};
+        stability_count = 0;
 
         if (time == -1) {
             inf_time = true;
@@ -56,12 +58,22 @@ public:
         }
 
         double opt_scale = 1.0;
+        double stability_scale = 1.0;
         if (depth > 6) {
+            if (last_best_move == best_move) {
+                stability_count++;
+            } else {
+                stability_count = 0;
+                last_best_move = best_move;
+            }
+            constexpr std::array<double, 7> stability_values = {2.2, 1.6, 1.4, 1.1, 1.0, 0.95, 0.9};
+            stability_scale = stability_values[std::min(6, stability_count)];
+
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
             opt_scale = bm_frac * 2.0 + 0.5;
         }
 
-        if (elapsed() >= std::min(optimal_time_limit * opt_scale, double(time_limit))) {
+        if (elapsed() >= std::min(optimal_time_limit * opt_scale * stability_scale, double(time_limit))) {
             stop = true;
         }
         return stop;
@@ -119,6 +131,8 @@ private:
     int max_nodes;
     std::uint64_t total_nodes;
     std::array<std::array<int, 64>, 64> node_count;
+    chess_move last_best_move;
+    int stability_count;
 };
 
 #endif //MOTOR_TIME_KEEPER_HPP
