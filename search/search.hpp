@@ -114,6 +114,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
+            depth -= is_pv;
         }
     }
 
@@ -197,7 +198,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         continue;
                     }
                 }
-
 
                 int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
                 if (depth < see_depth && !see<color>(chessboard, chessmove, see_margin)) {
