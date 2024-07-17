@@ -135,6 +135,7 @@ void uci_process(board& b, const std::string& line) {
         continuation_table = {};
         capture_table = {};
         correction_table = {};
+        std::fill(&pawn_history[0][0][0][0], &pawn_history[0][0][0][0] + sizeof(pawn_history) / sizeof(int), -1234);
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
@@ -156,6 +157,7 @@ void uci_process(board& b, const std::string& line) {
         continuation_table = {};
         capture_table = {};
         correction_table = {};
+        std::fill(&pawn_history[0][0][0][0], &pawn_history[0][0][0][0] + sizeof(pawn_history) / sizeof(int), -1234);
         tt.clear();
         bench(13);
     } else if (command == "perft") {

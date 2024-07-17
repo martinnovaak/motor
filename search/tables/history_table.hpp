@@ -11,6 +11,7 @@ std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2>
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 std::array<std::array<int, 16384>, 2> correction_table = {};
+std::array<std::array<std::array<std::array<int, 64>, 6>, 512>, 2> pawn_history = {};
 
 constexpr int noisy_mul = 41;
 constexpr int noisy_max = 375;
@@ -43,7 +44,9 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     if (chessboard.is_quiet(best_move)) {
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
+        int pawn_key = chessboard.get_pawn_key() % 512;
         update_history(history_table[color][threat_from][threat_to][from][to], bonus);
+        update_history(pawn_history[color][pawn_key][piece][to], bonus);
 
         if constexpr (!is_root) {
             prev = data.prev_moves[data.get_ply() - 1];
@@ -66,6 +69,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             bool qthreat_from = (threats & bb(qfrom));
             bool qthreat_to = (threats & bb(qto));
             update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
+            update_history(pawn_history[color][pawn_key][qpiece][qto], malus);
 
             if constexpr (!is_root) {
                 update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], malus);
@@ -93,11 +97,13 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     std::uint64_t threats = chessboard.get_threats();
     bool threat_from = (threats & bb(from));
     bool threat_to = (threats & bb(to));
+    int pawn_key = chessboard.get_pawn_key() % 512;
 
     int move_score = history_table[color][threat_from][threat_to][from][to];
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
         move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+        move_score += pawn_history[color][pawn_key][piece][to];
         if (data.get_ply() > 1) {
             prev = data.prev_moves[data.get_ply() - 2];
             move_score += continuation_table[prev.piece_type][prev.to][piece][to];
