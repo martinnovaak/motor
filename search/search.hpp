@@ -124,17 +124,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     data.reset_killers();
 
     if constexpr (!is_root) {
-        if (!in_check && std::abs(beta) < 9'000) {
+        if (!in_check && data.singular_move == 0 && std::abs(beta) < 9'000) {
             // razoring
-            if (depth < razoring_depth && eval + razoring * depth <= alpha) {
-                std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
-                if (razor_eval <= alpha) {
-                    return razor_eval;
-                }
-            }
-
             // reverse futility pruning
-            if (!is_pv && depth < rfp_depth && eval - 50 * (depth - improving) >= beta) {
+            if (!is_pv && depth < rfp_depth && eval - 93 * (depth - improving) >= beta) {
                 return eval;
             }
 
