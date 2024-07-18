@@ -216,14 +216,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 tt_entry.bound != Bound::UPPER &&
                 data.singular_move == 0)
             {
-                int s_beta = tt_entry.score - se_mul * depth / 80;
+                int s_beta = tt_entry.score - depth;
                 data.singular_move = chessmove.get_value();
                 int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
                 data.singular_move = 0;
                 if (s_score < s_beta) {
                     ext = 1;
                     if constexpr(!is_pv) {
-                        if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
+                        if (s_score + 8 < s_beta && data.double_extension[data.get_ply()] < 12) {
                             ext = 2;
                             data.double_extension[data.get_ply()]++;
                         }
