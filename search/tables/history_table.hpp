@@ -111,4 +111,33 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     return move_score;
 }
 
+
+void decay_weights() {
+    // Decay values in history_table
+    for (auto& table1 : history_table)
+        for (auto& table2 : table1)
+            for (auto& table3 : table2)
+                for (auto& table4 : table3)
+                    for (auto& value : table4)
+                        value /= 2;
+
+    // Decay values in continuation_table
+    for (auto& table1 : continuation_table)
+        for (auto& table2 : table1)
+            for (auto& table3 : table2)
+                for (auto& value : table3)
+                    value /= 2;
+
+    // Decay values in capture_table
+    for (auto& table1 : capture_table)
+        for (auto& table2 : table1)
+            for (auto& value : table2)
+                value /= 2;
+
+    // Decay values in correction_table
+    for (auto& table1 : correction_table)
+        for (auto& value : table1)
+            value /= 2;
+}
+
 #endif //MOTOR_BUTTERFLY_TABLE_HPP
