@@ -244,11 +244,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt.prefetch(chessboard.get_hash_key());
         data.augment_ply();
 
+        int new_depth = depth - 1 + ext;
+
         std::int16_t score;
         if (moves_searched == 0) {
-            score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext, false);
-        }
-        else {
+            score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
+        } else {
             // late move reduction
             if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
                 if (is_quiet) {
@@ -263,14 +264,19 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 reduction = 0;
             }
 
-            score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - reduction - 1 + ext, true);
+            score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth - reduction, true);
 
             if (score > alpha && reduction > 0) {
-                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, depth - 1 + ext, !cutnode);
+                if constexpr (!is_root) {
+                    new_depth += (score > best_score + 80);
+                    new_depth -= (score < best_score + new_depth);
+                }
+
+                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth, !cutnode);
             }
 
             if (is_pv && score > alpha) {
-                score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, depth - 1 + ext, false);
+                score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
             }
         }
 
