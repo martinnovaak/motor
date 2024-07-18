@@ -264,6 +264,15 @@ public:
             return false;
         }
 
+        switch (popcount(occupancy)) {
+            case 2: return true;
+            case 3: {
+                if (bitboards[White][Bishop] | bitboards[Black][Bishop] | bitboards[White][Knight] | bitboards[Black][Knight])
+                    return true;
+                break;
+            }
+        }
+
         if (state->fifty_move_clock >= 100) {
             return true;
         }
