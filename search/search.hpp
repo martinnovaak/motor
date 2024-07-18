@@ -84,12 +84,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::uint64_t zobrist_key = chessboard.get_hash_key();
     const TT_entry& tt_entry = tt.retrieve(zobrist_key, data.get_ply());
 
-    chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
-        best_move = tt_entry.tt_move;
+        tt_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
@@ -171,7 +170,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     std::int16_t best_score = -INF;
-    score_moves<color>(chessboard, movelist, data, best_move);
+    score_moves<color>(chessboard, movelist, data, tt_move);
+    chess_move best_move = {};
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
@@ -283,7 +283,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (score > best_score) {
             best_score = score;
-            best_move = chessmove;
             data.update_pv(chessmove);
             if constexpr (is_root) {
                 data.best_move = chessmove.to_string();
@@ -292,6 +291,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (score > alpha) {
                 alpha = score;
                 flag = Bound::EXACT;
+                best_move = chessmove;
 
                 if (alpha >= beta) {
                     flag = Bound::LOWER;
@@ -324,7 +324,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             entry = std::clamp(entry, -16'384, 16'384);
         }
 
-        tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), zobrist_key);
+        chess_move stored_move = best_move.get_value() == 0 ? tt_move : best_move;
+        tt.store(flag, depth, best_score, raw_eval, stored_move, data.get_ply(), zobrist_key);
     }
 
     return best_score;
