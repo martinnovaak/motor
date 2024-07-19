@@ -16,7 +16,8 @@ struct TT_entry {
     std::int16_t score;     // 16 bits
     std::int16_t static_eval; // 16 bits
     chess_move tt_move;     // 16 bits
-    std::uint32_t age;      // 32 bits (but can be less, and unused for now)
+    std::uint16_t age;      // 16 bits (but can be less, and unused for now)
+    bool tt_pv;
     std::uint32_t zobrist;  // 32 bits
 };
 
@@ -51,14 +52,14 @@ public:
     }
 
     void store(const Bound flag, const int8_t depth, const int16_t best_score, const int16_t raw_eval, const chess_move best_move,
-        const int16_t ply, const uint64_t zobrist_key) {
+        const int16_t ply, const bool tt_pv, const uint64_t zobrist_key) {
 
         const int16_t stored_score = [&] {
             if (best_score > 19'000) return static_cast<int16_t>(best_score + ply);
             if (best_score < -19'000) return static_cast<int16_t>(best_score - ply);
             return best_score;
         }();
-        (*this)[zobrist_key] = TT_ENTRY{ flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
+        (*this)[zobrist_key] = TT_ENTRY{ flag, depth, stored_score, raw_eval, best_move, 0, tt_pv, upper(zobrist_key) };
     }
 
     TT_ENTRY retrieve(const uint64_t zobrist_key, const int16_t ply) {

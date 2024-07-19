@@ -100,7 +100,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     }
 
-    tt.store(flag, 0, eval, static_eval, best_move, data.get_ply(), zobrist_key);
+    tt.store(flag, 0, eval, static_eval, best_move, data.get_ply(), false, zobrist_key);
     return eval;
 }
 
