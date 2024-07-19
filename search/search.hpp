@@ -251,7 +251,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         auto piece = chessboard.get_piece(from);
         data.prev_moves[data.get_ply()] = { piece, from, to };
         make_move<color, true>(chessboard, chessmove);
-        data.history_score[ply] = movelist.get_move_score(moves_searched);
+        data.history_score[ply] = movelist.get_move_score(moves_searched) < 0 ? movelist.get_move_score(moves_searched) : 0;
         tt.prefetch(chessboard.get_hash_key());
         data.augment_ply();
 
