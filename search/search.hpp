@@ -181,6 +181,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
+    int move_cutoffed = 0;
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
@@ -191,18 +192,20 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         std::uint64_t start_nodes = data.get_nodes();
 
-        int reduction = lmr_table[depth][moves_searched];
+        int reduction = lmr_table[depth][moves_searched - move_cutoffed];
         bool is_quiet = chessboard.is_quiet(chessmove);
 
         if constexpr (!is_root) {
             if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
                 if (is_quiet) {
                     if (quiets.size() > lmp_base + depth * depth / (2 - improving)) {
+                        move_cutoffed++;
                         continue;
                     }
 
                     int lmr_depth = std::max(0, depth - reduction + movelist.get_move_score(moves_searched) / 6000);
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
+                        move_cutoffed++;
                         continue;
                     }
                 }
@@ -210,6 +213,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
                 int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
                 if (depth < see_depth && !see<color>(chessboard, chessmove, see_margin)) {
+                    move_cutoffed++;
                     continue;
                 }
             }
