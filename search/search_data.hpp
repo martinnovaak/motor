@@ -119,6 +119,7 @@ public:
     int stack_eval = {};
     int double_extension[96] = {};
     std::string best_move = {};
+    int history_score[96] = {};
 private:
     std::int16_t ply;
 

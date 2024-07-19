@@ -126,8 +126,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    data.improving[data.get_ply()] = static_eval;
-    int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+    int ply = data.get_ply();
+    data.improving[ply] = static_eval;
+    int improving = !in_check && ply > 1 && static_eval > data.improving[ply - 2];
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
@@ -143,7 +144,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // reverse futility pruning
-            if (depth < rfp_depth && eval - rfp * (depth - improving) >= beta) {
+            if (depth < rfp_depth && eval - rfp * (depth - improving) >= beta + data.history_score[ply - 1] / 1000) {
                 return eval;
             }
 
@@ -250,6 +251,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         auto piece = chessboard.get_piece(from);
         data.prev_moves[data.get_ply()] = { piece, from, to };
         make_move<color, true>(chessboard, chessmove);
+        data.history_score[ply] = movelist.get_move_score(moves_searched);
         tt.prefetch(chessboard.get_hash_key());
         data.augment_ply();
 
@@ -290,6 +292,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
 
         undo_move<color>(chessboard, chessmove);
+        data.history_score[ply] = 0;
         data.reduce_ply();
 
         if constexpr (is_root) {
