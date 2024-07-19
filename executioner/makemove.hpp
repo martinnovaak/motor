@@ -36,15 +36,16 @@ void set_position(board& chessboard) {
 
 template<Color color>
 void update_bucket(board& chessboard, int wking, int bking) {
-    network.refresh_current_accumulator();
+    network.refresh_current_accumulator<color>();
+    int king = color == White ? wking : bking;
 
     for (Color side : {White, Black}) {
         for (Piece piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
             std::uint64_t bitboard = chessboard.get_pieces(side, piece);
 
             while (bitboard) {
-                Square square = pop_lsb(bitboard);
-                network.update_accumulator<Operation::Set>(piece, side, square, wking, bking);
+                const Square square = pop_lsb(bitboard);
+                network.add_to_accumulator<color>(piece, side, square, king);
             }
         }
     }
@@ -95,17 +96,7 @@ void make_move(board & b, chess_move m) {
 
     if constexpr (update_nnue) {
         network.push();
-
-        if (piece == King && (((side == White) && buckets[from] != buckets[to]) || ((side == Black) && buckets[from ^ 56] != buckets[to ^ 56]))) {
-            if constexpr (side == White) {
-                wking = to;
-            } else {
-                bking = to;
-            }
-            update_bucket<side>(b, wking, bking);
-        }
     }
-
 
     switch(m.get_move_type()) {
         case NORMAL: {
@@ -174,6 +165,17 @@ void make_move(board & b, chess_move m) {
 
             b.reset_fifty_move_clock();
             break;
+        }
+    }
+
+    if constexpr (update_nnue) {
+        if (piece == King && (((side == White) && buckets[from] != buckets[to]) || ((side == Black) && buckets[from ^ 56] != buckets[to ^ 56]))) {
+            if constexpr (side == White) {
+                wking = to;
+            } else {
+                bking = to;
+            }
+            update_bucket<side>(b, wking, bking);
         }
     }
 
