@@ -144,7 +144,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
             // reverse futility pruning
             if (depth < rfp_depth && eval - rfp * (depth - improving) >= beta) {
-                return eval;
+                return (!is_pv && beta > -9'000) ? beta + (eval - beta) / 3 : eval;
             }
 
             // NULL MOVE PRUNING
