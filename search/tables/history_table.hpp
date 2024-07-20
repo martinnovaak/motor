@@ -41,8 +41,8 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     std::array<std::uint64_t, 6> threats = chessboard.get_threats();
 
     if (chessboard.is_quiet(best_move)) {
-        bool threat_from = (threats[piece] & bb(from));
-        bool threat_to = (threats[piece] & bb(to));
+        bool threat_from = (threats[King] & bb(from));
+        bool threat_to = (threats[King] & bb(to));
         update_history(history_table[color][threat_from][threat_to][from][to], bonus);
 
         if constexpr (!is_root) {
@@ -63,8 +63,8 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
             auto qpiece = chessboard.get_piece(qfrom);
-            bool qthreat_from = (threats[qpiece] & bb(qfrom));
-            bool qthreat_to = (threats[qpiece] & bb(qto));
+            bool qthreat_from = (threats[King] & bb(qfrom));
+            bool qthreat_to = (threats[King] & bb(qto));
             update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
 
             if constexpr (!is_root) {
@@ -91,8 +91,8 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
 template <Color color>
 int get_history(board & chessboard, search_data & data, Square from, Square to, Piece piece) {
     std::array<std::uint64_t, 6> threats = chessboard.get_threats();
-    bool threat_from = (threats[piece] & bb(from));
-    bool threat_to = (threats[piece] & bb(to));
+    bool threat_from = (threats[King] & bb(from));
+    bool threat_to = (threats[King] & bb(to));
 
     int move_score = history_table[color][threat_from][threat_to][from][to];
     if (data.get_ply()) {
@@ -106,6 +106,22 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
                 move_score += continuation_table[prev.piece_type][prev.to][piece][to];
             }
         }
+    }
+
+    switch (piece) {
+        case Knight:
+        case Bishop:
+            if (bb(from) & threats[Bishop]) move_score += 10'000;
+            if (bb(to) & threats[Bishop]) move_score -= 10'000;
+            break;
+        case Rook:
+            if (bb(from) & threats[Rook]) move_score += 20'000;
+            if (bb(to) & threats[Rook]) move_score -= 20'000;
+            break;
+        case Queen:
+            if (bb(from) & threats[Queen]) move_score += 30'000;
+            if (bb(to) & threats[Queen]) move_score -= 30'000;
+            break;
     }
 
     return move_score;
