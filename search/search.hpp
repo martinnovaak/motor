@@ -340,9 +340,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
 
         if (!would_tt_prune) {
-            chess_move stored_move = {};
-            if (flag != Bound::UPPER) stored_move = best_move;
-            tt.store(flag, depth, best_score, raw_eval, stored_move, data.get_ply(), zobrist_key);
+            tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), zobrist_key);
         }
     }
 

@@ -64,9 +64,7 @@ public:
 
         auto & entry = tt_table[key];
         if (flag == Bound::EXACT || depth >= entry.depth - 3) {
-            const chess_move stored_move = best_move.get_value() == 0 ? entry.tt_move : best_move;
-
-            entry = { flag, depth, stored_score, raw_eval, stored_move, 0, upper(zobrist_key) };
+            entry = { flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
         }
     }
 
