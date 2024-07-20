@@ -88,8 +88,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
+    bool tt_hit = false;
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
+        tt_hit = true;
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
@@ -148,7 +150,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // NULL MOVE PRUNING
-            if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
+            if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()
+                && !(tt_hit && tt_entry.bound == Bound::UPPER && tt_entry.score < beta)
+            ) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
                 int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 256, 3);
