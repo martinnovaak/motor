@@ -111,16 +111,16 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     switch (piece) {
         case Knight:
         case Bishop:
-            if (bb(from) & threats[Bishop]) move_score += 10'000;
-            if (bb(to) & threats[Bishop]) move_score -= 10'000;
+            if (bb(from) & threats[Bishop]) move_score += 2'000;
+            if (bb(to) & threats[Bishop]) move_score -= 2'000;
             break;
         case Rook:
-            if (bb(from) & threats[Rook]) move_score += 20'000;
-            if (bb(to) & threats[Rook]) move_score -= 20'000;
+            if (bb(from) & threats[Rook]) move_score += 4'000;
+            if (bb(to) & threats[Rook]) move_score -= 4'000;
             break;
         case Queen:
-            if (bb(from) & threats[Queen]) move_score += 30'000;
-            if (bb(to) & threats[Queen]) move_score -= 30'000;
+            if (bb(from) & threats[Queen]) move_score += 8'000;
+            if (bb(to) & threats[Queen]) move_score -= 8'000;
             break;
     }
 
