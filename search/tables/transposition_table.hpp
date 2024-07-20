@@ -42,7 +42,8 @@ public:
     }
 
     TT_ENTRY & operator[](const std::uint64_t zobrist_hash) {
-        return tt_table[zobrist_hash & mask];
+        std::uint64_t index = static_cast<std::uint64_t>((static_cast<__int128>(zobrist_hash) * static_cast<__int128>(bucket_count)) >> 64);
+        return tt_table[index ];
     }
 
     const TT_ENTRY & operator[](const std::uint64_t zobrist_hash) const {
@@ -53,12 +54,20 @@ public:
     void store(const Bound flag, const int8_t depth, const int16_t best_score, const int16_t raw_eval, const chess_move best_move,
         const int16_t ply, const uint64_t zobrist_key) {
 
+        std::uint64_t key = static_cast<std::uint64_t>((static_cast<__int128>(zobrist_key) * static_cast<__int128>(bucket_count)) >> 64);
+
         const int16_t stored_score = [&] {
             if (best_score > 19'000) return static_cast<int16_t>(best_score + ply);
             if (best_score < -19'000) return static_cast<int16_t>(best_score - ply);
             return best_score;
         }();
-        (*this)[zobrist_key] = TT_ENTRY{ flag, depth, stored_score, raw_eval, best_move, 0, upper(zobrist_key) };
+
+        auto & entry = tt_table[key];
+        if (flag == Bound::EXACT || depth >= entry.depth - 3) {
+            const chess_move stored_move = best_move.get_value() == 0 ? entry.tt_move : best_move;
+
+            entry = { flag, depth, stored_score, raw_eval, stored_move, 0, upper(zobrist_key) };
+        }
     }
 
     TT_ENTRY retrieve(const uint64_t zobrist_key, const int16_t ply) {
