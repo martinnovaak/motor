@@ -38,11 +38,11 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
 
-    std::uint64_t threats = chessboard.get_threats();
+    std::array<std::uint64_t, 6> threats = chessboard.get_threats();
 
     if (chessboard.is_quiet(best_move)) {
-        bool threat_from = (threats & bb(from));
-        bool threat_to = (threats & bb(to));
+        bool threat_from = (threats[piece] & bb(from));
+        bool threat_to = (threats[piece] & bb(to));
         update_history(history_table[color][threat_from][threat_to][from][to], bonus);
 
         if constexpr (!is_root) {
@@ -63,8 +63,8 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
             auto qpiece = chessboard.get_piece(qfrom);
-            bool qthreat_from = (threats & bb(qfrom));
-            bool qthreat_to = (threats & bb(qto));
+            bool qthreat_from = (threats[qpiece] & bb(qfrom));
+            bool qthreat_to = (threats[qpiece] & bb(qto));
             update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], malus);
 
             if constexpr (!is_root) {
@@ -90,9 +90,9 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
 
 template <Color color>
 int get_history(board & chessboard, search_data & data, Square from, Square to, Piece piece) {
-    std::uint64_t threats = chessboard.get_threats();
-    bool threat_from = (threats & bb(from));
-    bool threat_to = (threats & bb(to));
+    std::array<std::uint64_t, 6> threats = chessboard.get_threats();
+    bool threat_from = (threats[piece] & bb(from));
+    bool threat_to = (threats[piece] & bb(to));
 
     int move_score = history_table[color][threat_from][threat_to][from][to];
     if (data.get_ply()) {

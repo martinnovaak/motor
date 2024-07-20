@@ -35,7 +35,7 @@ struct board_info {
     chess_move move = {};
     zobrist hash_key = {};
     zobrist pawn_key = {};
-    std::uint64_t threats = {};
+    std::array<std::uint64_t, 6> threats = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
     std::uint64_t pin_diagonal = {};
@@ -120,6 +120,7 @@ public:
         constexpr Color their_color = our_color == White ? Black : White;
 
         std::uint64_t threatened = pawn_attacks<their_color>(bitboards[their_color][Pawn]);
+        state->threats[Knight] = state->threats[Bishop] = threatened;
 
         std::uint64_t knights = bitboards[their_color][Knight];
         while (knights) {
@@ -131,11 +132,13 @@ public:
         while (bishops) {
             threatened |= attacks<Ray::BISHOP>(pop_lsb(bishops), occupied); // x-ray through king
         }
+        state->threats[Rook] = threatened;
 
         std::uint64_t rooks = bitboards[their_color][Rook];
         while (rooks) {
             threatened |= attacks<Ray::ROOK>(pop_lsb(rooks), occupied);
         }
+        state->threats[Queen] = threatened;
 
         std::uint64_t queens = bitboards[their_color][Queen];
         while (queens) {
@@ -143,7 +146,7 @@ public:
         }
 
         threatened |= KING_ATTACKS[lsb(bitboards[their_color][King])];
-        state->threats = threatened;
+        state->threats[King] = threatened;
     }
 
     template <Color our_color>
@@ -344,7 +347,7 @@ public:
     [[nodiscard]] std::uint64_t pin_diagonal() const { return state->pin_diagonal; }
     [[nodiscard]] std::uint64_t pin_orthogonal() const { return state->pin_orthogonal; }
     [[nodiscard]] std::uint64_t checkers() const { return state->checkers; }
-    [[nodiscard]] std::uint64_t checked_squares() const { return state->threats; }
+    [[nodiscard]] std::uint64_t checked_squares() const { return state->threats[King]; }
 
     [[nodiscard]] bool can_castle(CastlingRight cr) const { return state->castling_rights & cr; }
 
@@ -424,7 +427,7 @@ public:
         state -= 100;
     }
 
-    std::uint64_t get_threats() {
+    std::array<std::uint64_t, 6> get_threats() {
         return state->threats;
     }
 
