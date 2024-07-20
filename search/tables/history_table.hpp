@@ -94,21 +94,21 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     bool threat_from = (threats & bb(from));
     bool threat_to = (threats & bb(to));
 
-    int move_score = history_table[color][threat_from][threat_to][from][to];
+    int move_score = history_table[color][threat_from][threat_to][from][to] * 5;
     if (data.get_ply()) {
         auto prev = data.prev_moves[data.get_ply() - 1];
-        move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+        move_score += continuation_table[prev.piece_type][prev.to][piece][to] * 6;
         if (data.get_ply() > 1) {
             prev = data.prev_moves[data.get_ply() - 2];
-            move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+            move_score += continuation_table[prev.piece_type][prev.to][piece][to] * 4;
             if (data.get_ply() > 3) {
                 prev = data.prev_moves[data.get_ply() - 4];
-                move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+                move_score += continuation_table[prev.piece_type][prev.to][piece][to] * 2;
             }
         }
     }
 
-    return move_score;
+    return move_score / 4;
 }
 
 #endif //MOTOR_BUTTERFLY_TABLE_HPP
