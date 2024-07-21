@@ -10,6 +10,13 @@
 #include "../executioner/makemove.hpp"
 
 template <Color color>
+std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
+    if (std::abs(raw_eval) > 8'000) return raw_eval;
+    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    return raw_eval + entry / 256;
+}
+
+template <Color color>
 std::int16_t quiescence_search(board & chessboard, search_data & data, std::int16_t alpha, std::int16_t beta, std::int8_t depth = 0) {
     constexpr Color enemy_color = (color == White) ? Black : White;
 
@@ -35,15 +42,18 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
 
     if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         std::int16_t tt_eval = tt_entry.score;
-        static_eval = tt_entry.static_eval;
-        eval = tt_eval;
+
+        int raw_eval = tt_entry.static_eval;
+        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
+
         if ((tt_entry.bound == Bound::EXACT) ||
             (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
             (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
             return tt_eval;
         }
     } else {
-        static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
+        int raw_eval = in_check ? -INF : evaluate<color>(chessboard);
+        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
     }
 
     if (eval >= beta) {

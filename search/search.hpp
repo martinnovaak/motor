@@ -43,13 +43,6 @@ constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
-template <Color color>
-std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
-    if (std::abs(raw_eval) > 8'000) return raw_eval;
-    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-    return raw_eval + entry / 256;
-}
-
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
     constexpr Color enemy_color = color == White ? Black : White;
