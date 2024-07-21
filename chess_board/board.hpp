@@ -412,6 +412,10 @@ public:
         return true;
     }
 
+    bool is_capture(const chess_move & move) {
+        return pieces[move.get_to()] != Null_Piece;
+    }
+
     void shift_history() {
         const int index = state - history.data();
         for (int i = 100; i <= index; ++i) {
