@@ -71,7 +71,8 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
 
-        if (!in_check && !see<color>(chessboard, chessmove)) {
+        bool square_attacked = chessboard.get_threats() & bb(chessmove.get_to());
+        if (!in_check && square_attacked && !see<color>(chessboard, chessmove)) {
             continue;
         }
 

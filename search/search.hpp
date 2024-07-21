@@ -208,9 +208,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
-                if (depth < see_depth && !see<color>(chessboard, chessmove, see_margin)) {
-                    continue;
+                if (chessboard.get_threats() & bb(chessmove.get_to())) {
+                    int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
+                    if (depth < see_depth && !see<color>(chessboard, chessmove, see_margin)) {
+                        continue;
+                    }
                 }
             }
         }
