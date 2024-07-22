@@ -102,7 +102,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
                     (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
                     would_tt_prune = true;
-                } else {
+                } else if (!is_pv) {
                     depth += depth < 7;
                 }
             }
