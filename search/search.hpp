@@ -255,7 +255,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         int new_depth = depth - 1 + ext;
 
-        std::int16_t score;
+        std::int16_t score = 0;
         if (moves_searched == 0) {
             score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
         } else {
@@ -269,19 +269,19 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
                 reduction = std::clamp(reduction, 0, depth - 2);
+
+                if (score > alpha && reduction > 0) {
+                    if constexpr (!is_root) {
+                        new_depth += (score > best_score + 80);
+                        new_depth -= (score < best_score + new_depth);
+                    }
+
+                    score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth - reduction, true);
+                }
             } else {
                 reduction = 0;
-            }
-
-            score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth - reduction, true);
-
-            if (score > alpha && reduction > 0) {
-                if constexpr (!is_root) {
-                    new_depth += (score > best_score + 80);
-                    new_depth -= (score < best_score + new_depth);
-                }
-
-                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth, !cutnode);
+                if (tt_move.get_value() == 0) reduction += 2;
+                score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth - reduction, true);
             }
 
             if (is_pv && score > alpha) {
