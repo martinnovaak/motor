@@ -266,6 +266,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction -= chessboard.in_check();
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                     reduction += cutnode * 2;
+                } else {
+                    reduction -= is_pv;
+                    reduction -= improving;
+                    reduction -= chessboard.in_check();
                 }
 
                 reduction = std::clamp(reduction, 0, depth - 2);
