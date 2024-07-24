@@ -197,7 +197,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if constexpr (!is_root) {
             if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
                 if (is_quiet) {
-                    if (quiets.size() > lmp_base + depth * depth / (2 - improving)) {
+                    if (moves_searched > lmp_base + depth * depth / (2 - improving)) {
                         continue;
                     }
 

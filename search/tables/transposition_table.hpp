@@ -11,14 +11,14 @@ enum class Bound : std::uint8_t {
 };
 
 struct TT_entry {
-    Bound bound;            // 8 bits
-    std::int8_t depth;      // 8 bits
-    std::int16_t score;     // 16 bits
+    Bound bound;              // 8 bits
+    std::int8_t depth;        // 8 bits
+    std::int16_t score;       // 16 bits
     std::int16_t static_eval; // 16 bits
-    chess_move tt_move;     // 16 bits
-    std::uint32_t age;      // 32 bits (but can be less, and unused for now)
-    std::uint32_t zobrist;  // 32 bits
-};
+    chess_move tt_move;       // 16 bits
+    std::uint32_t age;        // 32 bits (but can be less, and unused for now)
+    std::uint32_t zobrist;    // 32 bits
+}; //
 
 template<typename TT_ENTRY>
 class transposition_table {
