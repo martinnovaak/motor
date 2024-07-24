@@ -378,6 +378,7 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
         }
     }
 
+    tt.increase_age();
     return score;
 }
 
