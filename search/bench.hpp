@@ -64,6 +64,7 @@ std::uint64_t bench_iterative_deepening(board& chessboard, int max_depth) {
 
     int score;
     for (int depth = 1; depth <= max_depth; depth++) {
+        data.root_depth = depth;
         if (depth < 6) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth, false);
         } else {

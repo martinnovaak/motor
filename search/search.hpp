@@ -285,8 +285,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             if (is_pv && score > alpha) {
-                // don't drop into qsearch when there are tt moves
-                if (tt_move.get_value() && data.get_ply() < data.root_depth * 2) {
+                // don't drop into qsearch when there are tt movess
+                if (tt_move.get_value() && data.get_ply() < data.root_depth * 3 / 2) {
                     new_depth = std::max(1, new_depth);
                 }
                 score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
@@ -362,6 +362,7 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
     beta = std::min(INF, static_cast<std::int16_t>(score + window));
 
     while (!data.time_stopped()) {
+        data.root_depth = search_depth;
         score = alpha_beta<color, NodeType::Root>(chessboard, data, alpha, beta, search_depth, false);
         if (score <= alpha) {
             beta = (alpha + beta) / 2;
