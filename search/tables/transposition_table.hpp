@@ -76,7 +76,7 @@ public:
         }
 
         if (flag != Bound::EXACT && stored_key == best_slot->zobrist && depth < best_slot->depth - 3) {
-            return;
+        //    return;
         }
 
         *best_slot = new_entry;
