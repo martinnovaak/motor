@@ -5,10 +5,10 @@
 #include <cstdint>
 
 enum class Bound : std::uint8_t {
-    INVALID,
-    EXACT, // Type 1 - score is exact
-    LOWER, // Type 2 - score is bigger than beta (fail-high) - Beta node
-    UPPER  // Type 3 - score is lower than alpha (fail-low)  - Alpha node
+    INVALID,// Type 0 - invalid TT entryy
+    EXACT,  // Type 1 - score is exact
+    LOWER,  // Type 2 - score is bigger than beta (fail-high) - Beta node
+    UPPER   // Type 3 - score is lower than alpha (fail-low)  - Alpha node
 };
 
 struct TT_entry {
@@ -39,7 +39,7 @@ public:
 
     void clear() {
         tt_table = std::vector<TT_CLUSTER>(cluster_count);
-        reset_age();
+        age = 1; // reset TT age
     }
 
     void prefetch(const std::uint64_t zobrist_hash) {
@@ -75,10 +75,6 @@ public:
             }
         }
 
-        if (flag != Bound::EXACT && stored_key == best_slot->zobrist && depth < best_slot->depth - 3) {
-        //    return;
-        }
-
         *best_slot = new_entry;
     }
 
@@ -104,10 +100,6 @@ public:
 
     std::uint32_t upper(const std::uint64_t zobrist_key) const {
         return (zobrist_key & 0xFFFFFFFF00000000) >> 32;
-    }
-
-    void reset_age() {
-        age = 1;
     }
 
     void increase_age() {
