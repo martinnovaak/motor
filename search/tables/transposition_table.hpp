@@ -23,7 +23,7 @@ struct TT_entry {
 };
 
 struct TT_cluster {
-    std::array<TT_entry, 3> entries = {};
+    std::array<TT_entry, 4> entries = {};
 };
 
 template<typename TT_CLUSTER>
@@ -61,7 +61,7 @@ public:
         TT_entry new_entry{ flag, depth, stored_score, raw_eval, best_move, age, 0, stored_key };
 
         TT_entry *best_slot = &cluster.entries[0];
-        int best_relevance = static_cast<int>(best_slot->depth) - 3 * static_cast<int>(age - best_slot->age) + static_cast<int>(best_slot->last_age);
+        int best_relevance = static_cast<int>(best_slot->depth) + 4 * static_cast<int>(best_slot->age);
 
         for (TT_entry &entry : cluster.entries) {
             if (entry.zobrist == 0 || entry.zobrist == stored_key) {
@@ -69,7 +69,7 @@ public:
                 break;
             }
 
-            int relevance = static_cast<int>(entry.depth) - 3 * static_cast<int>(age - entry.age) + static_cast<int>(entry.last_age);
+            int relevance = static_cast<int>(entry.depth) + 4 * static_cast<int>(entry.age);
             if (relevance < best_relevance) {
                 best_slot = &entry;
                 best_relevance = relevance;
