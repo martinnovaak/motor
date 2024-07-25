@@ -17,13 +17,12 @@ struct TT_entry {
     std::int16_t score = 0;       // 16 bits
     std::int16_t static_eval = 0; // 16 bits
     chess_move tt_move = {};      // 16 bits
-    std::int16_t age = 0;         // 16 bits
-    std::int16_t last_age = 0;    // 16 bits
+    std::int32_t age = 0;         // 32 bits
     std::uint32_t zobrist = 0;    // 32 bits
 };
 
 struct TT_cluster {
-    std::array<TT_entry, 4> entries = {};
+    std::array<TT_entry, 3> entries = {};
 };
 
 template<typename TT_CLUSTER>
@@ -58,7 +57,7 @@ public:
 
         TT_CLUSTER &cluster = tt_table[get_index(zobrist_key)];
         const auto stored_key = upper(zobrist_key);
-        TT_entry new_entry{ flag, depth, stored_score, raw_eval, best_move, age, 0, stored_key };
+        TT_entry new_entry{ flag, depth, stored_score, raw_eval, best_move, age, stored_key };
 
         TT_entry *best_slot = &cluster.entries[0];
         int best_relevance = static_cast<int>(best_slot->depth) + 4 * static_cast<int>(best_slot->age);
@@ -93,7 +92,6 @@ public:
                     if (entry.score < -19'000) return static_cast<int16_t>(entry.score + ply);
                     return entry.score;
                 }();
-                entry.last_age = this->age;
                 return entry;
             }
         }
@@ -119,7 +117,7 @@ public:
 private:
     std::vector<TT_CLUSTER> tt_table;
     std::uint64_t cluster_count;
-    std::int16_t age = 1;
+    std::int32_t age = 1;
 };
 
 #endif //MOTOR_TRANSPOSITION_TABLE_HPP
