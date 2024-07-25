@@ -13,7 +13,7 @@ enum class NodeType : std::uint8_t {
     Root, PV, Non_PV, Null
 };
 
-transposition_table<TT_entry> tt(32 * 1024 * 1024);
+transposition_table<TT_cluster> tt(32 * 1024 * 1024);
 
 struct history_move {
     Piece piece_type;
