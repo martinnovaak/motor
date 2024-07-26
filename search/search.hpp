@@ -217,6 +217,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
 
+    const bool tt_capture = tt_move.get_value() ? !chessboard.is_quiet(tt_move) : false;
+
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
 
@@ -301,6 +303,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction -= chessboard.in_check();
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                     reduction += cutnode * 2;
+                    reduction += tt_capture;
                 }
 
                 reduction = std::clamp(reduction, 0, depth - 2);
