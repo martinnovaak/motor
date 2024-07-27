@@ -111,4 +111,11 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     return move_score;
 }
 
+template <Color color>
+std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
+    if (std::abs(raw_eval) > 8'000) return raw_eval;
+    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    return raw_eval + entry / 256;
+}
+
 #endif //MOTOR_BUTTERFLY_TABLE_HPP
