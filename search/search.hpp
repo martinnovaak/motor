@@ -161,7 +161,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
             }
 
-            const auto probcut_beta = beta + 250;
+            const auto probcut_beta = beta + (250 - improving * 125);
             if (depth >= 6 && !(tt_move.get_value() && tt_entry.depth > depth - 3 && tt_entry.score < probcut_beta)) {
                 const auto see_treshold = probcut_beta - static_eval;
                 move_list movelist;
