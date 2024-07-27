@@ -171,7 +171,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
                     chess_move &chessmove = movelist.get_next_move(moves_searched);
 
-                    if (!see<color>(chessboard, chessmove)) {
+                    if (!see<color>(chessboard, chessmove, see_treshold)) {
                         continue;
                     }
 
@@ -190,8 +190,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (score >= probcut_beta) {
                         tt.store(Bound::LOWER, std::int8_t(depth - 3), score, raw_eval, chessmove, data.get_ply(), zobrist_key);
                         return score;
-                    } else if (tt_move.get_value() == 0) {
-                        tt_move = tt.retrieve(zobrist_key, data.get_ply()).tt_move;
                     }
                 }
             }
