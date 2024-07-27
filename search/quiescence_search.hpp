@@ -68,11 +68,20 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
 
     chess_move best_move;
 
+    std::int16_t futility_base = eval + 250;
+
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
 
-        if (!in_check && !see<color>(chessboard, chessmove)) {
-            continue;
+        if (!in_check && !chessboard.pawn_endgame()) {
+            if (chessboard.is_capture(chessmove) && futility_base <= alpha && !see<color>(chessboard, chessmove, 1)) {
+                eval = std::max(eval, futility_base);
+                continue;
+            }
+
+            if (!see<color>(chessboard, chessmove)) {
+                continue;
+            }
         }
 
         make_move<color>(chessboard, chessmove);
