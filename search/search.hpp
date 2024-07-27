@@ -37,7 +37,7 @@ constexpr int double_margin = 20;
 constexpr int double_exts = 4;
 
 constexpr int lmr_depth = 2;
-constexpr int lmr_quiet_history = 12600;
+constexpr int lmr_quiet_history = 16000;
 constexpr int asp_window = 19;
 constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
@@ -293,9 +293,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
         } else {
             // late move reduction
-            if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
+            if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000 && (!is_pv || is_quiet)) {
                 if (is_quiet) {
-                    reduction += !is_pv + !improving;
+                    reduction += !is_pv * 2 + !improving;
                     reduction -= chessboard.in_check();
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                     reduction += cutnode * 2;
