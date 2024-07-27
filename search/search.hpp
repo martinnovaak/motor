@@ -121,9 +121,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
-        if (data.singular_move == 0 && depth >= iir_depth) {
-            depth--;
-        }
+    }
+
+    if (data.singular_move == 0 && (is_pv || cutnode) && depth >= iir_depth && (tt_move.get_value() == 0 || tt_entry.depth < depth - 4)) {
+        depth--;
     }
 
     data.improving[data.get_ply()] = static_eval;
