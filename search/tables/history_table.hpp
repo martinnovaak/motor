@@ -32,8 +32,9 @@ void update_cap_history(int& value, int bonus) {
 
 template <Color color, bool is_root>
 void update_history(search_data & data, board & chessboard, const chess_move & best_move, move_list & quiets, move_list & captures, int depth) {
-    int bonus = history_bonus(depth);
-    int cap_bonus = std::min(noisy_max, noisy_mul * depth);
+    int moves_searched = quiets.size() + captures.size();
+    int bonus = history_bonus(depth + moves_searched / 3);
+    int cap_bonus = std::min(noisy_max, noisy_mul * (depth + moves_searched / 3));
 
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
@@ -58,8 +59,10 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
             }
         }
 
+        int i = 0;
         for (const auto &quiet: quiets) {
-            int malus = -bonus;
+            int malus = -history_bonus(depth + (moves_searched - i) / 4);
+            i++;
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
             auto qpiece = chessboard.get_piece(qfrom);
