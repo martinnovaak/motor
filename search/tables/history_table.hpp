@@ -61,7 +61,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
 
         int i = 0;
         for (const auto &quiet: quiets) {
-            int malus = -history_bonus(depth + (moves_searched - i) / 4);
+            int malus = -history_bonus(depth + (moves_searched - i) / 3);
             i++;
             auto qfrom = quiet.get_from();
             auto qto = quiet.get_to();
