@@ -43,15 +43,46 @@ int screlu(int x) {
 }
 
 template<std::uint16_t hidden_size>
+struct accumulator_cache {
+    std::array<std::int16_t, hidden_size> accumulator;
+
+    bool valid;
+    std::uint64_t occupancy;
+    std::array<std::pair<Color, Piece>, 64> mailbox;
+
+    accumulator_cache() {
+        accumulator = weights.feature_bias;
+        valid = false;
+        occupancy = {};
+        std::ranges::fill(mailbox, {Color::None, Piece::Null_Piece});
+    }
+
+    set_piece(Color color, Piece piece, Square square) {
+        mailbox[square] = {color, piece};
+        occupancy ^= bb(square);
+    }
+};
+
+template<std::uint16_t hidden_size>
 class perspective_network
 {
 public:
     std::array<std::array<std::int16_t, hidden_size>, 128> white_accumulator_stack;
     std::array<std::array<std::int16_t, hidden_size>, 128> black_accumulator_stack;
+    std::array<accumulator_cache<hidden_size>, 6> white_accumulator_cache;
+    std::array<accumulator_cache<hidden_size>, 6> black_accumulator_cache;
     unsigned int index;
 
     perspective_network() {
         refresh();
+    }
+
+    accumulator_cache<hidden_size> get_white_accumulator() {
+
+    }
+
+    accumulator_cache<hidden_size> get_black_accumulator() {
+
     }
 
     void refresh_current_accumulator() {
@@ -60,6 +91,7 @@ public:
 
     void refresh() {
         white_accumulator_stack[0] = black_accumulator_stack[0] = weights.feature_bias;
+        cache = {};
         index = 0;
     }
 
@@ -86,17 +118,24 @@ public:
         auto& black_accumulator = black_accumulator_stack[index];
 
         if constexpr (operation == Operation::Set) {
+            white_accumulator_cache[buckets[wking]].set_piece(color, piece, get_square_index(square, wking));
+            black_accumulator_cache[buckets[bking ^ 56]].set_piece(color ^ 1, piece, get_square_index(square, bking) ^ 56);
             for (std::size_t i = 0; i < hidden_size; i++) {
                 white_accumulator[i] += white_weights[i];
                 black_accumulator[i] += black_weights[i];
             }
         }
         else {
+            white_accumulator_cache[buckets[wking]].set_piece(Color::None, Piece::Null_Piece, get_square_index(square, wking));
+            black_accumulator_cache[buckets[bking ^ 56]].set_piece(Color::None, Piece::Null_Piece, get_square_index(square, bking) ^ 56);
             for (std::size_t i = 0; i < hidden_size; i++) {
                 white_accumulator[i] -= white_weights[i];
                 black_accumulator[i] -= black_weights[i];
             }
         }
+
+        white_accumulator_cache[buckets[wking]].accumulator = white_accumulator;
+        black_accumulator_cache[buckets[wking]].accumulator = black_accumulator;
     }
 
 #ifndef __AVX2__

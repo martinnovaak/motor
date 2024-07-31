@@ -18,7 +18,7 @@ enum Square : std::uint8_t {
 };
 
 enum Color : std::uint8_t {
-    White = 0, Black = 1,
+    White = 0, Black = 1, None
 };
 
 enum Direction : std::int8_t {
