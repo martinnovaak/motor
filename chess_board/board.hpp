@@ -436,6 +436,32 @@ public:
         const int current_index = state - history.data();
         return (current_index + 1) / 2;
     }
+
+    std::uint64_t get_material_key() const {
+        auto murmur_hash_3 = [](std::uint64_t key) -> std::uint64_t {
+            key ^= key >> 33;
+            key *= 0xff51afd7ed558ccd;
+            key ^= key >> 33;
+            key *= 0xc4ceb9fe1a85ec53;
+            key ^= key >> 33;
+            return key;
+        };
+
+        std::uint64_t material_key = 0;
+        std::uint64_t piece_positions[5] = {0, 6, 12, 18, 24}; // Pawn, Knight, Bishop, Rook, Queen
+
+        for (Color c : {Color::White, Color::Black}) {
+            int color_index = (c == Color::White) ? 0 : 1;
+            std::uint64_t shift = (c == Color::White) ? 0 : 30;
+
+            for (size_t i = 0; i < 5; ++i) {
+                std::uint64_t count = std::popcount(bitboards[color_index][i]);
+                material_key |= (count << (piece_positions[i] + shift));
+            }
+        }
+
+        return murmur_hash_3(material_key);
+    }
 };
 
 #endif //MOTOR_BOARD_HPP
