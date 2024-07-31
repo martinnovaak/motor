@@ -47,7 +47,7 @@ template <Color color>
 std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-    const int material_entry = material_correction_table[color][chessboard.get_material_key() % 65536];
+    const int material_entry = material_correction_table[color][chessboard.get_material_key<color>() % 32768];
     return raw_eval + entry / 256 + material_entry / 256;
 }
 
@@ -372,9 +372,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             entry = (entry * (4096 - weight) + diff * weight) / 4096;
             entry = std::clamp(entry, -16'384, 16'384);
 
-            int & material_entry = material_correction_table[color][chessboard.get_material_key() % 65536];
+            int & material_entry = material_correction_table[color][chessboard.get_material_key<color>() % 32768];
             material_entry = (material_entry * (4096 - weight) + diff * weight) / 4096;
-            material_entry = std::clamp(material_entry, -16'384, 16'384);
+            material_entry = std::clamp(material_entry, -8192, 8192);
         }
 
         if (!would_tt_prune) {
