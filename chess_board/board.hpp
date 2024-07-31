@@ -451,12 +451,9 @@ public:
         std::uint64_t piece_positions[5] = {0, 6, 12, 18, 24}; // Pawn, Knight, Bishop, Rook, Queen
 
         for (Color c : {Color::White, Color::Black}) {
-            int color_index = (c == Color::White) ? 0 : 1;
-            std::uint64_t shift = (c == Color::White) ? 0 : 30;
-
-            for (size_t i = 0; i < 5; ++i) {
-                std::uint64_t count = std::popcount(bitboards[color_index][i]);
-                material_key |= (count << (piece_positions[i] + shift));
+            for (Piece p : {Pawn, Knight, Bishop, Rook, Queen}) {
+                std::uint64_t count = std::popcount(bitboards[c][p]);
+                material_key |= (count << (p * 6 + c * 30));
             }
         }
 
