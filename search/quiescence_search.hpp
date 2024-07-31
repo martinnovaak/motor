@@ -85,12 +85,16 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
                 continue;
             }
 
+            if (std::abs(eval) < 2000) {
+                if (depth < -4 && moves_searched > 1) break;
+                else if (depth < -2 && moves_searched > 2) break;
+                else if (depth < 0 && moves_searched > 4) break;
+            }
+
             if (!see<color>(chessboard, chessmove)) {
                 continue;
             }
         }
-
-
 
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
