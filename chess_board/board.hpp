@@ -437,7 +437,6 @@ public:
         return (current_index + 1) / 2;
     }
 
-    template <Color side>
     std::uint64_t get_material_key() const {
         auto murmur_hash_3 = [](std::uint64_t key) -> std::uint64_t {
             key ^= key >> 33;
@@ -452,8 +451,8 @@ public:
 
         for (Color c : {Color::White, Color::Black}) {
             for (Piece p : {Pawn, Knight, Bishop, Rook, Queen}) {
-                int shift = p * 6 + (c != side) * 30;
-                std::uint64_t count = std::popcount(bitboards[c][p]);
+                int shift = p * 6 + c * 30;
+                std::uint64_t count = std::popcount(this->bitboards[c][p]);
                 material_key |= (count << shift);
             }
         }
