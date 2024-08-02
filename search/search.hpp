@@ -44,10 +44,11 @@ constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
 template <Color color>
-std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval, int krisz_key) {
+std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
-    const int entry = correction_table[color][krisz_key];
-    return raw_eval + entry / 256;
+    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    const int material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
+    return raw_eval + (entry + material_entry) / 256;
 }
 
 template <Color color, NodeType node_type>
@@ -88,14 +89,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
-    const int krisz_key = (chessboard.get_pawn_key() ^ chessboard.get_material_key()) % 16384;
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval, krisz_key);
+        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
 
         if constexpr (!is_root) {
             if (tt_entry.depth >= depth + 2 * is_pv) {
@@ -121,7 +121,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval, krisz_key);
+        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -362,14 +362,18 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     if (data.singular_move == 0) {
         if (!(in_check || !chessboard.is_quiet(best_move)
-            || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
-        ) {
+              || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
+                ) {
             int diff = (best_score - raw_eval) * 256;
             int weight = std::min(16, depth + 1);
 
-            int & entry = correction_table[color][krisz_key];
+            int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
             entry = (entry * (256 - weight) + diff * weight) / 256;
-            entry = std::clamp(entry, -16'384, 16'384);
+            entry = std::clamp(entry, -8'192, 8'192);
+
+            int & material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
+            material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
+            material_entry = std::clamp(material_entry, -8'192, 8'192);
         }
 
         if (!would_tt_prune) {
