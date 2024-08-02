@@ -365,14 +365,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
                 ) {
             int diff = (best_score - raw_eval) * 256;
-            int weight = std::min(16, depth + 1);
+            int weight = std::min(4 * (depth + 1) * (depth + 1), 1024);
 
             int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-            entry = (entry * (256 - weight) + diff * weight) / 256;
+            entry = (entry * (1024 - weight) + diff * weight) / 1024;
             entry = std::clamp(entry, -8'192, 8'192);
 
             int & material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
-            material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
+            material_entry = (material_entry * (1024 - weight) + diff * weight) / 1024;
             material_entry = std::clamp(material_entry, -8'192, 8'192);
         }
 
