@@ -26,7 +26,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     bool in_check = chessboard.in_check();
-    std::int16_t static_eval, eval;
+    std::int16_t raw_eval, static_eval, eval;
 
     Bound flag = Bound::UPPER;
 
@@ -37,15 +37,24 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         std::int16_t tt_eval = tt_entry.score;
         tt_move = tt_entry.tt_move;
-        static_eval = tt_entry.static_eval;
+        raw_eval = tt_entry.static_eval;
+        eval = static_eval = correct_eval<color>(chessboard, raw_eval);
         eval = tt_eval;
         if ((tt_entry.bound == Bound::EXACT) ||
             (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
             (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
             return tt_eval;
         }
+
+        if (tt_entry.bound == Bound::EXACT ||
+            (eval < tt_eval && tt_entry.bound == Bound::LOWER) ||
+            (eval > tt_eval && tt_entry.bound == Bound::UPPER)
+        ){
+            eval = tt_eval;
+        }
     } else {
-        static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
+        raw_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
+        static_eval = eval = correct_eval<color>(chessboard, raw_eval);
     }
 
     if (eval >= beta) {
@@ -117,7 +126,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     }
 
-    tt.store(flag, 0, eval, static_eval, best_move, data.get_ply(), zobrist_key);
+    tt.store(flag, 0, eval, raw_eval, best_move, data.get_ply(), zobrist_key);
     return eval;
 }
 
