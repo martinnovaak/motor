@@ -75,7 +75,7 @@ public:
             }
         }
 
-        if (flag != Bound::UPPER) {
+        if (flag == Bound::UPPER) {
             new_entry.tt_move = best_slot->tt_move;
         }
 
