@@ -47,7 +47,8 @@ template <Color color>
 std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-    return raw_eval + entry / 256;
+    const int material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
+    return raw_eval + (entry + material_entry) / 256;
 }
 
 template <Color color, NodeType node_type>
@@ -361,15 +362,18 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     if (data.singular_move == 0) {
         if (!(in_check || !chessboard.is_quiet(best_move)
-            || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
-        ) {
+              || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
+                ) {
             int diff = (best_score - raw_eval) * 256;
-            int weight = flag == Bound::EXACT ? std::min(4 * depth * depth + 8 * depth + 4, 512)
-                                              : std::min(3 * depth * depth + 6 * depth + 3, 384);
+            int weight = std::min(16, depth + 1);
 
             int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-            entry = (entry * (4096 - weight) + diff * weight) / 4096;
-            entry = std::clamp(entry, -16'384, 16'384);
+            entry = (entry * (256 - weight) + diff * weight) / 256;
+            entry = std::clamp(entry, -8'192, 8'192);
+
+            int & material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
+            material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
+            material_entry = std::clamp(material_entry, -8'192, 8'192);
         }
 
         if (!would_tt_prune) {
