@@ -273,8 +273,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     }
                 } else if (s_beta >= beta) {
                     return s_beta;
-                } else if (cutnode) {
+                } else if (tt_entry.score >= beta) {
                     ext = -2;
+                } else if (cutnode) {
+                    ext = -1;
                 }
             }
         }
