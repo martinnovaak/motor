@@ -249,7 +249,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        int ext = in_check;
+        int ext = 0;
 
         if constexpr (!is_root) {
             if (depth >= se_depth &&
