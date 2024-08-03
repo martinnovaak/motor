@@ -13,9 +13,9 @@ std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 std::array<std::array<int, 16384>, 2> correction_table = {};
 std::array<std::array<int, 32768>, 2> material_correction_table = {};
 
-constexpr int noisy_mul = 41;
-constexpr int noisy_max = 375;
-constexpr int noisy_gravity = 1779;
+constexpr int noisy_mul = 100;
+constexpr int noisy_max = 1000;
+constexpr int noisy_gravity = 16384;
 constexpr int quiet_mul = 236;
 constexpr int quiet_max = 2040;
 
