@@ -76,10 +76,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         in_check = chessboard.in_check();
     }
 
-    if (depth <= 0) {
-        return quiescence_search<color>(chessboard, data, alpha, beta);
-    }
-
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
@@ -125,6 +121,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
+    }
+
+    if (depth <= 0) {
+        return quiescence_search<color>(chessboard, data, alpha, beta);
     }
 
     data.improving[data.get_ply()] = static_eval;
