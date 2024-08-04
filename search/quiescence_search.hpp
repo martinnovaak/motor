@@ -79,6 +79,10 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             break;
         }
 
+        if (moves_searched >= 4) {
+            break;
+        }
+
         if (!in_check) {
             if (chessboard.is_capture(chessmove) && futility_base <= alpha && !see<color>(chessboard, chessmove, 1)) {
                 eval = std::max(eval, futility_base);
@@ -89,8 +93,6 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
                 continue;
             }
         }
-
-
 
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
