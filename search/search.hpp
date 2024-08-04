@@ -230,14 +230,21 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if constexpr (!is_root) {
             if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
+                int lmr_depth = std::max(0, depth - reduction + movelist.get_move_score(moves_searched) / 6000);
                 if (is_quiet) {
                     if (quiets.size() > lmp_base + depth * depth / (2 - improving)) {
                         continue;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction + movelist.get_move_score(moves_searched) / 6000);
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         continue;
+                    }
+                } else {
+                    if (chessmove.get_move_type() != PROMOTION) {
+                        auto captured_piece = chessmove.get_move_type() == EN_PASSANT ? Pawn : chessboard.get_piece(chessmove.get_to());
+                        if (lmr_depth < 5 && static_eval + 500 + SEE_VALUES[captured_piece] + 300 * lmr_depth <= alpha) {
+                            continue;
+                        }
                     }
                 }
 
@@ -363,7 +370,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if (data.singular_move == 0) {
         if (!(in_check || !chessboard.is_quiet(best_move)
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
-                ) {
+        ) {
             int diff = (best_score - raw_eval) * 256;
             int weight = std::min(16, depth + 1);
 
