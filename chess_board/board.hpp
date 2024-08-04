@@ -413,6 +413,8 @@ public:
     }
 
     bool is_capture(const chess_move & move) {
+        if (move.get_move_type() == EN_PASSANT || move.get_move_type() == PROMOTION)
+            return true;
         return pieces[move.get_to()] != Null_Piece;
     }
 

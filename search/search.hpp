@@ -197,6 +197,15 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
+    if constexpr (!is_pv) {
+        const auto probcut_beta = beta + 500;
+        if (chessboard.is_capture(tt_move) && in_check && tt_entry.bound != Bound::UPPER &&
+            tt_entry.depth >= depth - 4 && tt_entry.score >= probcut_beta && std::abs(eval) < 5'000
+        ) {
+            return probcut_beta;
+        }
+    }
+
     if constexpr (!is_root) {
         data.double_extension[data.get_ply()] = data.double_extension[data.get_ply() - 1];
     }
