@@ -38,7 +38,7 @@ constexpr int double_exts = 4;
 
 constexpr int lmr_depth = 2;
 constexpr int lmr_quiet_history = 12600;
-constexpr int asp_window = 19;
+constexpr int asp_window = 10;
 constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
@@ -386,7 +386,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
 template <Color color>
 std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_t score, int depth) {
-    std::int16_t window = asp_window;
+    std::int16_t window = asp_window + std::abs(score) / 20;
     std::int16_t alpha, beta;
 
     int search_depth = depth;
@@ -409,7 +409,7 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
             break;
         }
 
-        window += window * asp_window_mul / 32;
+        window += window / 3;
         if (window > asp_window_max) {
             window = INF;
         }
