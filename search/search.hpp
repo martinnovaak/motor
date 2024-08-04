@@ -65,6 +65,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         return evaluate<color>(chessboard);
     }
 
+    int old_alpha = alpha;
+
     data.update_pv_length();
 
     bool in_check = false;
@@ -321,6 +323,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (is_pv && score > alpha) {
                 score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
             }
+        }
+
+        if (score + 20 * depth < old_alpha && movelist.get_move_score(moves_searched) > 1'000'000){
+            update_see_history(see_penalty_table[piece][to][chessboard.get_piece(to)], -see_bonus(depth));
         }
 
         undo_move<color>(chessboard, chessmove);
