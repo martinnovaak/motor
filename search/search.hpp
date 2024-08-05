@@ -363,7 +363,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if (data.singular_move == 0) {
         if (!(in_check || !chessboard.is_quiet(best_move)
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
-                ) {
+        ) {
             int diff = (best_score - raw_eval) * 256;
             int weight = std::min(16, depth + 1);
 
