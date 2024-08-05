@@ -48,7 +48,9 @@ std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_e
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
     const int material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
-    return raw_eval + (entry + material_entry) / 256;
+    auto [wkey, bkey] = chessboard.get_nonpawn_key();
+    const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
+    return raw_eval + (entry + material_entry + nonpawn_entry / 2) / 256;
 }
 
 template <Color color, NodeType node_type>
@@ -363,7 +365,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if (data.singular_move == 0) {
         if (!(in_check || !chessboard.is_quiet(best_move)
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
-                ) {
+        ) {
             int diff = (best_score - raw_eval) * 256;
             int weight = std::min(16, depth + 1);
 
@@ -374,6 +376,15 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             int & material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
             material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
             material_entry = std::clamp(material_entry, -8'192, 8'192);
+
+            auto [wkey, bkey] = chessboard.get_nonpawn_key();
+            int & white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
+            white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
+            white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
+
+            int & black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
+            black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
+            black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
         }
 
         if (!would_tt_prune) {
