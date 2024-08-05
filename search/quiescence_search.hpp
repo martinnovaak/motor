@@ -79,7 +79,10 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             break;
         }
 
-        if (moves_searched >= 4) {
+        if ((depth < -4 && moves_searched >= 2) ||
+            (depth < -2 && moves_searched >= 3) ||
+            (depth < 0 && moves_searched >= 4)
+        ) {
             break;
         }
 
