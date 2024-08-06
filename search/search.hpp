@@ -100,16 +100,16 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if constexpr (!is_root) {
             if (tt_entry.depth >= depth + 2 * is_pv) {
-                if (tt_entry.bound != Bound::UPPER) {
+                if (tt_entry.bound == Bound::EXACT) {
+                    return tt_eval;
+                } else if (tt_entry.bound == Bound::UPPER) {
+                    beta = std::min(tt_eval, beta);
+                } else if (tt_entry.bound == Bound::LOWER) {
                     alpha = std::max(alpha, tt_eval);
                 }
 
-                if (tt_entry.bound != Bound::LOWER) {
-                    beta = std::min(tt_eval, beta);
-                }
-
                 if (alpha >= beta) {
-                    return alpha;
+                    return tt_eval;
                 }
             }
         }
