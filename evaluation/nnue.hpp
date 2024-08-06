@@ -60,8 +60,13 @@ public:
         refresh();
     }
 
+    template <Color perspective>
     void refresh_current_accumulator() {
-        white_accumulator_stack[index] = black_accumulator_stack[index] = weights.feature_bias;
+        if constexpr (perspective == White) {
+            white_accumulator_stack[index] = weights.feature_bias;
+        } else {
+            black_accumulator_stack[index] = weights.feature_bias;
+        }
     }
 
     void refresh() {
@@ -81,6 +86,39 @@ public:
 
     int get_square_index(int square, int king_square) {
         return (king_square % 8 > 3) ? square ^ 7 : square;
+    }
+
+    template<Operation operation, Color perspective>
+    void update_accumulator(const Piece piece, const Color color, const Square square, int king) {
+        if constexpr (perspective == White) {
+            const auto& white_weights = weights.feature_weight[buckets[king] % 3][color][piece][get_square_index(square, king)];
+            auto& white_accumulator = white_accumulator_stack[index];
+
+            if constexpr (operation == Operation::Set) {
+                for (std::size_t i = 0; i < hidden_size; i++) {
+                    white_accumulator[i] += white_weights[i];
+                }
+            }
+            else {
+                for (std::size_t i = 0; i < hidden_size; i++) {
+                    white_accumulator[i] -= white_weights[i];
+                }
+            }
+        } else {
+            const auto& black_weights = weights.feature_weight[buckets[king ^ 56] % 3][color ^ 1][piece][get_square_index(square, king) ^ 56];
+            auto& black_accumulator = black_accumulator_stack[index];
+
+            if constexpr (operation == Operation::Set) {
+                for (std::size_t i = 0; i < hidden_size; i++) {
+                    black_accumulator[i] += black_weights[i];
+                }
+            }
+            else {
+                for (std::size_t i = 0; i < hidden_size; i++) {
+                    black_accumulator[i] -= black_weights[i];
+                }
+            }
+        }
     }
 
     template<Operation operation>

@@ -35,8 +35,8 @@ void set_position(board& chessboard) {
 }
 
 template<Color color>
-void update_bucket(board& chessboard, int wking, int bking) {
-    network.refresh_current_accumulator();
+void update_bucket(board& chessboard, int king) {
+    network.refresh_current_accumulator<color>();
 
     for (Color side : {White, Black}) {
         for (Piece piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
@@ -44,7 +44,7 @@ void update_bucket(board& chessboard, int wking, int bking) {
 
             while (bitboard) {
                 Square square = pop_lsb(bitboard);
-                network.update_accumulator<Operation::Set>(piece, side, square, wking, bking);
+                network.update_accumulator<Operation::Set, color>(piece, side, square, king);
             }
         }
     }
@@ -102,7 +102,7 @@ void make_move(board & b, chess_move m) {
             } else {
                 bking = to;
             }
-            update_bucket<side>(b, wking, bking);
+            update_bucket<side>(b, to);
         }
     }
 
