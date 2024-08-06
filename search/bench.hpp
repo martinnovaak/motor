@@ -82,6 +82,7 @@ void bench(int depth) {
 
     for (const auto & fen : fens) {
         b.fen_to_board(fen);
+        set_position(b);
         nodes += (b.get_side() == Color::White) ? bench_iterative_deepening<Color::White>(b, depth) : bench_iterative_deepening<Color::Black>(b, depth);
     }
 
