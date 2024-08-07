@@ -26,7 +26,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
     int move_index = 0;
     for (chess_move & move : movelist) {
         const Square from = move.get_from();
-        const Square to   = move.get_to();
+        const Square to = move.get_to();
         int move_score;
         if (move == tt_move) {
             move_score = 214748364;
