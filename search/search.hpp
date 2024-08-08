@@ -131,6 +131,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     data.improving[data.get_ply()] = static_eval;
     int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+    int opponent_worsening = !in_check && data.get_ply() > 0 && static_eval + data.improving[data.get_ply() - 1] > 15;
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
@@ -146,7 +147,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // reverse futility pruning
-            if (depth < rfp_depth && eval - rfp * (depth - improving) >= beta) {
+            if (depth < rfp_depth && eval - rfp * (depth - improving) + opponent_worsening * 50 >= beta) {
                 return eval;
             }
 
