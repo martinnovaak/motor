@@ -131,6 +131,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     data.improving[data.get_ply()] = static_eval;
     int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+    int opponent_worsening = !in_check && data.get_ply() > 0 && static_eval + data.improving[data.get_ply() - 1] > 15;
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
@@ -154,7 +155,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 256, 3);
+                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 256, 3) + opponent_worsening;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
