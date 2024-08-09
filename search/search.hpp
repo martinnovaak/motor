@@ -244,7 +244,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * (depth - !improving) : -see_noisy * depth * depth;
+                int see_margin = is_quiet ? -see_quiet * (depth + improving) : -see_noisy * depth * depth;
                 if (!see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
