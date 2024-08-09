@@ -232,19 +232,19 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if constexpr (!is_root) {
             if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
+                int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
                 if (is_quiet) {
                     if (quiets.size() > lmp_base + depth * depth / (2 - improving)) {
                         continue;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         continue;
                     }
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * (depth + improving) : -see_noisy * depth * depth;
+                int see_margin = is_quiet ? -see_quiet * lmr_depth : -see_noisy * depth * depth;
                 if (!see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
