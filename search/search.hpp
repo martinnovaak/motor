@@ -119,16 +119,18 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        if (!((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
+        if (tt_entry.bound != Bound::INVALID && !((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
         {
             eval = tt_eval;
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
-        if (data.singular_move == 0 && depth >= iir_depth) {
-            depth--;
-        }
+        tt.store(Bound::INVALID, 0, 0, raw_eval, {}, data.get_ply(), false, zobrist_key);
+    }
+
+    if (tt_move.get_value() == 0 && data.singular_move == 0 && depth >= iir_depth) {
+        depth--;
     }
 
     data.improving[data.get_ply()] = static_eval;
@@ -244,7 +246,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         continue;
                     }
                 }
-
 
                 int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
                 if (!see<color>(chessboard, chessmove, see_margin)) {
