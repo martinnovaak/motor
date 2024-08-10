@@ -91,6 +91,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
+    bool tt_pv = is_pv;
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
@@ -98,6 +99,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
         eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
+        tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
             if (tt_entry.depth >= depth + 2 * is_pv) {
@@ -191,7 +193,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     data.reduce_ply();
 
                     if (score >= probcut_beta) {
-                        tt.store(Bound::LOWER, std::int8_t(depth - 3), score, raw_eval, chessmove, data.get_ply(), zobrist_key);
+                        tt.store(Bound::LOWER, std::int8_t(depth - 3), score, raw_eval, chessmove, data.get_ply(), tt_pv, zobrist_key);
                         return score;
                     }
                 }
@@ -303,6 +305,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                     reduction += cutnode * 2;
                 }
+                reduction -= tt_pv;
 
                 reduction = std::clamp(reduction, 0, depth - 2);
             } else {
@@ -388,7 +391,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
 
         if (!would_tt_prune) {
-            tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), zobrist_key);
+            tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), tt_pv, zobrist_key);
         }
     }
 
