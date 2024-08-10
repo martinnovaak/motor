@@ -112,7 +112,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
 
         if (would_tt_prune) {
-            if (is_pv && !tt_entry.tt_pv) {
+            if (is_pv) {
                 depth --;
             } else {
                 return tt_eval;
@@ -305,6 +305,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                     reduction += cutnode * 2;
                 }
+                reduction -= tt_pv;
 
                 reduction = std::clamp(reduction, 0, depth - 2);
             } else {
