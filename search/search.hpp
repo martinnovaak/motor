@@ -464,6 +464,8 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
         }
     }
     std::cout << "bestmove " << best_move << "\n";
+
+    stop_requested.store(true); // Signal the command thread to stop
 }
 
 void find_best_move(board& chessboard, time_info& info) {

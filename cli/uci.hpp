@@ -75,6 +75,19 @@ void position_uci(board & b, const std::string & command) {
     set_position(b);
 }
 
+void handle_commands() {
+    std::string line;
+    while (!stop_requested.load() && std::getline(std::cin, line)) {
+        std::stringstream ss(line);
+        std::string command;
+        ss >> command;
+
+        if (command == "stop") {
+            stop_requested.store(true);
+        }
+    }
+}
+
 void uci_go(board& b, const std::string& command) {
     std::stringstream ss(command);
     std::string token;
@@ -97,17 +110,32 @@ void uci_go(board& b, const std::string& command) {
         } else if (tokens[i] == "movestogo") {
             info.movestogo = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "depth") {
-            info.max_depth = std::stoi(tokens[i + 1]); 
-        } else if (tokens[i] == "movetime") {
-            // info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
-        } else if (tokens[i] == "infinite") {
-            // info.infinite = true;                      
+            info.max_depth = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "nodes") {
             info.max_nodes = std::stoi(tokens[i + 1]);
         }
     }
 
-    find_best_move(b, info);
+    stop_requested.store(false); // Reset the global stop flag
+
+    // Start a separate thread to handle stop command
+    std::thread command_thread(handle_commands);
+
+    // Create a thread to perform the search
+    std::thread search_thread([&b, &info]() {
+        find_best_move(b, info);
+    });
+
+    // Wait for the search thread to finish, but check for stop command periodically
+    while (search_thread.joinable()) {
+        if (stop_requested.load()) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Polling interval
+    }
+
+    search_thread.join(); // Ensure the search thread has been joined
+    command_thread.join();
 }
 
 void uci_process(board& b, const std::string& line) {
@@ -120,6 +148,8 @@ void uci_process(board& b, const std::string& line) {
         position_uci(b, line.substr(9));
     } else if (command == "go") {
         uci_go(b, line.substr(3));
+    } else if (command == "stop") {
+        stop_requested.store(true);
     } else if (command == "exit" || command == "quit" || command == "end") {
         exit(0);
     } else if (command == "isready") {
@@ -174,7 +204,7 @@ void uci_mainloop() {
 
     while (std::getline(std::cin, line)) {
         uci_process(chessboard, line);
-    } 
+    }
 }
 
 #endif //MOTOR_UCI_HPP

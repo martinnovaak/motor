@@ -5,6 +5,10 @@
 #include <cstdint>
 #include <climits>
 #include "../chess_board/chess_move.hpp"
+#include <atomic>
+#include <thread>
+
+std::atomic<bool> stop_requested(false);
 
 struct time_info {
     int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64, max_nodes = INT_MAX / 2;
@@ -45,7 +49,7 @@ public:
     }
 
     bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth) { // called in iterative deepening
-        if (stop) {
+        if (stop || stop_requested.load()) {
             return true;
         }
 
@@ -80,7 +84,7 @@ public:
     }
 
     bool should_end(std::uint64_t nodes = 0) { // called in alphabeta
-        if (stop || total_nodes >= max_nodes) {
+        if (stop || total_nodes >= max_nodes || stop_requested.load()) {
             return true;
         }
 
