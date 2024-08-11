@@ -15,6 +15,8 @@
 #include "../search/bench.hpp"
 #include "../perft.hpp"
 
+std::thread search_thread;
+
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
     if (b.get_side() == White) {
@@ -116,26 +118,31 @@ void uci_go(board& b, const std::string& command) {
         }
     }
 
+    // Check if the search thread is joinable
+    if (search_thread.joinable()) {
+        stop_requested.store(true); // Signal the previous search thread to stop
+        search_thread.join(); // Wait for the previous search thread to finish
+    }
+
     stop_requested.store(false); // Reset the global stop flag
 
-    // Start a separate thread to handle stop command
-    std::thread command_thread(handle_commands);
-
-    // Create a thread to perform the search
-    std::thread search_thread([&b, &info]() {
+    // Start a new thread to perform the search
+    search_thread = std::thread([&b, &info]() {
         find_best_move(b, info);
     });
 
-    // Wait for the search thread to finish, but check for stop command periodically
+    // Main loop for handling commands
     while (search_thread.joinable()) {
         if (stop_requested.load()) {
+            stop_requested.store(true); // Signal the search thread to stop
             break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Polling interval
     }
 
-    search_thread.join(); // Ensure the search thread has been joined
-    command_thread.join();
+    // Wait for the search thread to finish
+    if (search_thread.joinable()) {
+        search_thread.join();
+    }
 }
 
 void uci_process(board& b, const std::string& line) {
