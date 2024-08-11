@@ -5,6 +5,14 @@
 #include <iomanip>
 #include <chrono>
 #include <cmath>
+#include <thread>
+#include <atomic>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <thread>
+#include <atomic>
+#include <mutex>
 
 #include "../chess_board/board.hpp"
 #include "../move_generation/move_list.hpp"
@@ -16,6 +24,7 @@
 #include "../perft.hpp"
 
 std::thread search_thread;
+std::mutex search_thread_mutex;
 
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
@@ -39,14 +48,13 @@ bool parse_move(board & b, const std::string& move_string) {
 }
 
 void position_uci(board & b, const std::string & command) {
-    // Initialize from FEN string
-    int fen_pos = command.find("fen");
-    int moves_pos = command.find("moves");
+    size_t fen_pos = command.find("fen");
+    size_t moves_pos = command.find("moves");
 
     if (command.find("startpos") != std::string::npos) {
         b.fen_to_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    } else if (command.find("fen") != std::string::npos) {
-        std::string fen = command.substr(fen_pos + 3, moves_pos);
+    } else if (fen_pos != std::string::npos) {
+        std::string fen = command.substr(fen_pos + 4, moves_pos - fen_pos - 4);
         b.fen_to_board(fen);
     }
 
@@ -55,8 +63,7 @@ void position_uci(board & b, const std::string & command) {
         return;
     }
 
-
-    std::stringstream move_ss(command.substr(moves_pos + 5));
+    std::stringstream move_ss(command.substr(moves_pos + 6));
     std::vector<std::string> moves;
     std::string string_move;
 
@@ -79,7 +86,7 @@ void position_uci(board & b, const std::string & command) {
 
 void handle_commands() {
     std::string line;
-    while (!stop_requested.load() && std::getline(std::cin, line)) {
+    while (std::getline(std::cin, line)) {
         std::stringstream ss(line);
         std::string command;
         ss >> command;
@@ -118,25 +125,30 @@ void uci_go(board& b, const std::string& command) {
         }
     }
 
-    // Check if the search thread is joinable
-    if (search_thread.joinable()) {
-        stop_requested.store(true); // Signal the previous search thread to stop
-        search_thread.join(); // Wait for the previous search thread to finish
-    }
-
     stop_requested.store(false); // Reset the global stop flag
 
-    // Start a new thread to perform the search
-    search_thread = std::thread([&b, &info]() {
-        find_best_move(b, info);
-    });
+    {
+        std::lock_guard<std::mutex> lock(search_thread_mutex);
+        // Join the previous search thread if it's joinable
+        if (search_thread.joinable()) {
+            stop_requested.store(true);
+            search_thread.join();
+        }
+
+        // Start a new thread to perform the search
+        search_thread = std::thread([&b, &info]() {
+            find_best_move(b, info);
+        });
+    }
 
     // Main loop for handling commands
     while (search_thread.joinable()) {
         if (stop_requested.load()) {
+            std::cout << "Stopping search..." << std::endl;
             stop_requested.store(true); // Signal the search thread to stop
             break;
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Short polling interval
     }
 
     // Wait for the search thread to finish
@@ -163,7 +175,7 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "readyok" << std::endl;
     } else if (command == "uci") {
         std::cout << "id name Motor 0.7.0 dev " << std::endl;
-        std::cout << "id author Martin Novak " << std::endl;    
+        std::cout << "id author Martin Novak " << std::endl;
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
         std::cout << "uciok" << std::endl;
@@ -205,6 +217,7 @@ void uci_process(board& b, const std::string& line) {
     }
 }
 
+
 void uci_mainloop() {
     board chessboard;
     std::string line{};
@@ -214,4 +227,4 @@ void uci_mainloop() {
     }
 }
 
-#endif //MOTOR_UCI_HPP
+#endif // MOTOR_UCI_HPP
