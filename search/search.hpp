@@ -217,6 +217,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
+    bool did_double_ext = false;
+
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move);
 
@@ -273,6 +275,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
                             ext = 2;
                             data.double_extension[data.get_ply()]++;
+                            did_double_ext = true;
                         }
                     }
                 } else if (s_beta >= beta) {
@@ -304,6 +307,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction -= chessboard.in_check();
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                     reduction += cutnode * 2;
+                    reduction += did_double_ext;
                 }
                 reduction -= tt_pv;
 
