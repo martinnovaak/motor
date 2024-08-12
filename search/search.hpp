@@ -270,7 +270,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 if (s_score < s_beta) {
                     ext = 1;
                     if constexpr(!is_pv) {
-                        if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
+                        if (data.get_ply() < 2 * data.root_depth && s_score + 5 < s_beta && data.double_extension[data.get_ply()] < double_exts) {
                             ext = 2;
                             data.double_extension[data.get_ply()]++;
                         }
@@ -443,6 +443,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
         if (depth > 1 && data.time_is_up(depth)) {
             break;
         }
+        data.root_depth = depth;
 
         if (depth < asp_depth) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth, false);

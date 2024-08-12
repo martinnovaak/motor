@@ -114,7 +114,7 @@ public:
     int improving[96] = {};
 
     history_move prev_moves[96];
-
+    int root_depth;
     std::uint32_t singular_move = {};
     int stack_eval = {};
     int double_extension[96] = {};
