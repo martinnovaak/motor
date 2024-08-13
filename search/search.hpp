@@ -44,10 +44,10 @@ constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
 template <Color color>
-std::int16_t correct_eval(const board & chessboard, search_data& data, int raw_eval) {
+std::int16_t correct_eval(const board & chessboard, int material_key, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-    const int material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
+    const int material_entry = material_correction_table[color][material_key];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
     return raw_eval + (entry + material_entry + nonpawn_entry / 2) / 256;
@@ -82,6 +82,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         return quiescence_search<color>(chessboard, data, alpha, beta);
     }
 
+    std::uint64_t material_key = chessboard.get_material_key();
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
@@ -98,7 +99,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
+        eval = static_eval = correct_eval<color>(chessboard, material_key % 32768, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -125,7 +126,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = static_eval = correct_eval<color>(chessboard, data, raw_eval);
+        eval = static_eval = correct_eval<color>(chessboard, material_key % 32768, raw_eval);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -218,7 +219,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     std::int16_t best_score = -INF;
-    score_moves<color>(chessboard, movelist, data, best_move);
+    score_moves<color>(chessboard, movelist, data, best_move, material_key % 512);
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
@@ -352,7 +353,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth);
+                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
                     break;
                 }
             }
@@ -376,7 +377,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             entry = (entry * (256 - weight) + diff * weight) / 256;
             entry = std::clamp(entry, -8'192, 8'192);
 
-            int & material_entry = material_correction_table[color][chessboard.get_material_key() % 32768];
+            int & material_entry = material_correction_table[color][material_key % 32768];
             material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
             material_entry = std::clamp(material_entry, -8'192, 8'192);
 

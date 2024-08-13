@@ -22,7 +22,7 @@ constexpr int noisy_base = -409;
 constexpr int mvv[7] = { 147, 441, 312, 1039, 1232, 0, 1044 };
 
 template <Color color>
-void score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
+void score_moves(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move, int material_key) {
     int move_index = 0;
     for (chess_move & move : movelist) {
         const Square from = move.get_from();
@@ -36,7 +36,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         } else if (data.get_killer() == move){
             move_score = 1'000'002;
         } else {
-            move_score = get_history<color>(chessboard, data, from, to, chessboard.get_piece(from));
+            move_score = get_history<color>(chessboard, data, from, to, chessboard.get_piece(from), material_key);
         }
         
         movelist[move_index] = move_score;
