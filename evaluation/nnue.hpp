@@ -178,8 +178,8 @@ private:
         auto min = _mm256_setzero_si256();
         auto max = _mm256_set1_epi16(QA);
         for (int i = 0; i < hidden_size / CHUNK; i++) {
-            auto us_vector = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(accumulator + i * CHUNK));
-            auto weights_vec = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(weights + i * CHUNK));
+            auto us_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(accumulator + i * CHUNK));
+            auto weights_vec = _mm256_load_si256(reinterpret_cast<const __m256i*>(weights + i * CHUNK));
             auto clamped = _mm256_min_epi16(_mm256_max_epi16(us_vector, min), max);
             auto mul = _mm256_madd_epi16(clamped, _mm256_mullo_epi16(clamped, weights_vec));
             sum = _mm256_add_epi32(sum, mul);
