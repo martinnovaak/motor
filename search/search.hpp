@@ -127,9 +127,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = correct_eval<color>(chessboard, material_key % 32768, raw_eval);
-        if (data.singular_move == 0 && depth >= iir_depth) {
-            depth--;
-        }
+    }
+
+    if (tt_move.get_value() == 0 && data.singular_move == 0 && depth >= iir_depth) {
+        depth--;
     }
 
     data.improving[data.get_ply()] = static_eval;
@@ -338,7 +339,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (score > best_score) {
             best_score = score;
-            best_move = chessmove;
             data.update_pv(chessmove);
             if constexpr (is_root) {
                 data.best_move = chessmove.to_string();
@@ -347,6 +347,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (score > alpha) {
                 alpha = score;
                 flag = Bound::EXACT;
+                best_move = chessmove;
 
                 if (alpha >= beta) {
                     flag = Bound::LOWER;

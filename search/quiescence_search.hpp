@@ -90,8 +90,6 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             }
         }
 
-
-
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
         tt.prefetch(chessboard.get_hash_key());
@@ -104,9 +102,9 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
 
         eval = score;
-        best_move = chessmove;
 
         if (beta <= eval) {
+            best_move = chessmove;
             flag = Bound::LOWER;
             break;
         }
@@ -114,6 +112,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         if (alpha <= eval) {
             alpha = eval;
             flag = Bound::EXACT;
+            best_move = chessmove;
         }
     }
 
