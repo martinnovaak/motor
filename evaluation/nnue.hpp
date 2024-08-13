@@ -23,10 +23,10 @@ constexpr std::array<int, 64> buckets = {
 };
 
 struct Weights {
-    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 3> feature_weight;
-    std::array<std::int16_t, HIDDEN_SIZE> feature_bias;
-    std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM;
-    std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM;
+    alignas(64) std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 3> feature_weight;
+    alignas(64) std::array<std::int16_t, HIDDEN_SIZE> feature_bias;
+    alignas(64) std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM;
+    alignas(64) std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM;
     std::int16_t output_bias;
 };
 
