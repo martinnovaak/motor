@@ -76,6 +76,9 @@ public:
             }
         }
 
+        if (best_move.get_value() == 0 && best_slot->zobrist == stored_key) {
+            new_entry.tt_move = best_slot->tt_move;
+        }
         *best_slot = new_entry;
     }
 

@@ -338,7 +338,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (score > best_score) {
             best_score = score;
-            best_move = chessmove;
             data.update_pv(chessmove);
             if constexpr (is_root) {
                 data.best_move = chessmove.to_string();
@@ -347,6 +346,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (score > alpha) {
                 alpha = score;
                 flag = Bound::EXACT;
+                best_move = chessmove;
 
                 if (alpha >= beta) {
                     flag = Bound::LOWER;
