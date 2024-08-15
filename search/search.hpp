@@ -424,7 +424,7 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
             break;
         }
 
-        window += window * asp_window_mul / 32;
+        window += window / 3;
         if (window > asp_window_max) {
             window = INF;
         }
