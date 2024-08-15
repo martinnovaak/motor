@@ -234,20 +234,20 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         bool is_quiet = chessboard.is_quiet(chessmove);
 
         if constexpr (!is_root) {
-            if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
+            if (moves_searched && best_score > -9'000 && movelist[moves_searched] < 15'000) {
                 if (is_quiet) {
-                    if (quiets.size() > lmp_base + depth * depth / (2 - improving)) {
+                    if (quiets.size() > lmp_base + (depth + in_check) * (depth + in_check) / (2 - improving)) {
                         continue;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
+                    int lmr_depth = std::max(0, depth - reduction - !improving + in_check + movelist.get_move_score(moves_searched) / 6000);
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         continue;
                     }
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
+                int see_margin = is_quiet ? -see_quiet * (depth + in_check) : -see_noisy * (depth + in_check) * (depth + in_check);
                 if (depth <= 6 + is_quiet * 4 && !see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
