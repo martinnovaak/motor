@@ -114,6 +114,10 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             flag = Bound::EXACT;
             best_move = chessmove;
         }
+
+        if (eval > -5'000 && moves_searched >= 2) {
+            break;
+        }
     }
 
     tt.store(flag, 0, eval, static_eval, best_move, data.get_ply(), false, zobrist_key);
