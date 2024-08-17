@@ -44,7 +44,7 @@ public:
         return stop;
     }
 
-    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth) { // called in iterative deepening
+    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth, int score_diff) { // called in iterative deepening
         if (stop) {
             return true;
         }
@@ -59,6 +59,7 @@ public:
 
         double opt_scale = 1.0;
         double stability_scale = 1.0;
+        double score_stability_scale = 1.0;
         if (depth > 6) {
             if (last_best_move == best_move) {
                 stability_count++;
@@ -66,7 +67,10 @@ public:
                 stability_count = 0;
                 last_best_move = best_move;
             }
-            stability_scale = 1.25 - 0.05 * std::min(10, stability_count);
+            constexpr std::array<double, 7> stability_values = {2.2, 1.6, 1.4, 1.1, 1.0, 0.95, 0.9};
+            stability_scale = stability_values[std::min(6, stability_count)];
+
+            score_stability_scale = std::clamp(0.05 * score_diff, 0.75, 1.25);
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
             opt_scale = bm_frac * 2.0 + 0.5;
@@ -132,7 +136,6 @@ private:
     std::array<std::array<int, 64>, 64> node_count;
     chess_move last_best_move;
     int stability_count;
-    int pv_stability_count;
 };
 
 #endif //MOTOR_TIME_KEEPER_HPP

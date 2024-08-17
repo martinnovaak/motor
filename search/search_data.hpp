@@ -37,8 +37,8 @@ public:
         return timekeeper.stopped();
     }
 
-    bool time_is_up(int depth) {
-        return timekeeper.can_end(nodes(), principal_variation_table.get_best_move(), depth);
+    bool time_is_up(int depth, int score_diff) {
+        return timekeeper.can_end(nodes(), principal_variation_table.get_best_move(), depth, score_diff);
     }
 
     void update_pv_length() {

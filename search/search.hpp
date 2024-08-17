@@ -437,11 +437,14 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
 template <Color color>
 void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
     std::string best_move;
+    std::array<int, 256> score_history = {};
+    int current_depth_index = 0;
 
     int score;
 
     for (int depth = 1; depth <= max_depth; depth++) {
-        if (depth > 1 && data.time_is_up(depth)) {
+        int score_diff = (depth > 6) ? score_history[current_depth_index-4] - score_history[current_depth_index-1] : 0;
+        if (depth > 1 && data.time_is_up(depth, score_diff)) {
             break;
         }
 
@@ -454,6 +457,8 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
         if (depth > 1 && data.time_stopped()) {
             break;
         }
+
+        score_history[current_depth_index++] = score;
 
         std::cout << "info depth " << depth << " score cp " << score << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
         data.reset_nodes();
