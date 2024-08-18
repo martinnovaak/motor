@@ -70,7 +70,7 @@ public:
             constexpr std::array<double, 7> stability_values = {2.2, 1.6, 1.4, 1.1, 1.0, 0.95, 0.9};
             stability_scale = stability_values[std::min(6, stability_count)];
 
-            score_stability_scale = std::clamp(0.05 * score_diff, 0.75, 1.25);
+            score_stability_scale = std::clamp(0.05 * score_diff, 0.85, 1.15);
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
             opt_scale = bm_frac * 2.0 + 0.5;
