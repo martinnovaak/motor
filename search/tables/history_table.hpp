@@ -10,6 +10,7 @@
 std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 2>, 512> material_history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
+std::array<std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 64>, 6> noisy_continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 std::array<std::array<int, 16384>, 2> correction_table = {};
 std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table = {};
@@ -84,12 +85,20 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
         }
     } else {
         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], cap_bonus);
+        if constexpr (!is_root) {
+            prev = data.prev_moves[data.get_ply() - 1];
+            update_history(noisy_continuation_table[prev.piece_type][prev.to][piece][to][chessboard.get_piece(to)], cap_bonus);
+        }
     }
 
     for (const auto &capture: captures) {
         int malus = -cap_bonus;
         auto cap_to = capture.get_to();
         update_cap_history(capture_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], malus);
+        if constexpr (!is_root) {
+            prev = data.prev_moves[data.get_ply() - 1];
+            update_history(noisy_continuation_table[prev.piece_type][prev.to][chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], malus);
+        }
     }
 }
 
