@@ -14,7 +14,9 @@ std::int16_t evaluate(board& chessboard) {
 
     int material = std::min(game_phase, 24);
 
-    return network.evaluate<color>() * (56 + material) / 64;
+    int pawn_count = popcount(chessboard.get_pieces(White, Pawn)) + popcount(chessboard.get_pieces(Black, Pawn));
+
+    return network.evaluate<color>() * (56 + material) / (64 + pawn_count / 5 - 1);
 }
 
 void set_position(board& chessboard) {
