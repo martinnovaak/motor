@@ -50,7 +50,9 @@ std::int16_t correct_eval(const board & chessboard, int material_key, int raw_ev
     const int material_entry = material_correction_table[color][material_key];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry + material_entry + nonpawn_entry / 2) / 256;
+    const std::uint64_t corrcorrkey = (chessboard.get_pawn_key() ^ material_key ^ wkey ^ bkey) % 32768;
+    const int corrcorr_entry = correction_of_correction_table[color][corrcorrkey];
+    return raw_eval + (entry + corrcorr_entry + material_entry + nonpawn_entry / 2) / 256;
 }
 
 template <Color color, NodeType node_type>
@@ -389,6 +391,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             int & black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
             black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
             black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
+
+            std::uint64_t corrcorrkey = (chessboard.get_pawn_key() ^ material_key ^ wkey ^ bkey) % 32768;
+            int & corrcorrentry = correction_of_correction_table[color][corrcorrkey];
+            corrcorrentry = (corrcorrentry * (1024 - weight) + entry * weight + material_entry * weight + white_nonpawn_entry * weight + black_nonpawn_entry * weight) / 1024;
+            corrcorrentry = std::clamp(corrcorrentry, -8'192, 8'192);
         }
 
         if (!would_tt_prune) {
