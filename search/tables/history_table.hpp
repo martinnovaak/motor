@@ -117,4 +117,14 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     return move_score;
 }
 
+template <Color color>
+std::int16_t correct_eval(const board & chessboard, int material_key, int raw_eval) {
+    if (std::abs(raw_eval) > 8'000) return raw_eval;
+    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    const int material_entry = material_correction_table[color][material_key];
+    auto [wkey, bkey] = chessboard.get_nonpawn_key();
+    const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
+    return raw_eval + (entry + material_entry + nonpawn_entry / 2) / 256;
+}
+
 #endif //MOTOR_BUTTERFLY_TABLE_HPP
