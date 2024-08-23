@@ -307,7 +307,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction -= chessboard.in_check();
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                     reduction += tt_capture;
-                    reduction += cutnode * 2;
+                    reduction += cutnode;
                 }
                 reduction -= tt_pv;
 
