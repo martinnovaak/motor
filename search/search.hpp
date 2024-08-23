@@ -15,9 +15,9 @@
 #include "../executioner/makemove.hpp"
 
 constexpr int iir_depth = 3;
-constexpr int razoring = 300;
+constexpr int razoring = 350;
 constexpr int razoring_depth = 4;
-constexpr int rfp = 80;
+constexpr int rfp = 120;
 constexpr int rfp_depth = 9;
 constexpr int nmp = 3;
 constexpr int nmp_div = 3;
