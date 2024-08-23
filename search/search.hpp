@@ -15,12 +15,12 @@
 #include "../executioner/makemove.hpp"
 
 constexpr int iir_depth = 3;
-constexpr int razoring = 457;
+constexpr int razoring = 300;
 constexpr int razoring_depth = 4;
-constexpr int rfp = 154;
+constexpr int rfp = 100;
 constexpr int rfp_depth = 9;
 constexpr int nmp = 3;
-constexpr int nmp_div = 4;
+constexpr int nmp_div = 3;
 constexpr int nmp_depth = 2;
 constexpr int lmp_base = 2;
 constexpr int fp_base = 129;
@@ -114,7 +114,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (would_tt_prune) {
             if (is_pv) {
-                depth --;
+
             } else {
                 return tt_eval;
             }
@@ -138,7 +138,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
 
-    if constexpr (!is_root) {
+    if constexpr (!is_pv) {
         if (!in_check && std::abs(beta) < 9'000) {
             // razoring
             if (depth < razoring_depth && eval + razoring * depth <= alpha) {
@@ -157,7 +157,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 256, 3);
+                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 160, 3);
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
