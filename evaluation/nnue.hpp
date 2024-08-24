@@ -12,25 +12,25 @@ constexpr int QA = 403;
 constexpr int QB = 81;
 
 constexpr std::array<int, 64> buckets = {
-        0, 0, 1, 1, 4, 4, 3, 3,
-        0, 0, 1, 1, 4, 4, 3, 3,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
-        2, 2, 2, 2, 5, 5, 5, 5,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
 };
 
 struct Weights {
-    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 3> feature_weight;
+    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, 1> feature_weight;
     std::array<std::int16_t, HIDDEN_SIZE> feature_bias;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM;
     std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM;
     std::int16_t output_bias;
 };
 
-INCBIN(Weights, "nnue.bin");
+INCBIN(Weights, "nnue_old.bin");
 const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
 
 enum class Operation {
@@ -91,7 +91,7 @@ public:
     template<Operation operation, Color perspective>
     void update_accumulator(const Piece piece, const Color color, const Square square, int king) {
         if constexpr (perspective == White) {
-            const auto& white_weights = weights.feature_weight[buckets[king] % 3][color][piece][get_square_index(square, king)];
+            const auto& white_weights = weights.feature_weight[buckets[king] % 1][color][piece][get_square_index(square, king)];
             auto& white_accumulator = white_accumulator_stack[index];
 
             if constexpr (operation == Operation::Set) {
@@ -105,7 +105,7 @@ public:
                 }
             }
         } else {
-            const auto& black_weights = weights.feature_weight[buckets[king ^ 56] % 3][color ^ 1][piece][get_square_index(square, king) ^ 56];
+            const auto& black_weights = weights.feature_weight[buckets[king ^ 56] % 1][color ^ 1][piece][get_square_index(square, king) ^ 56];
             auto& black_accumulator = black_accumulator_stack[index];
 
             if constexpr (operation == Operation::Set) {
@@ -123,8 +123,8 @@ public:
 
     template<Operation operation>
     void update_accumulator(const Piece piece, const Color color, const Square square, int wking, int bking) {
-        const auto& white_weights = weights.feature_weight[buckets[wking] % 3][color][piece][get_square_index(square, wking)];
-        const auto& black_weights = weights.feature_weight[buckets[bking ^ 56] % 3][color ^ 1][piece][get_square_index(square, bking) ^ 56];
+        const auto& white_weights = weights.feature_weight[buckets[wking] % 1][color][piece][get_square_index(square, wking)];
+        const auto& black_weights = weights.feature_weight[buckets[bking ^ 56] % 1][color ^ 1][piece][get_square_index(square, bking) ^ 56];
 
         auto& white_accumulator = white_accumulator_stack[index];
         auto& black_accumulator = black_accumulator_stack[index];
