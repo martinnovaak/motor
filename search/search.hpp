@@ -50,7 +50,7 @@ std::int16_t correct_eval(const board & chessboard, int material_key, int raw_ev
     const int material_entry = material_correction_table[color][material_key];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry + material_entry + nonpawn_entry / 2) / 256;
+    return raw_eval + (entry + nonpawn_entry) / 256;
 }
 
 template <Color color, NodeType node_type>
