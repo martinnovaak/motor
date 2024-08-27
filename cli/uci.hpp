@@ -15,6 +15,14 @@
 #include "../search/bench.hpp"
 #include "../perft.hpp"
 
+std::vector<TuningOption*> tuning_options = {
+        &pawn_weight, &material_weight, &nonpawn_weight,
+        &pawn_corr_max, &material_corr_max, &nonpawn_corr_max,
+        &quadratic_mul_upper, &quadratic_mul, &linear_mul_upper, &linear_mul,
+        &weight_bonus_upper, &weight_bonus,
+        &weight_max_upper, &weight_max
+};
+
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
     if (b.get_side() == White) {
@@ -129,6 +137,18 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
+
+        auto print_option = [](const TuningOption* option) {
+            std::cout << "option name " << option->name
+                      << " type " << "spin"
+                      << " default " << option->value
+                      << " min " << option->min_value
+                      << " max " << option->max_value
+                      << std::endl;
+        };
+
+        std::for_each(tuning_options.begin(), tuning_options.end(), print_option);
+
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
@@ -149,7 +169,21 @@ void uci_process(board& b, const std::string& line) {
 
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
-                tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
+                // Handle the Hash option separately
+                int hash_size_mb = std::stoi(tokens[3]);
+                tt.resize(hash_size_mb * 1024 * 1024);
+            } else {
+                // Check if the option is in our tuning options list
+                auto it = std::find_if(tuning_options.begin(), tuning_options.end(),
+               [&](TuningOption* opt) {
+                   return opt->get_name() == tokens[1];
+               });
+
+                if (it != tuning_options.end()) {
+                    (*it)->set_value(std::stoi(tokens[3]));
+                } else {
+                    std::cout << "Option not found." << std::endl;
+                }
             }
         } else {
             std::cout << "Command not found." << std::endl;
