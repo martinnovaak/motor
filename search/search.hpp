@@ -59,6 +59,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
+    int old_alpha = alpha;
+
     if (!(is_root && depth < 3) && data.should_end()) {
         return beta;
     }
@@ -371,23 +373,25 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
         ) {
             int diff = (best_score - raw_eval) * 256;
-            int weight = std::min(16, depth + 1);
+            int weight = static_eval < old_alpha
+                     ? std::min(4 * depth * depth + 12 * depth + 2, 480)
+                     : std::min(4 * depth * depth + 9 * depth + 2, 416);
 
             int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-            entry = (entry * (256 - weight) + diff * weight) / 256;
+            entry = (entry * (4096 - weight) + diff * weight) / 4096;
             entry = std::clamp(entry, -8'192, 8'192);
 
             int & material_entry = material_correction_table[color][material_key % 32768];
-            material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
+            material_entry = (material_entry * (4096 - weight) + diff * weight) / 4096;
             material_entry = std::clamp(material_entry, -8'192, 8'192);
 
             auto [wkey, bkey] = chessboard.get_nonpawn_key();
             int & white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
-            white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
+            white_nonpawn_entry = (white_nonpawn_entry * (4096 - weight) + diff * weight) / 4096;
             white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
 
             int & black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
-            black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
+            black_nonpawn_entry = (black_nonpawn_entry * (4096 - weight) + diff * weight) / 4096;
             black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
         }
 
