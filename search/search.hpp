@@ -45,23 +45,23 @@ constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
-TuningOption pawn_weight("pawn_weight", 64, 0, 192);
-TuningOption material_weight("material_weight", 64, 0, 192);
-TuningOption nonpawn_weight("nonpawn_weight", 32, 0, 128);
+TuningOption pawn_weight("pawn_weight", 67, 0, 192);
+TuningOption material_weight("material_weight", 63, 0, 192);
+TuningOption nonpawn_weight("nonpawn_weight", 34, 0, 128);
 
-TuningOption pawn_corr_max("pawn_corr_max", 32, 8, 96);
-TuningOption material_corr_max("material_corr_max", 32, 8, 96);
-TuningOption nonpawn_corr_max("nonpawn_corr_max", 32, 8, 96);
+TuningOption pawn_corr_max("pawn_corr_max", 33, 8, 96);
+TuningOption material_corr_max("material_corr_max", 31, 8, 96);
+TuningOption nonpawn_corr_max("nonpawn_corr_max", 34, 8, 96);
 
 TuningOption quadratic_mul_upper("quadratic_mul_upper", 4, 0, 20);
-TuningOption quadratic_mul("quadratic_mul", 3, 0, 20);
-TuningOption linear_mul_upper("linear_mul_upper", 8, 0, 80);
-TuningOption linear_mul("linear_mul", 6, 0, 80);
-TuningOption weight_bonus_upper("weight_bonus_upper", 4, -10, 50);
-TuningOption weight_bonus("weight_bonus", 3, -10, 50);
+TuningOption quadratic_mul("quadratic_mul", 4, 0, 20);
+TuningOption linear_mul_upper("linear_mul_upper", 10, 0, 80);
+TuningOption linear_mul("linear_mul", 10, 0, 80);
+TuningOption weight_bonus_upper("weight_bonus_upper", 2, -10, 50);
+TuningOption weight_bonus("weight_bonus", 2, -10, 50);
 
-TuningOption weight_max_upper("weight_max_upper", 512, 1, 1024);
-TuningOption weight_max("weight_max", 384, 1, 1024);
+TuningOption weight_max_upper("weight_max_upper", 450, 1, 1024);
+TuningOption weight_max("weight_max", 450, 1, 1024);
 
 template <Color color>
 std::int16_t correct_eval(const board & chessboard, int material_key, int raw_eval) {
