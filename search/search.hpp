@@ -317,9 +317,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
             if (score > alpha && reduction > 0) {
                 if constexpr (!is_root) {
-                    if ((score > best_score + 80)) {
-                        new_depth += 1 + (moves_searched > 3);
-                    }
+                    new_depth += ((score > best_score + 80) || (best_score < alpha - 30));
                     new_depth -= (score < best_score + new_depth);
                 }
 
