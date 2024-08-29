@@ -36,6 +36,7 @@ struct board_info {
     zobrist hash_key = {};
     zobrist pawn_key = {};
     std::array<zobrist, 2> nonpawn_key = {};
+    std::array<std::uint64_t, 3> individual_threats = {};
     std::uint64_t threats = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
@@ -67,6 +68,7 @@ public:
         history = {};
         state = &history[0];
         side = Color::White;
+        state->individual_threats = {};
         state->hash_key = zobrist();
         state->pawn_key = zobrist();
         state->nonpawn_key[White] = state->nonpawn_key[Black] = zobrist();
@@ -122,6 +124,7 @@ public:
         constexpr Color their_color = our_color == White ? Black : White;
 
         std::uint64_t threatened = pawn_attacks<their_color>(bitboards[their_color][Pawn]);
+        state->individual_threats[0] = threatened;
 
         std::uint64_t knights = bitboards[their_color][Knight];
         while (knights) {
@@ -133,11 +136,13 @@ public:
         while (bishops) {
             threatened |= attacks<Ray::BISHOP>(pop_lsb(bishops), occupied); // x-ray through king
         }
+        state->individual_threats[1] = threatened;
 
         std::uint64_t rooks = bitboards[their_color][Rook];
         while (rooks) {
             threatened |= attacks<Ray::ROOK>(pop_lsb(rooks), occupied);
         }
+        state->individual_threats[2] = threatened;
 
         std::uint64_t queens = bitboards[their_color][Queen];
         while (queens) {
@@ -468,6 +473,12 @@ public:
         }
 
         return murmur_hash_3(material_key);
+    }
+
+    template <Color side>
+    bool can_opponent_gain_material() const {
+        const auto [threats_by_pawns, threats_by_minor, threats_by_rooks] = state->individual_threats;
+        return ((threats_by_rooks & bitboards[side][Queen]) || (threats_by_minor & bitboards[side][Rook]) || (threats_by_pawns & (bitboards[side][Knight] | bitboards[side][Bishop])));
     }
 };
 

@@ -149,7 +149,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // reverse futility pruning
-            if (depth < rfp_depth && eval - rfp * (depth - improving) >= beta) {
+            if (depth < rfp_depth && eval - rfp * (depth - (improving && !chessboard.can_opponent_gain_material<color>())) >= beta) {
                 return eval;
             }
 
