@@ -138,6 +138,7 @@ void uci_process(board& b, const std::string& line) {
         nonpawn_correction_table = {};
         material_correction_table = {};
         material_history_table = {};
+        pawn_history_table = {};
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
@@ -162,6 +163,7 @@ void uci_process(board& b, const std::string& line) {
         nonpawn_correction_table = {};
         material_correction_table = {};
         material_history_table = {};
+        pawn_history_table = {};
         tt.clear();
         bench(13);
     } else if (command == "perft") {
