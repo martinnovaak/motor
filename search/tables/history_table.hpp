@@ -43,7 +43,7 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     history_move prev = {}, prev2 = {}, prev4 = {};
 
     std::uint64_t threats = chessboard.get_threats();
-    int pawn_key = static_cast<int>(chessboard.get_pawn_key() % 512);
+    int pawn_key = static_cast<int>(chessboard.get_side_pawn_key<color>() % 512);
 
     if (chessboard.is_quiet(best_move)) {
         bool threat_from = (threats & bb(from));
@@ -102,7 +102,7 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
     std::uint64_t threats = chessboard.get_threats();
     bool threat_from = (threats & bb(from));
     bool threat_to = (threats & bb(to));
-    int pawn_key = static_cast<int>(chessboard.get_pawn_key() % 512);
+    int pawn_key = static_cast<int>(chessboard.get_side_pawn_key<color>() % 512);
 
     int move_score = history_table[color][threat_from][threat_to][from][to];
     move_score += material_history_table[material_key][color][piece][to];
