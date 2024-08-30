@@ -321,10 +321,6 @@ public:
         return state->hash_key.get_key();
     }
 
-    [[nodiscard]] std::uint64_t get_pawn_key() const {
-        return state->pawn_key.get_key();
-    }
-
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
         return { state->nonpawn_key[White].get_key(), state->nonpawn_key[Black].get_key()};
     }
@@ -468,6 +464,19 @@ public:
         }
 
         return murmur_hash_3(material_key);
+    }
+
+    [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_pawn_key() const {
+        auto murmur_hash_3 = [](std::uint64_t key) -> std::uint64_t {
+            key ^= key >> 33;
+            key *= 0xff51afd7ed558ccd;
+            key ^= key >> 33;
+            key *= 0xc4ceb9fe1a85ec53;
+            key ^= key >> 33;
+            return key;
+        };
+
+        return { murmur_hash_3(bitboards[White][Pawn]), murmur_hash_3(bitboards[Black][Pawn]) };
     }
 };
 

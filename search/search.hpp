@@ -46,11 +46,12 @@ constexpr int asp_depth = 8;
 template <Color color>
 std::int16_t correct_eval(const board & chessboard, int material_key, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
-    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    auto [wpawn, bpawn] = chessboard.get_pawn_key();
+    const int entry = pawn_correction_table[color][White][wpawn % 16384] + pawn_correction_table[color][Black][bpawn % 16384];
     const int material_entry = material_correction_table[color][material_key];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry + material_entry + nonpawn_entry / 2) / 256;
+    return raw_eval + (entry / 2 + material_entry + nonpawn_entry / 2) / 256;
 }
 
 template <Color color, NodeType node_type>
@@ -373,9 +374,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             int diff = (best_score - raw_eval) * 256;
             int weight = std::min(16, depth + 1);
 
-            int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-            entry = (entry * (256 - weight) + diff * weight) / 256;
-            entry = std::clamp(entry, -8'192, 8'192);
+            auto [wpawn, bpawn] = chessboard.get_pawn_key();
+            int & white_pawn_entry = pawn_correction_table[color][White][wpawn % 16384];
+            white_pawn_entry = (white_pawn_entry * (256 - weight) + diff * weight) / 256;
+            white_pawn_entry = std::clamp(white_pawn_entry, -8'192, 8'192);
+
+            int & black_pawn_entry = pawn_correction_table[color][Black][bpawn % 16384];
+            black_pawn_entry = (black_pawn_entry * (256 - weight) + diff * weight) / 256;
+            black_pawn_entry = std::clamp(black_pawn_entry, -8'192, 8'192);
 
             int & material_entry = material_correction_table[color][material_key % 32768];
             material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
