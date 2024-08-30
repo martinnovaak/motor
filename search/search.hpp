@@ -93,7 +93,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     std::uint64_t material_key = chessboard.get_material_key();
-    std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_occupancy());
+    std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
