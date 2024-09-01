@@ -10,6 +10,13 @@
 #include "../executioner/makemove.hpp"
 
 template <Color color>
+std::int16_t correct_eval(const board & chessboard, int raw_eval) {
+    if (std::abs(raw_eval) > 8'000) return raw_eval;
+    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    return raw_eval + entry / 256;
+}
+
+template <Color color>
 std::int16_t quiescence_search(board & chessboard, search_data & data, std::int16_t alpha, std::int16_t beta, std::int8_t depth = 0) {
     constexpr Color enemy_color = (color == White) ? Black : White;
 
@@ -46,6 +53,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     } else {
         static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
+        eval = correct_eval<color>(chessboard, static_eval);
     }
 
     if (eval >= beta) {
