@@ -9,11 +9,24 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
+auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
+    key ^= key >> 33;
+    key *= 0xff51afd7ed558ccd;
+    key ^= key >> 33;
+    key *= 0xc4ceb9fe1a85ec53;
+    key ^= key >> 33;
+    return key;
+};
+
 template <Color color>
 std::int16_t correct_eval(const board & chessboard, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-    return raw_eval + entry / 256;
+    const std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
+    const int threat_entry = threat_correction_table[color][threat_key % 32768];
+    auto [wkey, bkey] = chessboard.get_nonpawn_key();
+    const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
+    return raw_eval + (entry * 2 + threat_entry + nonpawn_entry) / (256 * 2);
 }
 
 template <Color color>

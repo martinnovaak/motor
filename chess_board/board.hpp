@@ -438,7 +438,7 @@ public:
         state -= 100;
     }
 
-    std::uint64_t get_threats() {
+    std::uint64_t get_threats() const {
         return state->threats;
     }
 
