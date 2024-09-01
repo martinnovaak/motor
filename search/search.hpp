@@ -43,14 +43,24 @@ constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
+auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
+    key ^= key >> 33;
+    key *= 0xff51afd7ed558ccd;
+    key ^= key >> 33;
+    key *= 0xc4ceb9fe1a85ec53;
+    key ^= key >> 33;
+    return key;
+};
+
 template <Color color>
-std::int16_t correct_eval(const board & chessboard, int material_key, int raw_eval) {
+std::int16_t correct_eval(const board & chessboard, int material_key, int threat_key, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
     const int material_entry = material_correction_table[color][material_key];
+    const int threat_entry = threat_correction_table[color][threat_key];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry + material_entry + nonpawn_entry / 2) / 256;
+    return raw_eval + (entry * 2 + material_entry + threat_entry + nonpawn_entry) / (256 * 2);
 }
 
 template <Color color, NodeType node_type>
@@ -83,6 +93,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     std::uint64_t material_key = chessboard.get_material_key();
+    std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
@@ -99,7 +110,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = correct_eval<color>(chessboard, material_key % 32768, raw_eval);
+        eval = static_eval = correct_eval<color>(chessboard, material_key % 32768, threat_key % 32768, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -126,7 +137,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = static_eval = correct_eval<color>(chessboard, material_key % 32768, raw_eval);
+        eval = static_eval = correct_eval<color>(chessboard, material_key % 32768, threat_key % 32768, raw_eval);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -380,6 +391,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             int & material_entry = material_correction_table[color][material_key % 32768];
             material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
             material_entry = std::clamp(material_entry, -8'192, 8'192);
+
+            int & threat_entry = threat_correction_table[color][threat_key % 32768];
+            threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
+            threat_entry = std::clamp(threat_entry, -8'192, 8'192);
 
             auto [wkey, bkey] = chessboard.get_nonpawn_key();
             int & white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
