@@ -295,6 +295,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         data.augment_ply();
 
         int new_depth = depth - 1 + ext;
+        int searched_times = 1;
 
         std::int16_t score;
         if (moves_searched == 0) {
@@ -316,7 +317,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth - reduction, true);
-
             if (score > alpha && reduction > 0) {
                 if constexpr (!is_root) {
                     new_depth += (score > best_score + 80);
@@ -324,10 +324,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
                 score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -alpha - 1, -alpha, new_depth, !cutnode);
+                searched_times++;
             }
 
             if (is_pv && score > alpha) {
                 score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
+                searched_times++;
             }
         }
 
@@ -355,7 +357,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
+                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, searched_times, material_key % 512);
                     break;
                 }
             }
