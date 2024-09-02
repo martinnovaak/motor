@@ -95,6 +95,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    bool tt_capture = false;
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
@@ -121,6 +122,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 return tt_eval;
             }
         }
+
+        tt_capture = tt_move.get_value() > 0 && chessboard.is_capture(tt_move);
 
         if (!((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
         {
@@ -306,6 +309,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction += !is_pv + !improving;
                     reduction -= chessboard.in_check();
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
+                    reduction += tt_capture;
                     reduction += cutnode * 2;
                 }
                 reduction -= tt_pv;
