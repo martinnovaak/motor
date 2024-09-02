@@ -95,8 +95,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    bool tt_hit = false;
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
+        tt_hit = true;
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
@@ -355,7 +357,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
+                    int bonus_depth = eval < alpha + (tt_hit && tt_entry.bound == Bound::UPPER);
+                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, bonus_depth, material_key % 512);
                     break;
                 }
             }
