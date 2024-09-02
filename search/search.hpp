@@ -43,15 +43,6 @@ constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
 
-auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
-    key ^= key >> 33;
-    key *= 0xff51afd7ed558ccd;
-    key ^= key >> 33;
-    key *= 0xc4ceb9fe1a85ec53;
-    key ^= key >> 33;
-    return key;
-};
-
 template <Color color>
 std::int16_t correct_eval(const board & chessboard, int material_key, int threat_key, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
