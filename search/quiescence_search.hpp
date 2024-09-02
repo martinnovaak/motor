@@ -58,14 +58,19 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         std::int16_t tt_eval = tt_entry.score;
         tt_move = tt_entry.tt_move;
         static_eval = tt_entry.static_eval;
-        eval = tt_eval;
+        eval = correct_eval<color>(chessboard, tt_eval);
         if ((tt_entry.bound == Bound::EXACT) ||
             (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
             (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
             return tt_eval;
         }
+
+        if (!((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
+        {
+            eval = tt_eval;
+        }
     } else {
-        static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
+        static_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = correct_eval<color>(chessboard, static_eval);
     }
 
