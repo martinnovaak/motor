@@ -14,7 +14,10 @@ std::int16_t evaluate(board& chessboard) {
 
     int material = std::min(game_phase, 24);
 
-    return network.evaluate<color>() * (56 + material) / 64;
+    const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+    int pawn_scaler = 128 + entry / 256;
+
+    return network.evaluate<color>() * (56 + material) / 64 * pawn_scaler / 128;
 }
 
 void set_position(board& chessboard) {
