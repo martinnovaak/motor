@@ -35,8 +35,8 @@ void update_cap_history(int& value, int bonus) {
 }
 
 template <Color color, bool is_root>
-void update_history(search_data & data, board & chessboard, const chess_move & best_move, move_list & quiets, move_list & captures, int depth, int bonus_depth, int material_key) {
-    int bonus = history_bonus(depth + bonus_depth);
+void update_history(search_data & data, board & chessboard, const chess_move & best_move, move_list & quiets, move_list & captures, int depth, int material_key) {
+    int bonus = history_bonus(depth + (quiets.size() + captures.size()) / 3);
     int penalty = -history_bonus(depth);
     int cap_bonus = std::min(noisy_max, noisy_mul * depth);
 
