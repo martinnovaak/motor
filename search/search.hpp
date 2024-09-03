@@ -355,7 +355,9 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
+                    if (quiets.size() >= 2 || depth >= 5) {
+                        update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
+                    }
                     break;
                 }
             }
