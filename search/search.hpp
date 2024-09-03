@@ -259,29 +259,43 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         int ext = 0;
 
         if constexpr (!is_root) {
-            if (depth >= se_depth &&
-                moves_searched == 0 &&
-                movelist.get_move_score(moves_searched) == 214'748'364 &&
-                tt_entry.depth >= depth - se_depth_margin &&
-                tt_entry.bound != Bound::UPPER &&
-                data.singular_move == 0)
-            {
-                int s_beta = tt_entry.score - se_mul * depth / 80;
-                data.singular_move = chessmove.get_value();
-                int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
-                data.singular_move = 0;
-                if (s_score < s_beta) {
-                    ext = 1;
-                    if constexpr(!is_pv) {
-                        if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
-                            ext = 2;
-                            data.double_extension[data.get_ply()]++;
+            if (depth >= se_depth) {
+                if (moves_searched == 0 &&
+                    movelist.get_move_score(moves_searched) == 214'748'364 &&
+                    tt_entry.depth >= depth - se_depth_margin &&
+                    (tt_entry.bound == Bound::LOWER || tt_entry.bound == Bound::EXACT) &&
+                    std::abs(tt_entry.score) < 8'000 &&
+                    data.singular_move == 0)
+                {
+                    int s_beta = tt_entry.score - se_mul * depth / 80;
+                    data.singular_move = chessmove.get_value();
+                    int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
+                    data.singular_move = 0;
+                    if (s_score < s_beta) {
+                        ext = 1;
+                        if constexpr(!is_pv) {
+                            if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
+                                ext = 2;
+                                data.double_extension[data.get_ply()]++;
+                            }
                         }
+                    } else if (s_beta >= beta) {
+                        return s_beta;
+                    } else if (tt_entry.score >= beta || cutnode) {
+                        ext = -2;
                     }
-                } else if (s_beta >= beta) {
-                    return s_beta;
-                } else if (tt_entry.score >= beta || cutnode) {
-                    ext = -2;
+                }
+            } else {
+                if (moves_searched == 0 && movelist.get_move_score(moves_searched) == 214'748'364 &&
+                    tt_entry.depth >= depth - se_depth_margin &&
+                    std::abs(tt_entry.score) < 8'000 &&
+                    (tt_entry.bound == Bound::LOWER || tt_entry.bound == Bound::EXACT) &&
+                    data.singular_move == 0 &&
+                    tt_entry.depth >= depth * 2)
+                {
+                    if (static_eval < alpha && tt_entry.score >= beta + 100 + 15 * depth) {
+                        ext = 1;
+                    }
                 }
             }
         }
