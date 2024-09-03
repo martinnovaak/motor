@@ -3,6 +3,7 @@
 
 #include "../chess_board/board.hpp"
 #include "../evaluation/nnue.hpp"
+#include "../search/tables/history_table.hpp"
 
 template <Color color>
 std::int16_t evaluate(board& chessboard) {
