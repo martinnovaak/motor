@@ -60,6 +60,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
+    int old_alpha = alpha;
+
     if (!(is_root && depth < 3) && data.should_end()) {
         return beta;
     }
@@ -373,7 +375,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
         ) {
             int diff = (best_score - raw_eval) * 256;
-            int weight = std::min(16, depth + 1);
+            int weight = (raw_eval < old_alpha && flag != Bound::UPPER) ? std::min(32, 2 * depth + 1) : std::min(16, depth + 1);
 
             int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
             entry = (entry * (256 - weight) + diff * weight) / 256;
