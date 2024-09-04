@@ -26,7 +26,7 @@ std::int16_t correct_eval(const board & chessboard, int raw_eval) {
     const int threat_entry = threat_correction_table[color][threat_key % 32768];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry * 2 + threat_entry + nonpawn_entry) / (256 * 2);
+    return raw_eval + (entry * 2 + threat_entry + nonpawn_entry) / (256 * 3);
 }
 
 template <Color color>
