@@ -49,9 +49,10 @@ std::int16_t correct_eval(const board & chessboard, int material_key, int threat
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
     const int material_entry = material_correction_table[color][material_key];
     const int threat_entry = threat_correction_table[color][threat_key];
+    const int king_entry = king_correction_table[color][lsb(chessboard.get_pieces(White, King))][lsb(chessboard.get_pieces(Black, King))];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry * 2 + material_entry + threat_entry + nonpawn_entry) / (256 * 3);
+    return raw_eval + (entry * 2 + material_entry + threat_entry + king_entry + nonpawn_entry) / (256 * 3);
 }
 
 template <Color color, NodeType node_type>
@@ -386,6 +387,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             int & threat_entry = threat_correction_table[color][threat_key % 32768];
             threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
             threat_entry = std::clamp(threat_entry, -8'192, 8'192);
+
+            int & king_entry = king_correction_table[color][lsb(chessboard.get_pieces(White, King))][lsb(chessboard.get_pieces(Black, King))];
+            king_entry = (king_entry * (256 - weight) + diff * weight) / 256;
+            king_entry = std::clamp(king_entry, -8'192, 8'192);
 
             auto [wkey, bkey] = chessboard.get_nonpawn_key();
             int & white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];

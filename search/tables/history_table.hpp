@@ -15,6 +15,7 @@ std::array<std::array<int, 16384>, 2> correction_table = {};
 std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table = {};
 std::array<std::array<int, 32768>, 2> material_correction_table = {};
 std::array<std::array<int, 32768>, 2> threat_correction_table = {};
+std::array<std::array<std::array<int, 64>, 64>, 2> king_correction_table = {};
 
 constexpr int noisy_mul = 41;
 constexpr int noisy_max = 375;
