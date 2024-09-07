@@ -24,9 +24,10 @@ std::int16_t correct_eval(const board & chessboard, int raw_eval) {
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
     const std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
     const int threat_entry = threat_correction_table[color][threat_key % 32768];
+    const int king_entry = king_correction_table[color][lsb(chessboard.get_pieces(White, King))][lsb(chessboard.get_pieces(Black, King))];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry * 2 + threat_entry + nonpawn_entry) / (256 * 3);
+    return raw_eval + (entry * 2 + threat_entry + king_entry + nonpawn_entry) / (256 * 3);
 }
 
 template <Color color>
