@@ -423,6 +423,9 @@ public:
             state->nonpawn_key_major[color].update_psqt_hash(color, piece, square);
         } else if (piece == Bishop || piece == Knight) {
             state->nonpawn_key_minor[color].update_psqt_hash(color, piece, square);
+        } else {
+            state->nonpawn_key_major[color].update_psqt_hash(color, piece, square);
+            state->nonpawn_key_minor[color].update_psqt_hash(color, piece, square);
         }
     }
 
