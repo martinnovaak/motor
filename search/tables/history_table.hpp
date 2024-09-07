@@ -11,6 +11,7 @@ std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2>
 std::array<std::array<std::array<std::array<int, 64>, 6>, 2>, 512> material_history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
+std::array<std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 64>, 6> continuation_capture_table = {};
 std::array<std::array<int, 16384>, 2> correction_table = {};
 std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table = {};
 std::array<std::array<int, 32768>, 2> material_correction_table = {};
@@ -42,6 +43,11 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
     auto [piece, from, to] = data.prev_moves[data.get_ply()];
     history_move prev = {}, prev2 = {}, prev4 = {};
 
+    if constexpr (!is_root)
+    {
+        prev = data.prev_moves[data.get_ply() - 1];
+    }
+
     std::uint64_t threats = chessboard.get_threats();
 
     if (chessboard.is_quiet(best_move)) {
@@ -51,7 +57,6 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
         update_history(material_history_table[material_key][color][piece][to], bonus);
 
         if constexpr (!is_root) {
-            prev = data.prev_moves[data.get_ply() - 1];
             update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
             if (data.get_ply() > 1) {
                 prev2 = data.prev_moves[data.get_ply() - 2];
@@ -84,11 +89,17 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
         }
     } else {
         update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], bonus);
+        if constexpr (!is_root) {
+            update_history(continuation_capture_table[prev.piece_type][prev.to][piece][to][chessboard.get_piece(to)], bonus);
+        }
     }
 
     for (const auto &capture: captures) {
         auto cap_to = capture.get_to();
         update_cap_history(capture_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], penalty);
+        if constexpr (!is_root) {
+            update_history(continuation_capture_table[prev.piece_type][prev.to][chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], penalty);
+        }
     }
 }
 
