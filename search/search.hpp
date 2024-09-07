@@ -49,9 +49,11 @@ std::int16_t correct_eval(const board & chessboard, int material_key, int threat
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
     const int material_entry = material_correction_table[color][material_key];
     const int threat_entry = threat_correction_table[color][threat_key];
-    auto [wkey, bkey] = chessboard.get_nonpawn_key();
-    const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry * 2 + material_entry + threat_entry + nonpawn_entry) / (256 * 3);
+    auto [wkey_minor, bkey_minor] = chessboard.get_nonpawn_key_minor();
+    auto [wkey_major, bkey_major] = chessboard.get_nonpawn_key_major();
+    const int nonpawn_minor_entry = nonpawn_correction_table_minor[color][White][wkey_minor % 16384] + nonpawn_correction_table_minor[color][Black][bkey_minor % 16384];
+    const int nonpawn_major_entry = nonpawn_correction_table_major[color][White][wkey_major % 16384] + nonpawn_correction_table_minor[color][Black][bkey_major % 16384];
+    return raw_eval + (entry * 2 + material_entry + threat_entry + nonpawn_minor_entry + nonpawn_major_entry) / (256 * 3);
 }
 
 template <Color color, NodeType node_type>
@@ -387,14 +389,23 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
             threat_entry = std::clamp(threat_entry, -8'192, 8'192);
 
-            auto [wkey, bkey] = chessboard.get_nonpawn_key();
-            int & white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
-            white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-            white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
+            auto [wkey_major, bkey_major] = chessboard.get_nonpawn_key_major();
+            int & white_nonpawn_entry_major = nonpawn_correction_table_major[color][White][wkey_major % 16384];
+            white_nonpawn_entry_major = (white_nonpawn_entry_major * (256 - weight) + diff * weight) / 256;
+            white_nonpawn_entry_major = std::clamp(white_nonpawn_entry_major, -8'192, 8'192);
 
-            int & black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
-            black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-            black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
+            int & black_nonpawn_entry_major = nonpawn_correction_table_major[color][Black][bkey_major % 16384];
+            black_nonpawn_entry_major = (black_nonpawn_entry_major * (256 - weight) + diff * weight) / 256;
+            black_nonpawn_entry_major = std::clamp(black_nonpawn_entry_major, -8'192, 8'192);
+
+            auto [wkey_minor, bkey_minor] = chessboard.get_nonpawn_key_minor();
+            int & white_nonpawn_entry_minor = nonpawn_correction_table_minor[color][White][wkey_minor % 16384];
+            white_nonpawn_entry_minor = (white_nonpawn_entry_minor * (256 - weight) + diff * weight) / 256;
+            white_nonpawn_entry_minor = std::clamp(white_nonpawn_entry_minor, -8'192, 8'192);
+
+            int & black_nonpawn_entry_minor = nonpawn_correction_table_minor[color][Black][bkey_minor % 16384];
+            black_nonpawn_entry_minor = (black_nonpawn_entry_minor * (256 - weight) + diff * weight) / 256;
+            black_nonpawn_entry_minor = std::clamp(black_nonpawn_entry_minor, -8'192, 8'192);
         }
 
         if (!would_tt_prune) {
