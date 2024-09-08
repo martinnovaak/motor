@@ -35,7 +35,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
             move_score += capture_table[chessboard.get_piece(from)][to][chessboard.get_piece(to)];
             if (data.get_ply()) {
                 auto prev = data.prev_moves[data.get_ply() - 1];
-                move_score += continuation_capture_table[prev.piece_type][prev.to][chessboard.get_piece(from)][to][chessboard.get_piece(to)];
+                move_score += continuation_capture_table[prev.piece_type][prev.to][chessboard.get_piece(from)][to][chessboard.get_piece(to)] / 2;
             }
         } else if (data.get_killer() == move){
             move_score = 1'000'002;
