@@ -35,6 +35,8 @@ struct board_info {
     chess_move move = {};
     zobrist hash_key = {};
     zobrist pawn_key = {};
+    zobrist minor_key = {};
+    zobrist major_key = {};
     std::array<zobrist, 2> nonpawn_key = {};
     std::uint64_t threats = {};
     std::uint64_t checkers = {};
@@ -69,6 +71,8 @@ public:
         side = Color::White;
         state->hash_key = zobrist();
         state->pawn_key = zobrist();
+        state->major_key = zobrist();
+        state->minor_key = zobrist();
         state->nonpawn_key[White] = state->nonpawn_key[Black] = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -299,6 +303,8 @@ public:
         state->hash_key.update_side_hash();
         state->hash_key.update_enpassant_hash(old_info->enpassant);
         state->pawn_key = old_info->pawn_key;
+        state->minor_key = old_info->minor_key;
+        state->major_key = old_info->major_key;
         state->nonpawn_key = old_info->nonpawn_key;
         state->enpassant = Square::Null_Square;
         state->fifty_move_clock++;
@@ -323,6 +329,14 @@ public:
 
     [[nodiscard]] std::uint64_t get_pawn_key() const {
         return state->pawn_key.get_key();
+    }
+
+    [[nodiscard]] std::uint64_t get_minor_key() const {
+        return state->minor_key.get_key();
+    }
+
+    [[nodiscard]] std::uint64_t get_major_key() const {
+        return state->major_key.get_key();
     }
 
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
@@ -397,6 +411,8 @@ public:
         state->hash_key.update_enpassant_hash(old_state->enpassant);
         state->hash_key.update_side_hash();
         state->pawn_key = old_state->pawn_key;
+        state->major_key = old_state->major_key;
+        state->minor_key = old_state->minor_key;
         state->nonpawn_key = old_state->nonpawn_key;
         state->enpassant = Null_Square;
         state->castling_rights = old_state->castling_rights;
@@ -413,6 +429,14 @@ public:
             state->pawn_key.update_psqt_hash(color, piece, square);
         } else {
             state->nonpawn_key[color].update_psqt_hash(color, piece, square);
+            if (piece == Queen || piece == Rook) {
+                state->major_key.update_psqt_hash(color, piece, square);
+            } else if (piece == Knight || piece == Bishop) {
+                state->minor_key.update_psqt_hash(color, piece, square);
+            } else {
+                state->minor_key.update_psqt_hash(color, piece, square);
+                state->major_key.update_psqt_hash(color, piece, square);
+            }
         }
     }
 

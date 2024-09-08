@@ -13,6 +13,8 @@ std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_t
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 std::array<std::array<int, 16384>, 2> correction_table = {};
 std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table = {};
+std::array<std::array<int, 16384>, 2> minor_correction_table = {};
+std::array<std::array<int, 16384>, 2> major_correction_table = {};
 std::array<std::array<int, 32768>, 2> material_correction_table = {};
 std::array<std::array<int, 32768>, 2> threat_correction_table = {};
 
