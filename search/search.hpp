@@ -372,7 +372,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
         ) {
-            int diff = (best_score - raw_eval) * 256;
+            int diff = (best_score - static_eval) * 256;
             int weight = std::min(128, depth * (depth + 1));
 
             int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
