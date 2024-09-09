@@ -15,6 +15,21 @@
 #include "../search/bench.hpp"
 #include "../perft.hpp"
 
+std::vector<TuningOption*> tuning_options = {
+    &pawn_weight, &threat_weight, &nonpawn_weight, &major_weight, &minor_weight, &divisor_weight,
+};
+
+void print_tune_options() {
+    std::cout << "name,type,default,min,max,step,0.002" << std::endl; // Header for CSV
+    for (const auto& option : tuning_options) {
+        std::cout << option->get_name() << ",int,"
+                  << option->value << ","
+                  << option->min_value << ","
+                  << option->max_value << ","
+                  << 20 << ",0.002" << std::endl;
+    }
+}
+
 bool parse_move(board & b, const std::string& move_string) {
     move_list ml;
     if (b.get_side() == White) {
@@ -129,6 +144,18 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "id author Martin Novak " << std::endl;    
         std::cout << "option name Hash type spin default " << 32 << " min 1 max 1024" << std::endl;
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
+
+        auto print_option = [](const TuningOption* option) {
+            std::cout << "option name " << option->name
+                      << " type " << "spin"
+                      << " default " << option->value
+                      << " min " << option->min_value
+                      << " max " << option->max_value
+                      << std::endl;
+        };
+
+        std::for_each(tuning_options.begin(), tuning_options.end(), print_option);
+
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
@@ -151,7 +178,20 @@ void uci_process(board& b, const std::string& line) {
 
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
-                tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
+                int hash_size_mb = std::stoi(tokens[3]);
+                tt.resize(hash_size_mb * 1024 * 1024);
+            } else {
+                // Check if the option is in our tuning options list
+                auto it = std::find_if(tuning_options.begin(), tuning_options.end(),
+               [&](TuningOption* opt) {
+                   return opt->get_name() == tokens[1];
+               });
+
+                if (it != tuning_options.end()) {
+                    (*it)->set_value(std::stoi(tokens[3]));
+                } else {
+                    std::cout << "Option not found." << std::endl;
+                }
             }
         } else {
             std::cout << "Command not found." << std::endl;
@@ -171,6 +211,8 @@ void uci_process(board& b, const std::string& line) {
     } else if (command == "perft") {
         ss >> command;
         perft_debug(b, std::stoi(command));
+    } else if (command == "tune") {
+        print_tune_options();
     }
 }
 

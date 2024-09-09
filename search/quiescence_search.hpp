@@ -2,6 +2,7 @@
 #define MOTOR_QUIESCENCE_SEARCH_HPP
 
 #include "search_data.hpp"
+#include "tuning_options.hpp"
 #include "tables/transposition_table.hpp"
 #include "move_ordering/move_ordering.hpp"
 #include "../chess_board/board.hpp"
@@ -18,17 +19,23 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     return key;
 };
 
+TuningOption pawn_weight("pawn_weight", 200, 0, 400);
+TuningOption nonpawn_weight("nonpawn_weight", 100, 0, 400);
+TuningOption threat_weight("threat_weight", 100, 0, 400);
+TuningOption major_weight("major_weight", 100, 0, 400);
+TuningOption minor_weight("minor_weight", 100, 0, 400);
+TuningOption divisor_weight("divisor_weight", 300, 0, 600);
+
 template <Color color>
-std::int16_t correct_eval(const board & chessboard, int raw_eval) {
+std::int16_t correct_eval(const board & chessboard, int threat_key, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-    const std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
-    const int threat_entry = threat_correction_table[color][threat_key % 32768];
+    const int threat_entry = threat_correction_table[color][threat_key];
     const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
     const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry * 2 + threat_entry + nonpawn_entry + major_entry + minor_entry) / (256 * 3);
+    return raw_eval + (entry * pawn_weight.value + threat_entry * threat_weight.value + nonpawn_entry * nonpawn_weight.value + major_entry * major_weight.value + minor_entry * minor_weight.value) / (256 * divisor_weight.value);
 }
 
 template <Color color>
@@ -67,8 +74,9 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             return tt_eval;
         }
     } else {
+        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = correct_eval<color>(chessboard, static_eval);
+        eval = correct_eval<color>(chessboard, threat_key % 32768, static_eval);
     }
 
     if (eval >= beta) {
