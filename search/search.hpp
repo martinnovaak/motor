@@ -237,14 +237,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         bool is_quiet = chessboard.is_quiet(chessmove);
 
         if constexpr (!is_root) {
-            if (moves_searched && best_score > -9'000 && !in_check && !chessboard.pawn_endgame() && movelist[moves_searched] < 15'000) {
+            if (moves_searched && best_score > -9'000 && movelist[moves_searched] < 15'000) {
                 if (is_quiet) {
                     if (quiets.size() > lmp_base + depth * depth / (2 - improving)) {
                         continue;
                     }
 
                     int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
-                    if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
+                    if (!in_check && lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         continue;
                     }
                 }
