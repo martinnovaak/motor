@@ -136,7 +136,6 @@ void uci_process(board& b, const std::string& line) {
         capture_table = {};
         correction_table = {};
         nonpawn_correction_table = {};
-        material_correction_table = {};
         material_history_table = {};
         threat_correction_table = {};
         minor_correction_table = {};
@@ -163,7 +162,6 @@ void uci_process(board& b, const std::string& line) {
         capture_table = {};
         correction_table = {};
         nonpawn_correction_table = {};
-        material_correction_table = {};
         material_history_table = {};
         threat_correction_table = {};
         minor_correction_table = {};
