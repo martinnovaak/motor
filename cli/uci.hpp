@@ -132,7 +132,7 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         history_table = {};
-        continuation_table = {};
+        continuation_table.clear();
         capture_table = {};
         correction_table = {};
         nonpawn_correction_table = {};
@@ -158,7 +158,7 @@ void uci_process(board& b, const std::string& line) {
         }
     } else if (command == "bench") {
         history_table = {};
-        continuation_table = {};
+        continuation_table.clear();
         capture_table = {};
         correction_table = {};
         nonpawn_correction_table = {};

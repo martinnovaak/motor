@@ -9,7 +9,10 @@
 
 std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 2>, 512> material_history_table = {};
-std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
+std::vector<std::vector<std::vector<std::vector<int>>>> continuation_table(
+6, std::vector<std::vector<std::vector<int>>>(
+64, std::vector<std::vector<int>>(
+6, std::vector<int>(64, 0))));
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
 std::array<std::array<int, 16384>, 2> correction_table = {};
 std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table = {};
