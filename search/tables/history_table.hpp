@@ -8,6 +8,7 @@
 #include "../search_data.hpp"
 
 std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table = {};
+std::array<std::array<std::array<int, 64>, 64>, 2> root_history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 2>, 512> material_history_table = {};
 std::array<std::array<std::array<std::array<int, 64>, 6>, 64>, 6> continuation_table = {};
 std::array<std::array<std::array<int, 7>, 64>, 6> capture_table = {};
@@ -62,6 +63,8 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
                     update_history(continuation_table[prev4.piece_type][prev4.to][piece][to], bonus);
                 }
             }
+        } else {
+            update_history(root_history_table[color][from][to], bonus);
         }
 
         for (const auto &quiet: quiets) {
@@ -81,6 +84,8 @@ void update_history(search_data & data, board & chessboard, const chess_move & b
                         update_history(continuation_table[prev4.piece_type][prev4.to][qpiece][qto], penalty);
                     }
                 }
+            } else {
+                update_history(root_history_table[color][qfrom][qto], penalty);
             }
         }
     } else {
@@ -112,6 +117,8 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
                 move_score += continuation_table[prev.piece_type][prev.to][piece][to];
             }
         }
+    } else {
+        move_score += 3 * root_history_table[color][from][to];
     }
 
     return move_score;

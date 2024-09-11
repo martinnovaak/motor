@@ -140,6 +140,7 @@ void uci_process(board& b, const std::string& line) {
         threat_correction_table = {};
         minor_correction_table = {};
         major_correction_table = {};
+        root_history_table = {};
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
@@ -166,6 +167,7 @@ void uci_process(board& b, const std::string& line) {
         threat_correction_table = {};
         minor_correction_table = {};
         major_correction_table = {};
+        root_history_table = {};
         tt.clear();
         bench(13);
     } else if (command == "perft") {
