@@ -131,15 +131,7 @@ void uci_process(board& b, const std::string& line) {
         std::cout << "option name Threads type spin default 1 min 1 max 1" << std::endl;
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
-        history_table = {};
-        continuation_table = {};
-        capture_table = {};
-        correction_table = {};
-        nonpawn_correction_table = {};
-        material_history_table = {};
-        threat_correction_table = {};
-        minor_correction_table = {};
-        major_correction_table = {};
+        history->clear();
         tt.clear();
     } else if (command == "setoption") {
         std::string token;
@@ -157,15 +149,7 @@ void uci_process(board& b, const std::string& line) {
             std::cout << "Command not found." << std::endl;
         }
     } else if (command == "bench") {
-        history_table = {};
-        continuation_table = {};
-        capture_table = {};
-        correction_table = {};
-        nonpawn_correction_table = {};
-        material_history_table = {};
-        threat_correction_table = {};
-        minor_correction_table = {};
-        major_correction_table = {};
+        history->clear();
         tt.clear();
         bench(13);
     } else if (command == "perft") {
