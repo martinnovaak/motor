@@ -27,7 +27,7 @@ std::int16_t correct_eval(const board & chessboard, int threat_key, int raw_eval
     const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry * 195 + threat_entry * 103 + nonpawn_entry * 118 + major_entry * 93 + minor_entry * 136) / (256 * 300);
+    return raw_eval + (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 137) / (256 * 300);
 }
 
 template <Color color>
