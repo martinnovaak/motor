@@ -53,6 +53,7 @@ public:
             update_history(history_table[color][threat_from][threat_to][from][to], bonus);
             update_history(material_history_table[material_key][color][piece][to], bonus);
 
+            /*
             if constexpr (!is_root) {
                 prev = data.prev_moves[data.get_ply() - 1];
                 update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
@@ -65,6 +66,7 @@ public:
                     }
                 }
             }
+            */
 
             for (const auto &quiet : quiets) {
                 auto qfrom = quiet.get_from();
@@ -75,6 +77,7 @@ public:
                 update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
                 update_history(material_history_table[material_key][color][qpiece][qto], penalty);
 
+                /*
                 if constexpr (!is_root) {
                     update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], penalty);
                     if (data.get_ply() > 1) {
@@ -84,6 +87,7 @@ public:
                         }
                     }
                 }
+                */
             }
         } else {
             update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], bonus);
@@ -103,18 +107,21 @@ public:
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
         move_score += material_history_table[material_key][color][piece][to];
+
+        /*
         if (data.get_ply()) {
             auto prev = data.prev_moves[data.get_ply() - 1];
             move_score += continuation_table[prev.piece_type][prev.to][piece][to];
             if (data.get_ply() > 1) {
-                prev = data.prev_moves[data.get_ply() - 2];
-                move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+                auto prev2 = data.prev_moves[data.get_ply() - 2];
+                move_score += continuation_table[prev2.piece_type][prev2.to][piece][to];
                 if (data.get_ply() > 3) {
-                    prev = data.prev_moves[data.get_ply() - 4];
-                    move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+                    auto prev4 = data.prev_moves[data.get_ply() - 4];
+                    move_score += continuation_table[prev4.piece_type][prev4.to][piece][to];
                 }
             }
         }
+        */
 
         return move_score;
     }
@@ -125,6 +132,7 @@ public:
 
     template<Color color>
     void update_correction_history(board& chessboard, int best_score, int raw_eval, int depth) {
+
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
 
