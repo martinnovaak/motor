@@ -89,7 +89,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = correct_eval<color>(chessboard, threat_key % 32768, raw_eval);
+        eval = static_eval = correct_eval<color>(chessboard, threat_key % 16384, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -367,7 +367,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             entry = (entry * (256 - weight) + diff * weight) / 256;
             entry = std::clamp(entry, -8'192, 8'192);
 
-            int & threat_entry = threat_correction_table[color][threat_key % 32768];
+            int & threat_entry = threat_correction_table[color][threat_key % 16384];
             threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
             threat_entry = std::clamp(threat_entry, -8'192, 8'192);
 
