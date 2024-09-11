@@ -40,7 +40,7 @@ TuningOption iir_depth("iir_depth", 4, 1, 6);
 TuningOption razoring_depth("razoring_depth", 4, 1, 6);
 TuningOption razoring("razoring", 457, 100, 800);
 TuningOption rfp_depth("rfp_depth", 9, 5, 15);
-TuningOption rfp("razoring", 154, 50, 300);
+TuningOption rfp("rfp", 154, 50, 300);
 TuningOption nmp_depth("nmp_depth", 3, 1, 6);
 TuningOption nmp("nmp", 3, 1, 6);
 TuningOption nmp_div("nmp_div", 4, 1, 8);
