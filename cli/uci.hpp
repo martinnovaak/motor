@@ -17,6 +17,7 @@
 
 std::vector<TuningOption*> tuning_options = {
     &pawn_weight, &threat_weight, &nonpawn_weight, &major_weight, &minor_weight, &divisor_weight,
+    &iir_depth, &razoring_depth, &razoring, &rfp_depth, &rfp, &nmp_depth, &nmp, &nmp_div, &nmp_beta_div, &probcut_depth, &prob_beta
 };
 
 void print_tune_options() {

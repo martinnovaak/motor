@@ -19,11 +19,11 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     return key;
 };
 
-TuningOption pawn_weight("pawn_weight", 200, 0, 400);
-TuningOption nonpawn_weight("nonpawn_weight", 100, 0, 400);
-TuningOption threat_weight("threat_weight", 100, 0, 400);
-TuningOption major_weight("major_weight", 100, 0, 400);
-TuningOption minor_weight("minor_weight", 100, 0, 400);
+TuningOption pawn_weight("pawn_weight", 195, 0, 400);
+TuningOption nonpawn_weight("nonpawn_weight", 118, 0, 400);
+TuningOption threat_weight("threat_weight", 103, 0, 400);
+TuningOption major_weight("major_weight", 93, 0, 400);
+TuningOption minor_weight("minor_weight", 136, 0, 400);
 TuningOption divisor_weight("divisor_weight", 300, 0, 600);
 
 template <Color color>
