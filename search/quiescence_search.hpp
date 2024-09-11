@@ -19,16 +19,15 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
 };
 
 template <Color color>
-std::int16_t correct_eval(const board & chessboard, int raw_eval) {
+std::int16_t correct_eval(const board & chessboard, int threat_key, int raw_eval) {
     if (std::abs(raw_eval) > 8'000) return raw_eval;
     const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-    const std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
-    const int threat_entry = threat_correction_table[color][threat_key % 32768];
+    const int threat_entry = threat_correction_table[color][threat_key];
     const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
     const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
     auto [wkey, bkey] = chessboard.get_nonpawn_key();
     const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
-    return raw_eval + (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 137) / (256 * 300);
+    return raw_eval + (entry * 195 + threat_entry * 103 + nonpawn_entry * 118 + major_entry * 93 + minor_entry * 136) / (256 * 300);
 }
 
 template <Color color>
@@ -67,8 +66,9 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             return tt_eval;
         }
     } else {
+        const std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = correct_eval<color>(chessboard, static_eval);
+        eval = correct_eval<color>(chessboard, threat_key % 32768, static_eval);
     }
 
     if (eval >= beta) {
