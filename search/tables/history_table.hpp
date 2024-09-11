@@ -118,7 +118,7 @@ int get_history(board & chessboard, search_data & data, Square from, Square to, 
             }
         }
     } else {
-        move_score += 3 * root_history_table[color][from][to];
+        move_score += 2 * root_history_table[color][from][to];
     }
 
     return move_score;
