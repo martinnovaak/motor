@@ -6,15 +6,7 @@
 
 template <Color color>
 std::int16_t evaluate(board& chessboard) {
-    int game_phase =
-            (popcount(chessboard.get_pieces(White, Knight) + chessboard.get_pieces(Black, Knight))) +
-            (popcount(chessboard.get_pieces(White, Bishop) + chessboard.get_pieces(Black, Bishop))) +
-            (popcount(chessboard.get_pieces(White, Rook) + chessboard.get_pieces(Black, Rook))) * 2 +
-            (popcount(chessboard.get_pieces(White, Queen) + chessboard.get_pieces(Black, Queen))) * 4;
-
-    int material = std::min(game_phase, 24);
-
-    return network.evaluate<color>() * (56 + material) / 64;
+    return network.evaluate<color>();
 }
 
 void set_position(board& chessboard) {

@@ -160,18 +160,31 @@ public:
 
     template <Color color>
     std::int16_t correct_eval(const board& chessboard, int raw_eval) {
-        if (std::abs(raw_eval) > 8'000) return raw_eval;
-        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
+        int corrected_eval = raw_eval;
+        if (std::abs(raw_eval) < 8'000) {
+            std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
-        const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-        const int threat_entry = threat_correction_table[color][threat_key % 32768];
-        const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
-        const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
+            const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
+            const int threat_entry = threat_correction_table[color][threat_key % 32768];
+            const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+            const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
 
-        auto [wkey, bkey] = chessboard.get_nonpawn_key();
-        const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
+            auto [wkey, bkey] = chessboard.get_nonpawn_key();
+            const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] +
+                                      nonpawn_correction_table[color][Black][bkey % 16384];
 
-        return raw_eval + (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 137) / (256 * 300);
+            corrected_eval += (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 137) / (256 * 300);
+
+        }
+        int game_phase =
+                (popcount(chessboard.get_pieces(White, Knight) + chessboard.get_pieces(Black, Knight))) +
+                (popcount(chessboard.get_pieces(White, Bishop) + chessboard.get_pieces(Black, Bishop))) +
+                (popcount(chessboard.get_pieces(White, Rook) + chessboard.get_pieces(Black, Rook))) * 2 +
+                (popcount(chessboard.get_pieces(White, Queen) + chessboard.get_pieces(Black, Queen))) * 4;
+
+        int material = std::min(game_phase, 24);
+
+        return corrected_eval * (56 + material) / 64;
     }
 
 
