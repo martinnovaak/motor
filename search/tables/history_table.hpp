@@ -244,7 +244,7 @@ private:
         constexpr double beta2 = 0.999;
         constexpr double epsilon = 1e-8;
 
-        double learning_rate = weight = 1000.0;
+        double learning_rate = weight;
         momentum = static_cast<int>(beta1 * momentum + (1 - beta1) * gradient);
         velocity = static_cast<int>(beta2 * velocity + (1 - beta2) * gradient * gradient);
 
