@@ -16,9 +16,9 @@ enum class NodeType : std::uint8_t {
 transposition_table<TT_cluster> tt(32 * 1024 * 1024);
 
 struct history_move {
-    Piece piece_type;
-    Square from;
-    Square to;
+    Piece piece_type = Piece::Null_Piece;
+    Square from = Square::A1;
+    Square to = Square::A1;
 };
 
 class search_data {

@@ -73,7 +73,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     std::uint64_t material_key = chessboard.get_material_key();
-    std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
@@ -90,7 +89,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = correct_eval<color>(chessboard, threat_key % 32768, raw_eval);
+        eval = static_eval = history->correct_eval<color>(chessboard, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -117,7 +116,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = static_eval = correct_eval<color>(chessboard, threat_key % 32768, raw_eval);
+        eval = static_eval = history->correct_eval<color>(chessboard, raw_eval);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -344,7 +343,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    update_history<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
+                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
                     break;
                 }
             }
@@ -361,33 +360,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
         ) {
-            int diff = (best_score - raw_eval) * 256;
-            int weight = std::min(128, depth * (depth + 1));
-
-            int & entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-            entry = (entry * (256 - weight) + diff * weight) / 256;
-            entry = std::clamp(entry, -8'192, 8'192);
-
-            int & threat_entry = threat_correction_table[color][threat_key % 32768];
-            threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
-            threat_entry = std::clamp(threat_entry, -8'192, 8'192);
-
-            auto [wkey, bkey] = chessboard.get_nonpawn_key();
-            int & white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
-            white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-            white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
-
-            int & black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
-            black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-            black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
-
-            int & major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
-            major_entry = (major_entry * (256 - weight) + diff * weight) / 256;
-            major_entry = std::clamp(major_entry, -8'192, 8'192);
-
-            int & minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-            minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
-            minor_entry = std::clamp(minor_entry, -8'192, 8'192);
+            history->update_correction_history<color>(chessboard, best_score, raw_eval, depth);
         }
 
         if (!would_tt_prune) {
