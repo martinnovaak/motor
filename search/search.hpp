@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include "tuning_options.hpp"
 #include "search_data.hpp"
 #include "tables/transposition_table.hpp"
 #include "tables/lmr_table.hpp"
@@ -14,14 +15,6 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
-constexpr int iir_depth = 3;
-constexpr int razoring = 457;
-constexpr int razoring_depth = 4;
-constexpr int rfp = 154;
-constexpr int rfp_depth = 9;
-constexpr int nmp = 3;
-constexpr int nmp_div = 4;
-constexpr int nmp_depth = 2;
 constexpr int lmp_base = 2;
 constexpr int fp_base = 129;
 constexpr int fp_mul = 286;
@@ -42,6 +35,19 @@ constexpr int asp_window = 19;
 constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 666;
 constexpr int asp_depth = 8;
+
+
+TuningOption iir_depth("iir_depth", 4, 1, 6);
+TuningOption razoring_depth("razoring_depth", 4, 1, 6);
+TuningOption razoring("razoring", 457, 100, 800);
+TuningOption rfp_depth("rfp_depth", 9, 5, 15);
+TuningOption rfp("rfp", 154, 50, 300);
+TuningOption nmp_depth("nmp_depth", 3, 1, 6);
+TuningOption nmp("nmp", 3, 1, 6);
+TuningOption nmp_div("nmp_div", 4, 1, 8);
+TuningOption nmp_beta_div("nmp_beta_div", 256, 100, 500);
+TuningOption probcut_depth("probcut_depth", 5, 3, 8);
+TuningOption prob_beta("prob_beta", 250, 100, 500);
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
@@ -117,7 +123,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = history->correct_eval<color>(chessboard, raw_eval);
-        if (data.singular_move == 0 && depth >= iir_depth) {
+        if (data.singular_move == 0 && depth >= iir_depth.value) {
             depth--;
         }
     }
@@ -128,10 +134,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
 
-    if constexpr (!is_root) {
+    if constexpr (!is_pv) {
         if (!in_check && std::abs(beta) < 9'000) {
             // razoring
-            if (depth < razoring_depth && eval + razoring * depth <= alpha) {
+            if (depth < razoring_depth.value && eval + razoring.value * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if (razor_eval <= alpha) {
                     return razor_eval;
@@ -139,15 +145,15 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // reverse futility pruning
-            if (depth < rfp_depth && eval - rfp * (depth - improving) >= beta) {
+            if (depth < rfp_depth.value && eval - rfp.value * (depth - improving) >= beta) {
                 return eval;
             }
 
             // NULL MOVE PRUNING
-            if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
+            if (node_type != NodeType::Null && depth >= nmp_depth.value && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 256, 3);
+                int R = nmp.value + depth / nmp_div.value + improving + std::min((static_eval - beta) / nmp_beta_div.value, 3);
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
@@ -157,8 +163,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
             }
 
-            const auto probcut_beta = beta + 250;
-            if (depth >= 6 && !(tt_move.get_value() && tt_entry.depth > depth - 3 && tt_entry.score < probcut_beta)) {
+            const auto probcut_beta = beta + prob_beta.value;
+            if (depth >= probcut_depth.value && !(tt_move.get_value() && tt_entry.depth > depth - 3 && tt_entry.score < probcut_beta)) {
                 const auto see_treshold = probcut_beta - static_eval;
                 move_list movelist;
                 generate_all_moves<color, true>(chessboard, movelist);
