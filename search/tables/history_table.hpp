@@ -23,7 +23,11 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}),
+              momentum_table({}), nonpawn_momentum_table({}), minor_momentum_table({}),
+              major_momentum_table({}), threat_momentum_table({}), velocity_table({}),
+              nonpawn_velocity_table({}), minor_velocity_table({}),
+              major_velocity_table({}), threat_velocity_table({}), timestep(0){}
 
     void clear() {
         history_table = {};
@@ -35,6 +39,20 @@ public:
         minor_correction_table = {};
         major_correction_table = {};
         threat_correction_table = {};
+
+        momentum_table = {};
+        velocity_table = {};
+        timestep = 0;
+
+        nonpawn_momentum_table = {};
+        minor_momentum_table = {};
+        major_momentum_table = {};
+        threat_momentum_table = {};
+
+        nonpawn_velocity_table = {};
+        minor_velocity_table = {};
+        major_velocity_table = {};
+        threat_velocity_table = {};
     }
 
     template <Color color, bool is_root>
@@ -127,35 +145,42 @@ public:
 
     template<Color color>
     void update_correction_history(board& chessboard, int best_score, int raw_eval, int depth) {
-
+        // Gradient: difference between best score and raw evaluation
         int diff = (best_score - raw_eval) * 256;
-        int weight = std::min(128, depth * (depth + 1));
+        int weight = std::min(16, depth + 1);
 
-        int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-        entry = (entry * (256 - weight) + diff * weight) / 256;
-        entry = std::clamp(entry, -8'192, 8'192);
+        timestep++;
 
+        // Pawn correction with Adam
+        update_adam_entry(correction_table[color][chessboard.get_pawn_key() % 16384],
+                          momentum_table[color][chessboard.get_pawn_key() % 16384],
+                          velocity_table[color][chessboard.get_pawn_key() % 16384],diff, weight);
+
+        // Threat correction with Adam
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
-        int &threat_entry = threat_correction_table[color][threat_key % 32768];
-        threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
-        threat_entry = std::clamp(threat_entry, -8'192, 8'192);
+        update_adam_entry(threat_correction_table[color][threat_key % 32768],
+                          threat_momentum_table[color][threat_key % 32768],
+                          threat_velocity_table[color][threat_key % 32768],diff, weight);
 
+        // Non-pawn correction with Adam
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
-        int &white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
-        white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-        white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
+        update_adam_entry(nonpawn_correction_table[color][White][wkey % 16384],
+                          nonpawn_momentum_table[color][White][wkey % 16384],
+                          nonpawn_velocity_table[color][White][wkey % 16384],diff, weight);
 
-        int &black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
-        black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-        black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
+        update_adam_entry(nonpawn_correction_table[color][Black][bkey % 16384],
+                          nonpawn_momentum_table[color][Black][bkey % 16384],
+                          nonpawn_velocity_table[color][Black][bkey % 16384],diff, weight);
 
-        int &major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
-        major_entry = (major_entry * (256 - weight) + diff * weight) / 256;
-        major_entry = std::clamp(major_entry, -8'192, 8'192);
+        // Major correction with Adam
+        update_adam_entry(major_correction_table[color][chessboard.get_major_key() % 16384],
+                          major_momentum_table[color][chessboard.get_major_key() % 16384],
+                          major_velocity_table[color][chessboard.get_major_key() % 16384],diff, weight);
 
-        int &minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-        minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
-        minor_entry = std::clamp(minor_entry, -8'192, 8'192);
+        // Minor correction with Adam
+        update_adam_entry(minor_correction_table[color][chessboard.get_minor_key() % 16384],
+                          minor_momentum_table[color][chessboard.get_minor_key() % 16384],
+                          minor_velocity_table[color][chessboard.get_minor_key() % 16384],diff, weight);
     }
 
     template <Color color>
@@ -186,6 +211,20 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
 
+    std::array<std::array<int, 16384>, 2> momentum_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_momentum_table;
+    std::array<std::array<int, 16384>, 2> minor_momentum_table;
+    std::array<std::array<int, 16384>, 2> major_momentum_table;
+    std::array<std::array<int, 32768>, 2> threat_momentum_table;
+
+    std::array<std::array<int, 16384>, 2> velocity_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_velocity_table;
+    std::array<std::array<int, 16384>, 2> minor_velocity_table;
+    std::array<std::array<int, 16384>, 2> major_velocity_table;
+    std::array<std::array<int, 32768>, 2> threat_velocity_table;
+
+    int timestep;
+
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
     }
@@ -197,6 +236,22 @@ private:
     void update_cap_history(int &value, int bonus) const {
         constexpr int noisy_gravity = 16384;
         value += bonus - (value * std::abs(bonus) / noisy_gravity);
+    }
+
+    void update_adam_entry(int &entry, int &momentum, int &velocity, int gradient, int weight) {
+        // Adam Optimizer parameters
+        constexpr double beta1 = 0.9;
+        constexpr double beta2 = 0.999;
+        constexpr double epsilon = 1e-8;
+
+        double learning_rate = weight = 1000.0;
+        momentum = static_cast<int>(beta1 * momentum + (1 - beta1) * gradient);
+        velocity = static_cast<int>(beta2 * velocity + (1 - beta2) * gradient * gradient);
+
+        double m_hat = momentum / (1.0 - std::pow(beta1, timestep));
+        double v_hat = velocity / (1.0 - std::pow(beta2, timestep));
+
+        entry = std::clamp(entry + static_cast<int>(learning_rate * m_hat / (std::sqrt(v_hat) + epsilon) - entry / 256), -8192, 8192);
     }
 };
 
