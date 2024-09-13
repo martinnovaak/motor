@@ -4,10 +4,28 @@
 #include <array>
 #include <memory>
 #include <algorithm>
+#include "tuning_options.hpp"
 #include "../../chess_board/board.hpp"
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
+
+TuningOption pawn_weight("pawn_weight", 195, 0, 400);
+TuningOption nonpawn_weight("nonpawn_weight", 117, 0, 400);
+TuningOption threat_weight("threat_weight", 102, 0, 400);
+TuningOption major_weight("major_weight", 92, 0, 400);
+TuningOption minor_weight("minor_weight", 137, 0, 400);
+
+TuningOption quad_weight("quad_weight", 10, 0, 100);
+TuningOption lin_weight("lin_weight", 10, 0, 100);
+TuningOption const_weight("const_weight", 0, -100, 100);
+TuningOption max_weight("max_weight", 128, 1, 255);
+
+TuningOption main_mo_weight("main_mo_weight", 100, 0, 400);
+TuningOption material_mo_weight("material_mo_weight", 100, 0, 400);
+TuningOption ply1_mo_weight("ply1_mo_weight", 100, 0, 400);
+TuningOption ply2_mo_weight("ply2_mo_weight", 100, 0, 400);
+TuningOption ply4_mo_weight("ply4_mo_weight", 100, 0, 400);
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     key ^= key >> 33;
@@ -101,19 +119,19 @@ public:
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
 
-        int move_score = history_table[color][threat_from][threat_to][from][to];
-        move_score += material_history_table[material_key][color][piece][to];
+        int move_score = (history_table[color][threat_from][threat_to][from][to] * main_mo_weight.value) / 100;
+        move_score += (material_history_table[material_key][color][piece][to] * material_mo_weight.value) / 100;
 
         int ply = data.get_ply();
         if (ply > 0) {
             auto prev = data.prev_moves[ply - 1];
-            move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+            move_score += (continuation_table[prev.piece_type][prev.to][piece][to] * ply1_mo_weight.value) / 100;
             if (ply > 1) {
                 auto prev2 = data.prev_moves[ply - 2];
-                move_score += continuation_table[prev2.piece_type][prev2.to][piece][to];
+                move_score += (continuation_table[prev2.piece_type][prev2.to][piece][to] * ply2_mo_weight.value) / 100;
                 if (ply > 3) {
                     auto prev4 = data.prev_moves[ply - 4];
-                    move_score += continuation_table[prev4.piece_type][prev4.to][piece][to];
+                    move_score += (continuation_table[prev4.piece_type][prev4.to][piece][to] * ply4_mo_weight.value) / 100;
                 }
             }
         }
@@ -129,7 +147,7 @@ public:
     void update_correction_history(board& chessboard, int best_score, int raw_eval, int depth) {
 
         int diff = (best_score - raw_eval) * 256;
-        int weight = std::min(128, depth * (depth + 1));
+        int weight = std::min(max_weight.value, quad_weight.value * depth * depth / 10 + lin_weight.value * depth / 10 + const_weight.value);
 
         int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         entry = (entry * (256 - weight) + diff * weight) / 256;
@@ -171,7 +189,7 @@ public:
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
 
-        return raw_eval + (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 137) / (256 * 300);
+        return raw_eval + (entry * pawn_weight.value + threat_entry * threat_weight.value + nonpawn_entry * nonpawn_weight.value + major_entry * major_weight.value + minor_entry * minor_weight.value) / (256 * 300);
     }
 
 

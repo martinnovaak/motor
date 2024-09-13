@@ -15,39 +15,44 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
-constexpr int lmp_base = 2;
-constexpr int fp_base = 129;
-constexpr int fp_mul = 286;
-constexpr int fp_depth = 7;
-constexpr int see_quiet = 93;
-constexpr int see_noisy = 39;
-constexpr int see_depth = 6;
-
-constexpr int se_depth = 7;
-constexpr int se_depth_margin = 2;
-constexpr int se_mul = 114;
-constexpr int double_margin = 20;
-constexpr int double_exts = 4;
-
-constexpr int lmr_depth = 2;
-constexpr int lmr_quiet_history = 12600;
-constexpr int asp_window = 19;
-constexpr int asp_window_mul = 15;
-constexpr int asp_window_max = 666;
-constexpr int asp_depth = 8;
-
-
-TuningOption iir_depth("iir_depth", 4, 1, 6);
+TuningOption iir_depth("iir_depth", 3, 1, 6);
 TuningOption razoring_depth("razoring_depth", 4, 1, 6);
-TuningOption razoring("razoring", 457, 100, 800);
-TuningOption rfp_depth("rfp_depth", 9, 5, 15);
-TuningOption rfp("rfp", 154, 50, 300);
+TuningOption razoring("razoring", 450, 100, 800);
+TuningOption rfp_depth("rfp_depth", 10, 5, 15);
+TuningOption rfp("rfp", 130, 50, 300);
+TuningOption rfp_nonpv("rfp_nonpv", 50, 0, 100);
 TuningOption nmp_depth("nmp_depth", 3, 1, 6);
 TuningOption nmp("nmp", 3, 1, 6);
 TuningOption nmp_div("nmp_div", 4, 1, 8);
-TuningOption nmp_beta_div("nmp_beta_div", 256, 100, 500);
-TuningOption probcut_depth("probcut_depth", 5, 3, 8);
-TuningOption prob_beta("prob_beta", 250, 100, 500);
+TuningOption nmp_beta_div("nmp_beta_div", 255, 100, 500);
+TuningOption probcut_depth("probcut_depth", 4, 3, 8);
+TuningOption prob_beta("prob_beta", 224, 100, 500);
+
+TuningOption asp_window("asp_window", 19, 8, 34);
+TuningOption asp_window_mul("asp_window_mul", 100, 50, 200);
+TuningOption asp_score_div("asp_score_div", 80, 20, 200);
+TuningOption asp_depth("asp_depth", 8, 5, 12);
+TuningOption asp_window_max("asp_window_max", 666, 500, 1000);
+
+TuningOption lmp_base("lmp_base", 2, 1, 4);
+TuningOption fp_base("fp_base", 129, 50, 200);
+TuningOption fp_mul("fp_mul", 286, 100, 400);
+TuningOption fp_depth("fp_depth", 7, 3, 10);
+TuningOption fp_history("fp_history", 6000, 3000, 20000);
+TuningOption see_quiet("see_quiet", 93, 50, 150);
+TuningOption see_noisy("see_noisy", 39, 20, 100);
+TuningOption see_depth("see_depth", 6, 3, 8);
+TuningOption moveloop_score_min("moveloop_score_min", 15000, 5000, 50000);
+
+TuningOption se_depth("se_depth", 7, 3, 10);
+TuningOption se_depth_margin("se_depth_margin", 2, 1, 5);
+TuningOption se_mul("se_mul", 114, 50, 200);
+TuningOption double_margin("double_margin", 20, 10, 50);
+TuningOption double_exts("double_exts", 4, 1, 6);
+
+TuningOption lmr_depth("lmr_depth", 2, 1, 4);
+TuningOption lmr_quiet_history("lmr_quiet_history", 12600, 10000, 15000);
+
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
@@ -98,7 +103,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         eval = static_eval = history->correct_eval<color>(chessboard, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
-        if constexpr (!is_root) {
+        if constexpr (!is_pv) {
             if (tt_entry.depth >= depth + 2 * is_pv) {
                 if ((tt_entry.bound == Bound::EXACT) ||
                     (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
@@ -134,7 +139,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
 
-    if constexpr (!is_pv) {
+    if constexpr (!is_root) {
         if (!in_check && std::abs(beta) < 9'000) {
             // razoring
             if (depth < razoring_depth.value && eval + razoring.value * depth <= alpha) {
@@ -145,7 +150,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // reverse futility pruning
-            if (depth < rfp_depth.value && eval - rfp.value * (depth - improving) >= beta) {
+            if (depth < rfp_depth.value && eval - rfp.value * (depth - improving) + !is_pv * rfp_nonpv.value * (depth - improving) >= beta) {
                 return eval;
             }
 
@@ -230,20 +235,20 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         bool is_quiet = chessboard.is_quiet(chessmove);
 
         if constexpr (!is_root) {
-            if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 15'000) {
+            if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < moveloop_score_min.value) {
                 if (is_quiet) {
-                    if (quiets.size() > lmp_base + depth * depth / (2 - improving)) {
+                    if (quiets.size() > lmp_base.value + depth * depth / (2 - improving)) {
                         continue;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
-                    if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
+                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / fp_history.value);
+                    if (lmr_depth < fp_depth.value && static_eval + fp_base.value + fp_mul.value * lmr_depth <= alpha) {
                         continue;
                     }
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
+                int see_margin = is_quiet ? -see_quiet.value * depth : -see_noisy.value * depth * depth;
                 if (depth <= 6 + is_quiet * 4 && !see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
@@ -253,21 +258,21 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         int ext = 0;
 
         if constexpr (!is_root) {
-            if (depth >= se_depth &&
+            if (depth >= se_depth.value &&
                 moves_searched == 0 &&
                 movelist.get_move_score(moves_searched) == 214'748'364 &&
-                tt_entry.depth >= depth - se_depth_margin &&
+                tt_entry.depth >= depth - se_depth_margin.value &&
                 tt_entry.bound != Bound::UPPER &&
                 data.singular_move == 0)
             {
-                int s_beta = tt_entry.score - se_mul * depth / 80;
+                int s_beta = tt_entry.score - se_mul.value * depth / 80;
                 data.singular_move = chessmove.get_value();
                 int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
                 data.singular_move = 0;
                 if (s_score < s_beta) {
                     ext = 1;
                     if constexpr(!is_pv) {
-                        if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
+                        if (s_score + double_margin.value < s_beta && data.double_extension[data.get_ply()] < double_exts.value) {
                             ext = 2;
                             data.double_extension[data.get_ply()]++;
                         }
@@ -295,11 +300,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
         } else {
             // late move reduction
-            if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
+            if (depth >= lmr_depth.value && movelist.get_move_score(moves_searched) < 1'000'000) {
                 if (is_quiet) {
                     reduction += !is_pv + !improving;
                     reduction -= chessboard.in_check();
-                    reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
+                    reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history.value;
                     reduction += cutnode * 2;
                 }
                 reduction -= tt_pv;
@@ -379,7 +384,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
 template <Color color>
 std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_t score, int depth) {
-    std::int16_t window = asp_window;
+    std::int16_t window = asp_window.value + std::abs(score) / asp_score_div.value;
     std::int16_t alpha, beta;
 
     int search_depth = depth;
@@ -402,8 +407,8 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
             break;
         }
 
-        window += window / 3;
-        if (window > asp_window_max) {
+        window += (window * asp_window_mul.value / 300);
+        if (window > asp_window_max.value) {
             window = INF;
         }
     }
@@ -423,7 +428,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
             break;
         }
 
-        if (depth < asp_depth) {
+        if (depth < asp_depth.value) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth, false);
         } else {
             score = aspiration_window<color>(chessboard, data, score, depth);

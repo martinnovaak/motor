@@ -16,7 +16,12 @@
 #include "../perft.hpp"
 
 std::vector<TuningOption*> tuning_options = {
-        &iir_depth, &razoring_depth, &razoring, &rfp_depth, &rfp, &nmp_depth, &nmp, &nmp_div, &nmp_beta_div, &probcut_depth, &prob_beta
+        &iir_depth, &razoring_depth, &razoring, &rfp_depth, &rfp, &nmp_depth, &nmp, &nmp_div, &nmp_beta_div, &probcut_depth, &prob_beta,
+        &asp_window, &asp_window_mul, &asp_score_div, &asp_depth, &asp_window_max, &lmp_base, &fp_base, &fp_mul, &fp_depth,
+        &fp_history, &see_quiet, &see_noisy, &moveloop_score_min, &se_depth, &se_depth_margin, &se_mul, &double_margin, &double_exts,
+        &lmr_depth, &lmr_quiet_history,
+        &pawn_weight, &nonpawn_weight, &threat_weight, &minor_weight, &major_weight, &quad_weight, &lin_weight, &const_weight, &max_weight,
+        &main_mo_weight, &material_mo_weight, &ply1_mo_weight, &ply2_mo_weight, &ply4_mo_weight
 };
 
 void print_tune_options() {
