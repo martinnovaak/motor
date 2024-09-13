@@ -16,7 +16,7 @@
 #include "../perft.hpp"
 
 std::vector<TuningOption*> tuning_options = {
-        &iir_depth, &razoring_depth, &razoring, &rfp_depth, &rfp, &nmp_depth, &nmp, &nmp_div, &nmp_beta_div, &probcut_depth, &prob_beta,
+        &iir_depth, &razoring_depth, &razoring, &rfp_depth, &rfp, &rfp_nonpv, &nmp_depth, &nmp, &nmp_div, &nmp_beta_div, &probcut_depth, &prob_beta,
         &asp_window, &asp_window_mul, &asp_score_div, &asp_depth, &asp_window_max, &lmp_base, &fp_base, &fp_mul, &fp_depth,
         &fp_history, &see_quiet, &see_noisy, &moveloop_score_min, &se_depth, &se_depth_margin, &se_mul, &double_margin, &double_exts,
         &lmr_depth, &lmr_quiet_history,
