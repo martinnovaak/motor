@@ -4,7 +4,7 @@
 #include <array>
 #include <memory>
 #include <algorithm>
-#include "tuning_options.hpp"
+#include "../tuning_options.hpp"
 #include "../../chess_board/board.hpp"
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
