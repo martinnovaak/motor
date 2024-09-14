@@ -101,19 +101,19 @@ public:
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
 
-        int move_score = history_table[color][threat_from][threat_to][from][to];
+        int move_score = 94 * history_table[color][threat_from][threat_to][from][to] / 100;
         move_score += material_history_table[material_key][color][piece][to];
 
         int ply = data.get_ply();
         if (ply > 0) {
             auto prev = data.prev_moves[ply - 1];
-            move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+            move_score += 103 * continuation_table[prev.piece_type][prev.to][piece][to] / 100;
             if (ply > 1) {
                 auto prev2 = data.prev_moves[ply - 2];
-                move_score += continuation_table[prev2.piece_type][prev2.to][piece][to];
+                move_score += 92 * continuation_table[prev2.piece_type][prev2.to][piece][to] / 100;
                 if (ply > 3) {
                     auto prev4 = data.prev_moves[ply - 4];
-                    move_score += continuation_table[prev4.piece_type][prev4.to][piece][to];
+                    move_score += 78 * continuation_table[prev4.piece_type][prev4.to][piece][to] / 100;
                 }
             }
         }
@@ -171,7 +171,7 @@ public:
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
 
-        return raw_eval + (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 137) / (256 * 300);
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146) / (256 * 300);
     }
 
 
