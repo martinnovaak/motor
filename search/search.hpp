@@ -131,7 +131,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     if constexpr (!is_root) {
         if (!in_check && std::abs(beta) < 9'000) {
             // razoring
-            if (depth < razoring_depth && eval + razoring * depth <= alpha) {
+            if (!improving && depth < razoring_depth && eval + razoring * depth <= alpha) {
                 std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
                 if (razor_eval <= alpha) {
                     return razor_eval;
