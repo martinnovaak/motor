@@ -21,13 +21,14 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
 class History {
 public:
     History()
-            : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
+            : history_table({}), material_history_table({}), minor_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
               major_correction_table({}), threat_correction_table({}) {}
 
     void clear() {
         history_table = {};
         material_history_table = {};
+        minor_history_table = {};
         continuation_table = {};
         capture_table = {};
         correction_table = {};
@@ -52,6 +53,7 @@ public:
             bool threat_to = (threats & bb(to));
             update_history(history_table[color][threat_from][threat_to][from][to], bonus);
             update_history(material_history_table[material_key][color][piece][to], bonus);
+            update_history(minor_history_table[chessboard.get_minor_key() % 512][color][piece][to], bonus);
 
             if constexpr (!is_root) {
                 prev = data.prev_moves[data.get_ply() - 1];
@@ -74,6 +76,8 @@ public:
                 bool qthreat_to = (threats & bb(qto));
                 update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
                 update_history(material_history_table[material_key][color][qpiece][qto], penalty);
+                update_history(minor_history_table[chessboard.get_minor_key() % 512][color][qpiece][qto], penalty);
+
 
                 if constexpr (!is_root) {
                     update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], penalty);
@@ -103,6 +107,7 @@ public:
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
         move_score += material_history_table[material_key][color][piece][to];
+        move_score += minor_history_table[chessboard.get_minor_key() % 512][color][piece][to];
 
         int ply = data.get_ply();
         if (ply > 0) {
@@ -178,6 +183,7 @@ public:
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> minor_history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
