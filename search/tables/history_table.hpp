@@ -153,9 +153,14 @@ public:
         major_entry = (major_entry * (256 - weight) + diff * weight) / 256;
         major_entry = std::clamp(major_entry, -8'192, 8'192);
 
-        int &minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-        minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
-        minor_entry = std::clamp(minor_entry, -8'192, 8'192);
+        auto [knight_key, bishop_key] = chessboard.get_minor_keys();
+        int &knight_entry = minor_correction_table[color][0][knight_key % 16384];
+        knight_entry = (knight_entry * (256 - weight) + diff * weight) / 256;
+        knight_entry = std::clamp(knight_entry, -8'192, 8'192);
+
+        int &bishop_entry = minor_correction_table[color][1][bishop_key % 16384];
+        bishop_entry = (bishop_entry * (256 - weight) + diff * weight) / 256;
+        bishop_entry = std::clamp(bishop_entry, -8'192, 8'192);
     }
 
     template <Color color>
@@ -166,12 +171,14 @@ public:
         const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 32768];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
-        const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
+
+        auto [knight_key, bishop_key] = chessboard.get_minor_keys();
+        const int minor_entry = minor_correction_table[color][0][knight_key % 16384] + minor_correction_table[color][1][bishop_key % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
 
-        return raw_eval + (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 137) / (256 * 300);
+        return raw_eval + (entry * 195 + threat_entry * 102 + nonpawn_entry * 117 + major_entry * 92 + minor_entry * 100) / (256 * 300);
     }
 
 
@@ -182,7 +189,7 @@ private:
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
-    std::array<std::array<int, 16384>, 2> minor_correction_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
 
