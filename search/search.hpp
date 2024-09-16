@@ -373,7 +373,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
 template <Color color>
 std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_t score, int depth) {
-    std::int16_t window = asp_window;
+    std::int16_t window = asp_window + std::abs(score) / 66;
     std::int16_t alpha, beta;
 
     int search_depth = depth;
