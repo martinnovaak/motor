@@ -9,13 +9,33 @@
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
 
-auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
-    key ^= key >> 33;
-    key *= 0xff51afd7ed558ccd;
-    key ^= key >> 33;
-    key *= 0xc4ceb9fe1a85ec53;
-    key ^= key >> 33;
-    return key;
+std::uint64_t xxhash64(std::uint64_t data) {
+    auto rotl64 = [](uint64_t x, int r) {
+        return (x << r) | (x >> (64 - r));
+    };
+
+    constexpr std::uint64_t PRIME1 = 0x9E3779B185EBCA87ULL;
+    constexpr std::uint64_t PRIME2 = 0xC2B2AE3D27D4EB4FULL;
+    constexpr std::uint64_t PRIME3 = 0x165667B19E3779F9ULL;
+    constexpr std::uint64_t PRIME4 = 0x85EBCA77C2B2AE63ULL;
+    constexpr std::uint64_t PRIME5 = 0x27D4EB2F165667C5ULL + 8;
+
+    std::uint64_t hash = PRIME5;
+
+    uint64_t val = data * PRIME2;
+    val = rotl64(val, 31);
+    val *= PRIME1;
+    hash ^= val;
+
+    hash = rotl64(hash, 27) * PRIME1 + PRIME4;
+
+    hash ^= hash >> 33;
+    hash *= PRIME2;
+    hash ^= hash >> 29;
+    hash *= PRIME3;
+    hash ^= hash >> 32;
+
+    return hash;
 }
 
 class History {
@@ -136,7 +156,7 @@ public:
         entry = (entry * (256 - weight) + diff * weight) / 256;
         entry = std::clamp(entry, -8'192, 8'192);
 
-        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
+        std::uint64_t threat_key = xxhash64(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         int &threat_entry = threat_correction_table[color][threat_key % 32768];
         threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
         threat_entry = std::clamp(threat_entry, -8'192, 8'192);
@@ -170,7 +190,7 @@ public:
     template <Color color>
     std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval) {
         if (std::abs(raw_eval) > 8'000) return raw_eval;
-        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
+        std::uint64_t threat_key = xxhash64(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
         const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 32768];
