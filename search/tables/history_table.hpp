@@ -4,10 +4,19 @@
 #include <array>
 #include <memory>
 #include <algorithm>
+#include "../tuning_options.hpp"
 #include "../../chess_board/board.hpp"
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
+
+TuningOption pawn_weight("pawn_weight", 192, 0, 400);
+TuningOption nonpawn_weight("nonpawn_weight", 85, 0, 400);
+TuningOption threat_weight("threat_weight", 88, 0, 400);
+TuningOption major_weight("major_weight", 84, 0, 400);
+TuningOption minor_weight("minor_weight", 146, 0, 400);
+TuningOption mat_weight("mat_weight", 100, 0, 400);
+TuningOption concorrde_weight("concorrde_weight", 150, 0, 400);
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     key ^= key >> 33;
@@ -193,7 +202,7 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 2650 + 1865 * material_entry + threat_entry * 1500 + nonpawn_entry * 2300 + major_entry * 1470 + minor_entry * 2300 + cont_entry * 2400) / (256 * 8192);
+        return raw_eval + (entry * pawn_weight.value + mat_weight.value * material_entry + threat_entry * threat_weight.value + nonpawn_entry * nonpawn_weight.value + major_entry * major_weight.value + minor_entry * minor_weight.value + cont_entry * concorrde_weight.value) / (256 * 400);
     }
 
 
