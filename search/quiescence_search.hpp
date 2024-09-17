@@ -46,7 +46,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     } else {
         static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = history->correct_eval<color>(chessboard, data,static_eval);
+        eval = history->correct_eval<color>(chessboard, data,static_eval, chessboard.get_material_key() % 32768);
     }
 
     if (eval >= beta) {
