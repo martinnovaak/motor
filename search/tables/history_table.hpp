@@ -35,7 +35,7 @@ public:
         minor_correction_table = {};
         major_correction_table = {};
         threat_correction_table = {};
-        material_history_table = {};
+        material_correction_table = {};
         continuation_correction_table = {};
     }
 
