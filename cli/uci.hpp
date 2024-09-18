@@ -16,7 +16,7 @@
 #include "../perft.hpp"
 
 std::vector<TuningOption*> tuning_options = {
-        &pawn_weight, &nonpawn_weight, &threat_weight, &minor_weight, &major_weight, &mat_weight, &concorrde_weight,
+        &pawn_weight, &nonpawn_weight, &threat_weight, &minor_weight, &major_weight, &center_weight, &concorrde_weight,
 };
 
 void print_tune_options() {

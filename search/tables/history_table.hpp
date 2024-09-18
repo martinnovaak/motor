@@ -15,7 +15,7 @@ TuningOption nonpawn_weight("nonpawn_weight", 159, 0, 600);
 TuningOption threat_weight("threat_weight", 94, 0, 600);
 TuningOption major_weight("major_weight", 76, 0, 600);
 TuningOption minor_weight("minor_weight", 174, 0, 600);
-TuningOption mat_weight("mat_weight", 72, 0, 600);
+TuningOption center_weight("center_weight", 100, 0, 600);
 TuningOption concorrde_weight("concorrde_weight", 154, 0, 600);
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
@@ -32,7 +32,7 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), material_correction_table({}), continuation_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}), center_correction_table({}), continuation_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -44,7 +44,7 @@ public:
         minor_correction_table = {};
         major_correction_table = {};
         threat_correction_table = {};
-        material_correction_table = {};
+        center_correction_table = {};
         continuation_correction_table = {};
     }
 
@@ -151,9 +151,9 @@ public:
         threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
         threat_entry = std::clamp(threat_entry, -8'192, 8'192);
 
-        int &material_entry = material_correction_table[color][material_key];
-        material_entry = (material_entry * (256 - weight) + diff * weight) / 256;
-        material_entry = std::clamp(material_entry, -8'192, 8'192);
+        int &center_entry = center_correction_table[color][chessboard.get_center_key() % 16384];
+        center_entry = (center_entry * (256 - weight) + diff * weight) / 256;
+        center_entry = std::clamp(center_entry, -8'192, 8'192);
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         int &white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
@@ -187,7 +187,7 @@ public:
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
         const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-        const int material_entry = material_correction_table[color][material_key];
+        const int center_entry = center_correction_table[color][chessboard.get_center_key() % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 32768];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
@@ -202,7 +202,7 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * pawn_weight.value + mat_weight.value * material_entry + threat_entry * threat_weight.value + nonpawn_entry * nonpawn_weight.value + major_entry * major_weight.value + minor_entry * minor_weight.value + cont_entry * concorrde_weight.value) / (256 * 400);
+        return raw_eval + (entry * pawn_weight.value + center_weight.value * center_entry + threat_entry * threat_weight.value + nonpawn_entry * nonpawn_weight.value + major_entry * major_weight.value + minor_entry * minor_weight.value + cont_entry * concorrde_weight.value) / (256 * 400);
     }
 
 
@@ -216,7 +216,7 @@ private:
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
-    std::array<std::array<int, 32768>, 2> material_correction_table;
+    std::array<std::array<int, 32768>, 2> center_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
 
     int history_bonus(int depth) const {
