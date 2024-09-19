@@ -194,7 +194,7 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 177 + threat_entry * 100 + nonpawn_entry * 161 + major_entry * 69 + minor_entry * 178 + cont_entry * 140 + center_entry * 105) / (256 * 400);
+        return raw_eval + (entry * 177 + threat_entry * 103 + nonpawn_entry * 166 + major_entry * 78 + minor_entry * 180 + cont_entry * 142 + center_entry * 112) / (256 * 400);
     }
 
 private:
