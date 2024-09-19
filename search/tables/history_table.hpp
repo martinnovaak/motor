@@ -52,8 +52,8 @@ public:
         if (chessboard.is_quiet(best_move)) {
             bool threat_from = (threats & bb(from));
             bool threat_to = (threats & bb(to));
-            if (data.get_ply() < 3) {
-                update_history(root_history_table[color][from][to], bonus * (3 - data.get_ply()));
+            if (is_root) {
+                update_history(root_history_table[color][from][to], bonus);
             }
             update_history(history_table[color][threat_from][threat_to][from][to], bonus);
             update_history(material_history_table[material_key][color][piece][to], bonus);
@@ -80,8 +80,8 @@ public:
                 update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
                 update_history(material_history_table[material_key][color][qpiece][qto], penalty);
 
-                if (data.get_ply() < 3) {
-                    update_history(root_history_table[color][qfrom][qto], penalty * (3 - data.get_ply()));
+                if (is_root) {
+                    update_history(root_history_table[color][qfrom][qto], penalty);
                 }
 
                 if constexpr (!is_root) {
@@ -110,6 +110,10 @@ public:
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
 
+        if (data.get_ply() == 0) {
+            return root_history_table[color][from][to];
+        }
+
         int move_score = 94 * history_table[color][threat_from][threat_to][from][to] / 100;
         move_score += material_history_table[material_key][color][piece][to];
 
@@ -125,10 +129,6 @@ public:
                     move_score += 78 * continuation_table[prev4.piece_type][prev4.to][piece][to] / 100;
                 }
             }
-        }
-
-        if (data.get_ply() < 3) {
-            move_score += root_history_table[color][from][to] * (4 - data.get_ply());
         }
 
         return move_score;
