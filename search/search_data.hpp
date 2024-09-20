@@ -119,6 +119,7 @@ public:
     int stack_eval = {};
     int double_extension[96] = {};
     std::string best_move = {};
+    chess_move sebm = {};
 private:
     std::int16_t ply;
 

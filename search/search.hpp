@@ -124,6 +124,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     data.improving[data.get_ply()] = static_eval;
     int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+    data.sebm = {};
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
@@ -297,6 +298,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction += cutnode * 2;
                 }
                 reduction -= tt_pv;
+                reduction -= data.sebm.get_value() == chessmove.get_value();
 
                 reduction = std::clamp(reduction, 0, depth - 2);
             } else {
@@ -366,6 +368,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (!would_tt_prune) {
             tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), tt_pv, zobrist_key);
         }
+    } else {
+        data.sebm = best_move;
     }
 
     return best_score;
