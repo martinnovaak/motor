@@ -44,8 +44,9 @@ int screlu(int x) {
 
 template<std::uint16_t hidden_size>
 struct accumulator_cache {
-    std::array<std::array<std::int16_t, hidden_size>, 128> white_accumulator_stack;
-    std::array<std::array<std::int16_t, hidden_size>, 128> black_accumulator_stack;
+    std::array<std::int16_t, hidden_size> accumulator;
+    std::array<Piece, 64> pieces;
+    std::uint64_t occupancy;
 };
 
 template<std::uint16_t hidden_size>
