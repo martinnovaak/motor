@@ -211,6 +211,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move, material_key % 512);
+    chess_move sebm = {};
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
@@ -272,6 +273,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 } else if (tt_entry.score >= beta || cutnode) {
                     ext = -2;
                 }
+
+                sebm = data.sebm;
             }
         }
 
@@ -298,7 +301,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction += cutnode * 2;
                 }
                 reduction -= tt_pv;
-                reduction -= data.sebm.get_value() == chessmove.get_value();
+                reduction -= sebm.get_value() == chessmove.get_value();
 
                 reduction = std::clamp(reduction, 0, depth - 2);
             } else {
