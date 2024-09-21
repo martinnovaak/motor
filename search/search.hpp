@@ -360,7 +360,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
         ) {
-            history->update_correction_history<color>(chessboard, data, best_score, raw_eval, depth);
+            history->update_correction_history<color>(chessboard, data, best_score, static_eval, depth);
         }
 
         if (!would_tt_prune) {
