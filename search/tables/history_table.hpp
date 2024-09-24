@@ -87,12 +87,17 @@ public:
                 }
             }
         } else {
-            update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], bonus);
+            const bool threat_from = (threats & bb(from));
+            const bool threat_to = (threats & bb(to));
+            update_cap_history(capture_table[threat_from][threat_to][piece][to][chessboard.get_piece(to)], bonus);
         }
 
         for (const auto &capture : captures) {
-            auto cap_to = capture.get_to();
-            update_cap_history(capture_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], penalty);
+            const auto cap_to = capture.get_to();
+            const auto cap_from = capture.get_from();
+            const bool threat_from = (threats & bb(cap_from));
+            const bool threat_to = (threats & bb(cap_to));
+            update_cap_history(capture_table[threat_from][threat_to][chessboard.get_piece(cap_from)][cap_to][chessboard.get_piece(cap_to)], penalty);
         }
     }
 
@@ -122,8 +127,14 @@ public:
         return move_score;
     }
 
-    int get_capture_score(Piece from_piece, Square to, Piece to_piece) const {
-        return capture_table[from_piece][to][to_piece];
+    int get_capture_score(board & chessboard, Square from, Square to) const {
+        const Piece from_piece = chessboard.get_piece(from);
+        const Piece to_piece = chessboard.get_piece(to);
+        const std::uint64_t threats = chessboard.get_threats();
+        const bool threat_from = (threats & bb(from));
+        const bool threat_to = (threats & bb(to));
+
+        return capture_table[threat_from][threat_to][from_piece][to][to_piece];
     }
 
     template<Color color>
@@ -195,7 +206,7 @@ private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_table;
-    std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
+    std::array<std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 2>, 2> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
