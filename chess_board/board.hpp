@@ -38,6 +38,7 @@ struct board_info {
     zobrist minor_key = {};
     zobrist major_key = {};
     std::array<zobrist, 2> nonpawn_key = {};
+    std::array<std::array<zobrist, 2>, 2> stripes_key = {};
     std::uint64_t threats = {};
     std::uint64_t checkers = {};
     std::uint64_t checkmask = {};
@@ -74,6 +75,7 @@ public:
         state->major_key = zobrist();
         state->minor_key = zobrist();
         state->nonpawn_key[White] = state->nonpawn_key[Black] = zobrist();
+        state->stripes_key[White][0] = state->stripes_key[White][1] = state->stripes_key[Black][0] = state->stripes_key[Black][1] = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
 
@@ -306,6 +308,7 @@ public:
         state->minor_key = old_info->minor_key;
         state->major_key = old_info->major_key;
         state->nonpawn_key = old_info->nonpawn_key;
+        state->stripes_key = old_info->stripes_key;
         state->enpassant = Square::Null_Square;
         state->fifty_move_clock++;
         state->castling_rights = old_info->castling_rights;
@@ -341,6 +344,10 @@ public:
 
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
         return { state->nonpawn_key[White].get_key(), state->nonpawn_key[Black].get_key()};
+    }
+
+    [[nodiscard]] std::array<std::uint64_t, 4> get_stripes() const {
+        return { state->stripes_key[White][0].get_key(), state->stripes_key[White][1].get_key(), state->stripes_key[Black][0].get_key(), state->stripes_key[Black][1].get_key()};
     }
 
     [[nodiscard]] chess_move get_last_played_move() const {
@@ -414,6 +421,7 @@ public:
         state->major_key = old_state->major_key;
         state->minor_key = old_state->minor_key;
         state->nonpawn_key = old_state->nonpawn_key;
+        state->stripes_key = old_state->stripes_key;
         state->enpassant = Null_Square;
         state->castling_rights = old_state->castling_rights;
         state->fifty_move_clock = old_state->fifty_move_clock + 1;
@@ -424,6 +432,8 @@ public:
 
     void update_hash(Color color, Piece piece, Square square) {
         state->hash_key.update_psqt_hash(color, piece, square);
+
+        state->stripes_key[color][static_cast<bool>(bb(square) & 0xf0f0f0f0f0f0f0f0ull)].update_psqt_hash(color, piece, square);
 
         if (piece == Pawn) {
             state->pawn_key.update_psqt_hash(color, piece, square);
