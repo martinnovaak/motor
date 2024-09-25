@@ -21,7 +21,7 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
 class History {
 public:
     History()
-            : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
+            : history_table({}), material_history_table({}), continuation_table({}), capture_table({}), see_history_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
               major_correction_table({}), threat_correction_table({}), continuation_correction_table({}) {}
 
@@ -30,6 +30,7 @@ public:
         material_history_table = {};
         continuation_table = {};
         capture_table = {};
+        see_history_table = {};
         correction_table = {};
         nonpawn_correction_table = {};
         minor_correction_table = {};
@@ -122,8 +123,8 @@ public:
         return move_score;
     }
 
-    int get_capture_score(Piece from_piece, Square to, Piece to_piece) const {
-        return capture_table[from_piece][to][to_piece];
+    int get_capture_score(std::uint64_t pawn_key, Piece from_piece, Square to, Piece to_piece) const {
+        return capture_table[from_piece][to][to_piece] + see_history_table[pawn_key % 512][from_piece][to][to_piece];
     }
 
     template<Color color>
@@ -190,12 +191,20 @@ public:
         return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
     }
 
+    void update_see_history(const board & chessboard, chess_move move, int depth) {
+        const auto pawn_key = chessboard.get_pawn_key() % 512;
+        const auto piece = chessboard.get_piece(move.get_from());
+        const auto to = move.get_to();
+        const auto capture = chessboard.get_piece(to);
+        update_history(see_history_table[pawn_key][piece][to][capture], 100 * depth);
+    }
 
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
+    std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 512> see_history_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;

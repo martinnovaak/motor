@@ -49,6 +49,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
+    int old_alpha = alpha;
+
     if (!(is_root && depth < 3) && data.should_end()) {
         return beta;
     }
@@ -316,6 +318,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
             if (is_pv && score > alpha) {
                 score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
+            }
+        }
+
+        if (!is_quiet) {
+            if (score + 30 * depth < old_alpha && movelist.get_move_score(moves_searched) > 1'000'000) {
+                history->update_see_history(chessboard, chessmove, -depth);
+            } else if (score - 30 * depth > old_alpha && movelist.get_move_score(moves_searched) < 100'000) {
+                history->update_see_history(chessboard, chessmove, depth);
             }
         }
 
