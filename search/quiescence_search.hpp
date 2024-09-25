@@ -112,7 +112,6 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
 
         if (alpha <= eval) {
             alpha = eval;
-            flag = Bound::EXACT;
             best_move = chessmove;
         }
     }
