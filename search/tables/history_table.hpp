@@ -23,7 +23,7 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}), darklight_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -36,6 +36,7 @@ public:
         major_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
+        darklight_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -165,6 +166,15 @@ public:
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
+
+        auto [dark_key, light_key] = chessboard.get_darklight_key();
+        int &dark_entry = darklight_correction_table[color][0][dark_key % 16384];
+        dark_entry = (dark_entry * (256 - weight) + diff * weight) / 256;
+        dark_entry = std::clamp(dark_entry, -8'192, 8'192);
+
+        int &light_entry = darklight_correction_table[color][1][light_key % 16384];
+        light_entry = (light_entry * (256 - weight) + diff * weight) / 256;
+        light_entry = std::clamp(light_entry, -8'192, 8'192);
     }
 
     template <Color color>
@@ -187,7 +197,10 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        auto [dark_key, light_key] = chessboard.get_darklight_key();
+        const int darklight_entry = darklight_correction_table[color][0][dark_key % 16384] + darklight_correction_table[color][1][light_key % 16384];
+
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + darklight_entry * 50) / (256 * 300);
     }
 
 
@@ -202,6 +215,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 2> darklight_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
