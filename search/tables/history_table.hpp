@@ -170,6 +170,12 @@ public:
     template <Color color>
     std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval) {
         if (std::abs(raw_eval) > 8'000) return raw_eval;
+
+        return raw_eval + calculate_expected_correction<color>(chessboard, data);
+    }
+
+    template <Color color>
+    std::int16_t calculate_expected_correction(const board &chessboard, const search_data &data) {
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
         const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
@@ -187,9 +193,8 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        return (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
     }
-
 
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
