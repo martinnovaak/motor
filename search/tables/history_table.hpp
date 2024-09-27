@@ -187,7 +187,17 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        int game_phase =
+                (popcount(chessboard.get_pieces(White, Knight) + chessboard.get_pieces(Black, Knight))) +
+                (popcount(chessboard.get_pieces(White, Bishop) + chessboard.get_pieces(Black, Bishop))) +
+                (popcount(chessboard.get_pieces(White, Rook) + chessboard.get_pieces(Black, Rook))) * 2 +
+                (popcount(chessboard.get_pieces(White, Queen) + chessboard.get_pieces(Black, Queen))) * 4;
+
+        int material = std::min(game_phase, 24);
+
+        const int correction = (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+
+        return raw_eval + correction * (56 + material) / 64;
     }
 
 
