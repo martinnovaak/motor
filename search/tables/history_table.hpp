@@ -208,7 +208,7 @@ public:
             lastmove_entry = last_move_correction_table[color][threat_from][threat_to][from][to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + lastmove_entry * 100) / (256 * 300);
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + lastmove_entry * 50) / (256 * 300);
     }
 
 
