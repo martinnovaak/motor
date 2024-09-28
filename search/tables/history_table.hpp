@@ -23,7 +23,8 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}),
+              last_move_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -36,6 +37,7 @@ public:
         major_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
+        last_move_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -165,6 +167,16 @@ public:
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
+
+        if (data.get_ply() > 0) {
+            auto [piece, from, to] = data.prev_moves[data.get_ply() - 1];
+            auto prev_threats = chessboard.get_prev_threats();
+            bool threat_from = (prev_threats & bb(from));
+            bool threat_to = (prev_threats & bb(to));
+            int &lastmove_entry = last_move_correction_table[color][threat_from][threat_to][from][to];
+            lastmove_entry = (lastmove_entry * (256 - weight) + diff * weight) / 256;
+            lastmove_entry = std::clamp(lastmove_entry, -8'192, 8'192);
+        }
     }
 
     template <Color color>
@@ -187,7 +199,16 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        int lastmove_entry = 0;
+        if (data.get_ply() > 0) {
+            auto [piece, from, to] = data.prev_moves[data.get_ply() - 1];
+            auto prev_threats = chessboard.get_prev_threats();
+            bool threat_from = (prev_threats & bb(from));
+            bool threat_to = (prev_threats & bb(to));
+            lastmove_entry = last_move_correction_table[color][threat_from][threat_to][from][to];
+        }
+
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + lastmove_entry * 100) / (256 * 300);
     }
 
 
@@ -202,6 +223,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> last_move_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);

@@ -466,6 +466,10 @@ public:
         return state->threats;
     }
 
+    std::uint64_t get_prev_threats() const {
+        return (state - 1)->threats;
+    };
+
     int move_count() {
         const int current_index = state - history.data();
         return (current_index + 1) / 2;
