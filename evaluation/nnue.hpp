@@ -91,6 +91,15 @@ public:
 
     template <Color color>
     std::uint64_t get_nn_index() {
+        auto murmur_hash_3 = [](std::uint64_t key) -> std::uint64_t {
+            key ^= key >> 33;
+            key *= 0xff51afd7ed558ccd;
+            key ^= key >> 33;
+            key *= 0xc4ceb9fe1a85ec53;
+            key ^= key >> 33;
+            return key;
+        };
+
         std::uint64_t key = 0ull;
 
         if constexpr (color == White) {
