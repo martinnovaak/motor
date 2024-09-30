@@ -79,7 +79,10 @@ public:
         if (best_move.get_value() == 0 && best_slot->zobrist == stored_key) {
             new_entry.tt_move = best_slot->tt_move;
         }
-        *best_slot = new_entry;
+
+        if (flag == Bound::EXACT || best_slot->zobrist != stored_key || depth + 2 >= best_slot->depth) {
+            *best_slot = new_entry;
+        }
     }
 
     TT_entry retrieve(const std::uint64_t zobrist_key, const std::int16_t ply) {
