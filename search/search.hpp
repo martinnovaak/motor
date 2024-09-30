@@ -402,7 +402,6 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
         }
     }
 
-    tt.increase_age();
     return score;
 }
 
@@ -431,6 +430,8 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
         data.reset_nodes();
 
         best_move = data.best_move;
+
+        tt.increase_age();
 
         if (depth > 20 && std::abs(score) > 19'900) {
             break;
