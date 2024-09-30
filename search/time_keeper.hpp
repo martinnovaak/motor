@@ -31,7 +31,7 @@ public:
         else if(movestogo == 0) {
             double time_divider = 40 * std::pow(1.0 + 1.5 * std::pow(double(move_count) / 40, 2), 0.5) - move_count;
             optimal_time_limit = std::clamp(0.8 * (time_minus_threshold / time_divider + increment), 10.0, std::max(50.0, time_minus_threshold / 2.0));
-            time_limit = std::clamp(time_minus_threshold / sqrt(time_divider) + increment, 10.0, std::max(50.0, time_minus_threshold / 2.0));
+            time_limit = std::clamp(time_minus_threshold / std::log(time_divider) + increment, 10.0, std::max(50.0, time_minus_threshold / 2.0));
         } else {
             time_limit = increment + 950 * time / movestogo / 1000;
             optimal_time_limit = time_limit / 4 * 3;
