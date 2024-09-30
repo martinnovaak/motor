@@ -83,13 +83,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    std::uint64_t nn_key = network.get_nn_index<color>();
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval, nn_key);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -116,7 +117,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval, nn_key);
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -360,7 +361,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
               || (flag == Bound::LOWER && best_score <= static_eval) || (flag == Bound::UPPER && best_score >= static_eval))
         ) {
-            history->update_correction_history<color>(chessboard, data, best_score, raw_eval, depth);
+            history->update_correction_history<color>(chessboard, data, best_score, raw_eval, depth, nn_key);
         }
 
         if (!would_tt_prune) {

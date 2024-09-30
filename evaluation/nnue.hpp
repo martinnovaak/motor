@@ -89,6 +89,29 @@ public:
         return (king_square % 8 > 3) ? square ^ 7 : square;
     }
 
+    template <Color color>
+    std::uint64_t get_nn_index() {
+        std::uint64_t key = 0ull;
+
+        if constexpr (color == White) {
+            auto& accumulator = white_accumulator_stack[index];
+            int shift = 0;
+            for (std::size_t i = 0; i < 8; i++) {
+                key += std::uint64_t(std::clamp(int(accumulator[i]), 0, 255)) << shift;
+                shift += 8;
+            }
+        } else {
+            auto& accumulator = black_accumulator_stack[index];
+            int shift = 0;
+            for (std::size_t i = 0; i < 8; i++) {
+                key += std::uint64_t(std::clamp(int(accumulator[i]), 0, 255)) << shift;
+                shift += 8;
+            }
+        }
+
+        return murmur_hash_3(key);
+    }
+
     template<Operation operation, Color perspective>
     void update_accumulator(const Piece piece, const Color color, const Square square, int king) {
         if constexpr (perspective == White) {

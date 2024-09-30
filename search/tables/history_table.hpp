@@ -23,7 +23,7 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}), accumulator_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -36,6 +36,7 @@ public:
         major_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
+        accumulator_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -127,7 +128,7 @@ public:
     }
 
     template<Color color>
-    void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth) {
+    void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth, std::uint64_t nn_key) {
 
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
@@ -165,10 +166,14 @@ public:
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
+
+        int &acc_entry = accumulator_correction_table[color][nn_key % 16384];
+        acc_entry = (acc_entry * (256 - weight) + diff * weight) / 256;
+        acc_entry = std::clamp(acc_entry, -8'192, 8'192);
     }
 
     template <Color color>
-    std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval) {
+    std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval, std::uint64_t nn_key) {
         if (std::abs(raw_eval) > 8'000) return raw_eval;
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
@@ -187,7 +192,9 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        const int accumulator_entry = accumulator_correction_table[color][nn_key % 16384];
+
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + accumulator_entry * 100) / (256 * 300);
     }
 
 
@@ -202,6 +209,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<int, 16384>, 2> accumulator_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
