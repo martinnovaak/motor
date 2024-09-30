@@ -128,7 +128,7 @@ public:
     }
 
     template<Color color>
-    void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth, std::uint64_t nn_key) {
+    void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth, int nn_key) {
 
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
@@ -167,13 +167,13 @@ public:
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
 
-        int &acc_entry = accumulator_correction_table[color][nn_key % 16384];
+        int &acc_entry = accumulator_correction_table[color][nn_key];
         acc_entry = (acc_entry * (256 - weight) + diff * weight) / 256;
         acc_entry = std::clamp(acc_entry, -8'192, 8'192);
     }
 
     template <Color color>
-    std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval, std::uint64_t nn_key) {
+    std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval, int nn_key) {
         if (std::abs(raw_eval) > 8'000) return raw_eval;
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
@@ -192,7 +192,7 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        const int accumulator_entry = accumulator_correction_table[color][nn_key % 16384];
+        const int accumulator_entry = accumulator_correction_table[color][nn_key];
 
         return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + accumulator_entry * 100) / (256 * 300);
     }

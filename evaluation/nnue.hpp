@@ -90,35 +90,17 @@ public:
     }
 
     template <Color color>
-    std::uint64_t get_nn_index() {
-        auto murmur_hash_3 = [](std::uint64_t key) -> std::uint64_t {
-            key ^= key >> 33;
-            key *= 0xff51afd7ed558ccd;
-            key ^= key >> 33;
-            key *= 0xc4ceb9fe1a85ec53;
-            key ^= key >> 33;
-            return key;
-        };
-
+    int get_nn_index() {
         std::uint64_t key = 0ull;
+        const auto& accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
 
-        if constexpr (color == White) {
-            auto& accumulator = white_accumulator_stack[index];
-            int shift = 0;
-            for (std::size_t i = 0; i < 8; i++) {
-                key += std::uint64_t(std::clamp(int(accumulator[i]), 0, 255)) << shift;
-                shift += 8;
-            }
-        } else {
-            auto& accumulator = black_accumulator_stack[index];
-            int shift = 0;
-            for (std::size_t i = 0; i < 8; i++) {
-                key += std::uint64_t(std::clamp(int(accumulator[i]), 0, 255)) << shift;
-                shift += 8;
-            }
+        int shift = 0;
+        for (std::size_t i = 0; i < 14; i++) {
+            key += int(accumulator[i] > 0) << shift;
+            shift ++;
         }
 
-        return murmur_hash_3(key);
+        return key;
     }
 
     template<Operation operation, Color perspective>

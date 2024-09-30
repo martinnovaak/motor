@@ -83,7 +83,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
-    std::uint64_t nn_key = network.get_nn_index<color>();
+    int nn_key = network.get_nn_index<color>();
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
