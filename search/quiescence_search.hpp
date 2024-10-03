@@ -91,6 +91,10 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             }
         }
 
+        if (moves_searched > 3) {
+            break;
+        }
+
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
         tt.prefetch(chessboard.get_hash_key());
