@@ -91,7 +91,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             }
         }
 
-        if (moves_searched > 3) {
+        if (eval > -8'000 && moves_searched > 3) {
             break;
         }
 
