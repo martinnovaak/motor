@@ -112,6 +112,7 @@ public:
     }
 
     int improving[96] = {};
+    std::array<int, 96> correction = {};
 
     history_move prev_moves[96];
 
