@@ -49,6 +49,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
 
+    const int old_alpha = alpha;
+
     if (!(is_root && depth < 3) && data.should_end()) {
         return beta;
     }
@@ -343,7 +345,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
+                    int corr_modification = static_eval < raw_eval && static_eval < old_alpha;
+                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + corr_modification, material_key % 512);
                     break;
                 }
             }
