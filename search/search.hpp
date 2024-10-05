@@ -218,6 +218,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             continue;
         }
 
+        const int move_score = movelist.get_move_score(moves_searched);
         std::uint64_t start_nodes = data.get_nodes();
 
         int reduction = lmr_table[depth][moves_searched];
@@ -237,7 +238,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
+                int see_margin = is_quiet ? -see_quiet * depth - move_score / 40 : -see_noisy * depth * depth;
                 if (depth <= 6 + is_quiet * 4 && !see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
