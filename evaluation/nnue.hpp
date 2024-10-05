@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "incbin.hpp"
+#include "../chess_board/zobrist_keys.hpp"
 
 #include <immintrin.h>
 
@@ -87,6 +88,21 @@ public:
 
     int get_square_index(int square, int king_square) {
         return (king_square % 8 > 3) ? square ^ 7 : square;
+    }
+
+    template<Color color>
+    std::uint64_t calculate_eval_key() {
+        std::uint64_t hash_key = 0ull;
+        constexpr std::array<std::uint64_t, 24> eval_keys = {0x6fe8acfed7dcd7b8, 0xafb43ace3abd9b36, 0x56692d778a0cedb7, 0x6cfa46dfca503c89, 0x1049a93eb327039d, 0xfd3d6f83fd48c1f5, 0x4ba5082e56009779, 0x191c02c1029674dc, 0x2e79300f3c84a131, 0x10bf59829a198ac5, 0x4556a35a5f4bb0b2, 0x1ba514bffae5a308, 0xc48704ee85301837, 0x9e3ad783fbce2264, 0xc7148006735eafcc, 0x6e9fae68900fea1e, 0x40ed1905825e3ac8, 0x1f1f82819364fa9f, 0xa7c6f4c701e0d02b, 0x3a5cbfb09f62dca2, 0x56ac2aa9f6ed16a0, 0xec1d0b21f0860a07, 0x567c059456ed13e3, 0xa0afac7a0607ab9a};
+
+        const auto& accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
+
+        for (int i = 0; i < 24; i++) {
+            int activated = accumulator[i] > 0;
+            hash_key ^= eval_keys[i] * activated;
+        }
+
+        return hash_key;
     }
 
     template<Operation operation, Color perspective>
