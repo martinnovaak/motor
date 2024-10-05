@@ -112,7 +112,9 @@ public:
 
         int move_score = 94 * history_table[color][threat_from][threat_to][from][to] / 100;
         move_score += material_history_table[material_key][color][piece][to];
-        move_score += pawn_history_table[chessboard.get_pawn_key() % 512][color][piece][to];
+        if (piece != Pawn) {
+            move_score += pawn_history_table[chessboard.get_pawn_key() % 512][color][piece][to];
+        }
 
         int ply = data.get_ply();
         if (ply > 0) {
