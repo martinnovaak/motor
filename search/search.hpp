@@ -223,6 +223,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         int reduction = lmr_table[depth][moves_searched];
         bool is_quiet = chessboard.is_quiet(chessmove);
 
+        const auto from = chessmove.get_from();
+        const auto to = chessmove.get_to();
+        const auto piece = chessboard.get_piece(from);
+
         if constexpr (!is_root) {
             if (moves_searched && best_score > -9'000 && !in_check && movelist[moves_searched] < 20'000) {
                 if (is_quiet) {
@@ -237,7 +241,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
+                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth - history->get_capture_score(piece, to, chessboard.get_piece(to)) / 40;
                 if (depth <= 6 + is_quiet * 4 && !see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
@@ -274,9 +278,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        auto from = chessmove.get_from();
-        auto to = chessmove.get_to();
-        auto piece = chessboard.get_piece(from);
         data.prev_moves[data.get_ply()] = { piece, from, to };
         make_move<color, true>(chessboard, chessmove);
         tt.prefetch(chessboard.get_hash_key());
