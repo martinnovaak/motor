@@ -39,9 +39,11 @@ public:
     }
 
     template <Color color, bool is_root>
-    void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth, int material_key) {
+    void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth, int material_key, const int gedas_dream) {
         int bonus = history_bonus(depth);
         int penalty = -bonus;
+
+        bonus += gedas_dream * 300;
 
         auto [piece, from, to] = data.prev_moves[data.get_ply()];
         history_move prev = {}, prev2 = {}, prev4 = {};
