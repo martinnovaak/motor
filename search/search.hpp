@@ -262,7 +262,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     ext = 1;
                     if constexpr(!is_pv) {
                         if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
-                            ext = 2 + (((static_eval - raw_eval) > 85) && is_quiet);
+                            ext = 2 + (((static_eval - raw_eval) >= 98) && is_quiet);
                             data.double_extension[data.get_ply()]++;
                         }
                     }
