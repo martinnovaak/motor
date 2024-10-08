@@ -134,6 +134,10 @@ public:
         if (ply > 0) {
             auto prev = data.prev_moves[ply - 1];
             move_score += continuation_table[prev.piece_type][prev.to][piece][to];
+            if (ply > 1) {
+                auto prev2 = data.prev_moves[ply - 2];
+                move_score += continuation_table[prev2.piece_type][prev2.to][piece][to];
+            }
         }
 
         return move_score;
