@@ -122,6 +122,23 @@ public:
         return move_score;
     }
 
+    template <Color color>
+    int get_basic_score(board &chessboard, const search_data &data, Square from, Square to, Piece piece) const {
+        std::uint64_t threats = chessboard.get_threats();
+        bool threat_from = (threats & bb(from));
+        bool threat_to = (threats & bb(to));
+
+        int move_score = history_table[color][threat_from][threat_to][from][to] / 100;
+
+        int ply = data.get_ply();
+        if (ply > 0) {
+            auto prev = data.prev_moves[ply - 1];
+            move_score += 103 * continuation_table[prev.piece_type][prev.to][piece][to] / 100;
+        }
+
+        return move_score;
+    }
+
     int get_capture_score(Piece from_piece, Square to, Piece to_piece) const {
         return capture_table[from_piece][to][to_piece];
     }
