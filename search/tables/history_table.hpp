@@ -128,12 +128,12 @@ public:
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
 
-        int move_score = history_table[color][threat_from][threat_to][from][to] / 100;
+        int move_score = history_table[color][threat_from][threat_to][from][to];
 
         int ply = data.get_ply();
         if (ply > 0) {
             auto prev = data.prev_moves[ply - 1];
-            move_score += 103 * continuation_table[prev.piece_type][prev.to][piece][to] / 100;
+            move_score += continuation_table[prev.piece_type][prev.to][piece][to];
         }
 
         return move_score;
