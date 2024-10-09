@@ -165,6 +165,10 @@ public:
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
+
+        int &center_entry = center_correction_table[color][chessboard.get_piece(D4)][chessboard.get_piece(E4)][chessboard.get_piece(D5)][chessboard.get_piece(E5)];
+        center_entry = (center_entry * (256 - weight) + diff * weight) / 256;
+        center_entry = std::clamp(center_entry, -8'192, 8'192);
     }
 
     template <Color color>
@@ -187,7 +191,9 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        const int center_entry = center_correction_table[color][chessboard.get_piece(D4)][chessboard.get_piece(E4)][chessboard.get_piece(D5)][chessboard.get_piece(E5)];
+
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + center_entry * 100) / (256 * 300);
     }
 
 
@@ -202,6 +208,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<std::array<std::array<std::array<int, 7>, 7>, 7>, 7>, 2> center_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
