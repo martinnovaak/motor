@@ -81,7 +81,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
-    bool would_tt_prune = false;
     bool tt_pv = is_pv;
 
     if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
@@ -92,21 +91,13 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
-        if constexpr (!is_root) {
-            if (tt_entry.depth >= depth + 2 * is_pv) {
+        if constexpr (!is_pv) {
+            if (tt_entry.depth >= depth) {
                 if ((tt_entry.bound == Bound::EXACT) ||
                     (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
                     (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
-                    would_tt_prune = true;
+                    return tt_eval;
                 }
-            }
-        }
-
-        if (would_tt_prune) {
-            if (is_pv) {
-                depth --;
-            } else {
-                return tt_eval;
             }
         }
 
@@ -363,9 +354,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             history->update_correction_history<color>(chessboard, data, best_score, raw_eval, depth);
         }
 
-        if (!would_tt_prune) {
-            tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), tt_pv, zobrist_key);
-        }
+        tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), tt_pv, zobrist_key);
     }
 
     return best_score;
