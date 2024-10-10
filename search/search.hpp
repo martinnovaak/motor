@@ -344,7 +344,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         data.update_killer(chessmove);
                     }
                     int bad_pos_bonus = static_eval + 80 < raw_eval;
-                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth, material_key % 512);
+                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + bad_pos_bonus, material_key % 512);
                     break;
                 }
             }
