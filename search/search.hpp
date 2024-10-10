@@ -112,7 +112,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (!((eval > tt_eval && tt_entry.bound == Bound::LOWER) || (eval < tt_eval && tt_entry.bound == Bound::UPPER)))
         {
-            eval = tt_eval;
+            eval = tt_entry.bound == Bound::EXACT ? (tt_eval * 9 + (static_eval - raw_eval)) / 10 : tt_eval;
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
