@@ -23,7 +23,7 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}), pin_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -36,6 +36,7 @@ public:
         major_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
+        pin_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -165,6 +166,13 @@ public:
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
+
+        const auto [pinned, pin_key] = chessboard.get_pinkey();
+        if (pinned) {
+            int &pin_entry = pin_correction_table[color][pin_key % 16384];
+            pin_entry = (pin_entry * (256 - weight) + diff * weight) / 256;
+            pin_entry = std::clamp(pin_entry, -8'192, 8'192);
+        }
     }
 
     template <Color color>
@@ -187,7 +195,10 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        const auto [pinned, pin_key] = chessboard.get_pinkey();
+        const int pin_entry = pinned ? pin_correction_table[color][pin_key % 16384] : 0;
+
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + pin_entry * 80) / (256 * 300);
     }
 
 
@@ -202,6 +213,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<int, 16384>, 2> pin_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);

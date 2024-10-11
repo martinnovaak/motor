@@ -308,7 +308,6 @@ void generate_rook_moves(const board &pos, std::uint64_t source, move_list &move
 
 template<Color side, bool only_captures = false>
 void generate_all_moves(board &pos, move_list &moves) {
-    pos.calculate_pins<side>();
     switch(popcount(pos.checkers())) {
         case 0:
             generate_pawn_moves<side, false, only_captures>(pos, pos.get_pieces(side, Pawn), moves);

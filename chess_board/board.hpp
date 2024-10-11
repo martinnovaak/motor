@@ -193,6 +193,7 @@ public:
     void update_bitboards() {
         calculate_threats<our_color>();
         calculate_checkers<our_color>();
+        calculate_pins<our_color>();
         state->checkmask = 0ull;
         std::uint64_t checks = checkers();
         if (checks) {
@@ -492,6 +493,18 @@ public:
         }
 
         return murmur_hash_3(material_key);
+    }
+
+    std::pair<bool, std::uint64_t> get_pinkey() const {
+        zobrist pinkey;
+        std::uint64_t pins = state->pin_diagonal | state->pin_orthogonal;
+        bool pinned = false;
+        while(pins) {
+            Square square = pop_lsb(pins);
+            pinkey.update_enpassant_hash(square);
+            pinned = true;
+        }
+        return {pinned, pinkey.get_key()};
     }
 };
 
