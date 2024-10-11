@@ -130,7 +130,7 @@ public:
     void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth) {
 
         int diff = (best_score - raw_eval) * 256;
-        int weight = std::min(128, depth * (depth + 1));
+        int weight = std::min(128, static_cast<int>(3 * depth * std::log(depth + 1)));
 
         int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         entry = (entry * (256 - weight) + diff * weight) / 256;
