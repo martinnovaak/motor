@@ -154,10 +154,6 @@ public:
         major_entry = (major_entry * (256 - weight) + diff * weight) / 256;
         major_entry = std::clamp(major_entry, -8'192, 8'192);
 
-        int &minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-        minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
-        minor_entry = std::clamp(minor_entry, -8'192, 8'192);
-
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
@@ -175,7 +171,6 @@ public:
         const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 32768];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
-        const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -187,7 +182,7 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + cont_entry * 150) / (256 * 300);
     }
 
 
