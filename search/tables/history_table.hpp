@@ -190,6 +190,26 @@ public:
         return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
     }
 
+    template<typename T>
+    void divide_by_2(T& value) {
+        value /= 2;
+    }
+
+    template<typename T, std::size_t N>
+    void divide_by_2(std::array<T, N>& table) {
+        for (auto& elem : table) {
+            divide_by_2(elem);
+        }
+    }
+
+    void decay_correction() {
+        divide_by_2(correction_table);
+        divide_by_2(nonpawn_correction_table);
+        divide_by_2(minor_correction_table);
+        divide_by_2(major_correction_table);
+        divide_by_2(threat_correction_table);
+        divide_by_2(continuation_correction_table);
+    }
 
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
