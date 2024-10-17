@@ -23,7 +23,8 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}), last_visit_table({}) {}
+              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}), 
+              last_visit_table({}) {}
 
     void clear() {
         history_table = {};
