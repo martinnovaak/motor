@@ -54,7 +54,7 @@ public:
         last_visit_table[color][threat_from][threat_to][piece][to] = new_pawn_key;
         const bool structure_changed = last_pawn_key != new_pawn_key;
 
-        int bonus = history_bonus(depth + structure_changed);
+        int bonus = history_bonus(depth) * (1 + structure_changed);
         int penalty = -bonus;
 
         if (chessboard.is_quiet(best_move)) {
@@ -209,7 +209,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
-    std::array < std::array < std::array<std::array<std::array<uint16_t, 64>, 6>, 2>, 2>, 2> last_visit_table;
+    std::array<std::array<std::array<std::array<std::array<uint16_t, 64>, 6>, 2>, 2>, 2> last_visit_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
