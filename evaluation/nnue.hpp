@@ -5,7 +5,11 @@
 
 #include "incbin.hpp"
 
-#include <immintrin.h>
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+    #include <immintrin.h>  // x86/x64 SIMD intrinsics
+#elif defined(__aarch64__) || defined(__arm__)
+    #include <arm_neon.h>   // ARM SIMD intrinsics (NEON)
+#endif
 
 constexpr unsigned int HIDDEN_SIZE = 1024;
 constexpr int QA = 403;
