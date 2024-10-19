@@ -54,11 +54,11 @@ public:
         last_visit_table[color][threat_from][threat_to][piece][to] = new_pawn_key;
         const bool structure_changed = last_pawn_key != new_pawn_key;
 
-        int bonus = history_bonus(depth) * (1 + structure_changed);
+        int bonus = history_bonus(depth);
         int penalty = -bonus;
 
         if (chessboard.is_quiet(best_move)) {
-            update_history(history_table[color][threat_from][threat_to][from][to], bonus);
+            update_history(history_table[color][threat_from][threat_to][from][to], bonus + 300 * structure_changed);
             update_history(material_history_table[material_key][color][piece][to], bonus);
 
             if constexpr (!is_root) {
@@ -80,7 +80,7 @@ public:
                 auto qpiece = chessboard.get_piece(qfrom);
                 bool qthreat_from = (threats & bb(qfrom));
                 bool qthreat_to = (threats & bb(qto));
-                update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
+                update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty - 300 * structure_changed);
                 update_history(material_history_table[material_key][color][qpiece][qto], penalty);
 
                 if constexpr (!is_root) {
