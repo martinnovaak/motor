@@ -23,7 +23,7 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}), cdef_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -36,6 +36,7 @@ public:
         major_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
+        cdef_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -165,6 +166,10 @@ public:
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
+
+        int& cdef_entry = cdef_correction_table[color][chessboard.get_cdef_key() % 16384];
+        cdef_entry = (cdef_entry * (256 - weight) + diff * weight) / 256;
+        cdef_entry = std::clamp(cdef_entry, -8'192, 8'192);
     }
 
     template <Color color>
@@ -179,6 +184,7 @@ public:
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
+        const int cdef_entry = cdef_correction_table[color][chessboard.get_cdef_key() % 16384];
 
         int cont_entry = 0;
         if (data.get_ply() > 1) {
@@ -187,7 +193,7 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        return raw_eval + (entry * 188 + threat_entry * 84 + nonpawn_entry * 130 + major_entry * 80 + minor_entry * 142 + cont_entry * 146 + cdef_entry * 100) / (256 * 300);
     }
 
 
@@ -202,6 +208,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<int, 16384>, 2> cdef_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
