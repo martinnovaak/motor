@@ -147,7 +147,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 245, 3);
+                int R = nmp + depth / nmp_div + std::min((static_eval - beta) / 245, 3);
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
@@ -427,7 +427,20 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
             break;
         }
 
-        std::cout << "info depth " << depth << " score cp " << score << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
+
+        std::string score_string = " score cp " + std::to_string(score);
+
+        if (std::abs(score) >= 19'000) {
+            if (score > 0) {
+                score_string = " mate " + std::to_string((20'000 - score + 1) / 2);
+            }
+            else {
+                score_string = " mate " + std::to_string(-(20'000 + score) / 2);
+            }
+        }
+
+        std::cout << "info depth " << depth << score_string << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
+        
         data.reset_nodes();
 
         best_move = data.best_move;
