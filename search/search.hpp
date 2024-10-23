@@ -84,7 +84,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
 
-    if (data.singular_move == 0 && tt_entry.zobrist == tt.upper(zobrist_key)) {
+    if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
@@ -102,7 +102,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        if (would_tt_prune) {
+        if (would_tt_prune && data.singular_move == 0) {
             if (is_pv) {
                 depth --;
             } else {
