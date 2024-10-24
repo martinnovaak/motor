@@ -56,13 +56,13 @@ public:
 
             if constexpr (!is_root) {
                 prev = data.prev_moves[data.get_ply() - 1];
-                update_history(continuation_table[prev.piece_type][prev.to][piece][to], bonus);
+                update_history(continuation_table[color][prev.piece_type][prev.to][piece][to], bonus);
                 if (data.get_ply() > 1) {
                     prev2 = data.prev_moves[data.get_ply() - 2];
-                    update_history(continuation_table[prev2.piece_type][prev2.to][piece][to], bonus);
+                    update_history(continuation_table[color][prev2.piece_type][prev2.to][piece][to], bonus);
                     if (data.get_ply() > 3) {
                         prev4 = data.prev_moves[data.get_ply() - 4];
-                        update_history(continuation_table[prev4.piece_type][prev4.to][piece][to], bonus);
+                        update_history(continuation_table[color][prev4.piece_type][prev4.to][piece][to], bonus);
                     }
                 }
             }
@@ -77,11 +77,11 @@ public:
                 update_history(material_history_table[material_key][color][qpiece][qto], penalty);
 
                 if constexpr (!is_root) {
-                    update_history(continuation_table[prev.piece_type][prev.to][qpiece][qto], penalty);
+                    update_history(continuation_table[color][prev.piece_type][prev.to][qpiece][qto], penalty);
                     if (data.get_ply() > 1) {
-                        update_history(continuation_table[prev2.piece_type][prev2.to][qpiece][qto], penalty);
+                        update_history(continuation_table[color][prev2.piece_type][prev2.to][qpiece][qto], penalty);
                         if (data.get_ply() > 3) {
-                            update_history(continuation_table[prev4.piece_type][prev4.to][qpiece][qto], penalty);
+                            update_history(continuation_table[color][prev4.piece_type][prev4.to][qpiece][qto], penalty);
                         }
                     }
                 }
@@ -108,13 +108,13 @@ public:
         int ply = data.get_ply();
         if (ply > 0) {
             auto prev = data.prev_moves[ply - 1];
-            move_score += 103 * continuation_table[prev.piece_type][prev.to][piece][to] / 100;
+            move_score += 103 * continuation_table[color][prev.piece_type][prev.to][piece][to] / 100;
             if (ply > 1) {
                 auto prev2 = data.prev_moves[ply - 2];
-                move_score += 92 * continuation_table[prev2.piece_type][prev2.to][piece][to] / 100;
+                move_score += 92 * continuation_table[color][prev2.piece_type][prev2.to][piece][to] / 100;
                 if (ply > 3) {
                     auto prev4 = data.prev_moves[ply - 4];
-                    move_score += 78 * continuation_table[prev4.piece_type][prev4.to][piece][to] / 100;
+                    move_score += 78 * continuation_table[color][prev4.piece_type][prev4.to][piece][to] / 100;
                 }
             }
         }
@@ -194,7 +194,7 @@ public:
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
-    std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_table;
+    std::array < std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
