@@ -23,7 +23,8 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}) {}
+              major_correction_table({}), threat_correction_table({}), continuation_correction_table({}), 
+              cdef_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -36,6 +37,7 @@ public:
         major_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
+        cdef_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -165,6 +167,15 @@ public:
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
+
+        auto [wcdef, bcdef] = chessboard.get_cdef_key();
+        int& wcdef_entry = cdef_correction_table[color][White][wcdef % 16384];
+        wcdef_entry = (wcdef_entry * (256 - weight) + diff * weight) / 256;
+        wcdef_entry = std::clamp(wcdef_entry, -8'192, 8'192);
+
+        int& bcdef_entry = cdef_correction_table[color][Black][wcdef % 16384];
+        bcdef_entry = (bcdef_entry * (256 - weight) + diff * weight) / 256;
+        bcdef_entry = std::clamp(bcdef_entry, -8'192, 8'192);
     }
 
     template <Color color>
@@ -180,6 +191,9 @@ public:
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
 
+        auto [wcdef, bcdef] = chessboard.get_cdef_key();
+        const int cdef_entry = cdef_correction_table[color][White][wcdef % 16384] + cdef_correction_table[color][Black][bcdef % 16384];
+
         int cont_entry = 0;
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
@@ -187,14 +201,14 @@ public:
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + major_entry * 84 + minor_entry * 146 + cont_entry * 150 + 70 * cdef_entry) / (256 * 300);
     }
 
 
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
-    std::array < std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
@@ -202,6 +216,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 2> cdef_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
