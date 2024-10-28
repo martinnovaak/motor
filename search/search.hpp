@@ -436,12 +436,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
         std::string score_string = " score cp " + std::to_string(score);
 
         if (std::abs(score) >= 19'000) {
-            if (score > 0) {
-                score_string = " mate " + std::to_string((20'000 - score + 1) / 2);
-            }
-            else {
-                score_string = " mate " + std::to_string(-(20'000 + score) / 2);
-            }
+            score_string = " score mate " + std::to_string(score > 0 ? (20'000 - score + 1) / 2 : -(20'000 + score) / 2);
         }
 
         std::cout << "info depth " << depth << score_string << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
