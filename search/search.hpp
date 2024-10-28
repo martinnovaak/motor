@@ -61,6 +61,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     bool in_check = false;
     if constexpr (!is_root) {
+        alpha = std::max(alpha, static_cast<std::int16_t>(-20'000 + data.get_ply()));
+        beta = std::min(beta, static_cast<std::int16_t>(20'000 - data.get_ply() - 1));
+        if (alpha > beta) {
+            return alpha;
+        }
+
         if (chessboard.is_draw()) {
             return 0;
         }
@@ -427,14 +433,21 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
             break;
         }
 
-        std::cout << "info depth " << depth << " score cp " << score << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
+        std::string score_string = " score cp " + std::to_string(score);
+
+        if (std::abs(score) >= 19'000) {
+            if (score > 0) {
+                score_string = " mate " + std::to_string((20'000 - score + 1) / 2);
+            }
+            else {
+                score_string = " mate " + std::to_string(-(20'000 + score) / 2);
+            }
+        }
+
+        std::cout << "info depth " << depth << score_string << " nodes " << data.nodes() << " nps " << data.nps() << " pv " << data.get_pv(depth) << std::endl;
         data.reset_nodes();
 
         best_move = data.best_move;
-
-        if (depth > 20 && std::abs(score) > 19'900) {
-            break;
-        }
     }
     std::cout << "bestmove " << best_move << "\n";
 }
