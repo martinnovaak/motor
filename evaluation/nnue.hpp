@@ -7,20 +7,20 @@
 
 #include <immintrin.h>
 
-constexpr unsigned int HIDDEN_SIZE = 1024;
+constexpr unsigned int HIDDEN_SIZE = 128;
 constexpr int QA = 403;
 constexpr int QB = 81;
-constexpr int Cells = 8;
+constexpr int Cells = 1;
 
 constexpr std::array<int, 64> buckets = {
-        0, 1, 2, 3, 11, 10, 9, 8,
-        4, 4, 5, 5, 13, 13, 12, 12,
-        6, 6, 6, 6, 14, 14, 14, 14,
-        6, 6, 6, 6, 14, 14, 14, 14,
-        7, 7, 7, 7, 15, 15, 15, 15,
-        7, 7, 7, 7, 15, 15, 15, 15,
-        7, 7, 7, 7, 15, 15, 15, 15,
-        7, 7, 7, 7, 15, 15, 15, 15,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
 };
 
 struct Weights {
@@ -31,7 +31,7 @@ struct Weights {
     std::int16_t output_bias;
 };
 
-INCBIN(Weights, "nnue.bin");
+INCBIN(Weights, "nnue_128_screlu.bin");
 const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
 
 enum class Operation {
