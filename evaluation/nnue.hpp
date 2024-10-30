@@ -159,6 +159,35 @@ public:
 
         return (sum / QA + weights.output_bias) * 400 / (QB * QA);
     }
+#elif defined(__AVX512F__)
+    template <Color color>
+    std::int32_t evaluate() {
+        const auto& stm_accumulator = color == White ? white_accumulator_stack[index] : black_accumulator_stack[index];
+        const auto& nstm_accumulator = color == White ? black_accumulator_stack[index] : white_accumulator_stack[index];
+
+        std::int32_t sum = 0;
+        sum += flatten_avx512(stm_accumulator.data(), weights.output_weight_STM.data());
+        sum += flatten_avx512(nstm_accumulator.data(), weights.output_weight_NSTM.data());
+
+        return (sum / QA + weights.output_bias) * 400 / (QB * QA);
+    }
+
+private:
+    std::int32_t flatten_avx512(const std::int16_t* accumulator, const std::int16_t* weights) {
+        constexpr int CHUNK = 32;
+        auto sum = _mm512_setzero_si512();
+        auto min = _mm512_setzero_si512();
+        auto max = _mm512_set1_epi16(QA);
+
+        for (int i = 0; i < hidden_size / CHUNK; i++) {
+            auto us_vector = _mm512_loadu_si512(reinterpret_cast<const __m512i*>(accumulator + i * CHUNK));
+            auto weights_vec = _mm512_loadu_si512(reinterpret_cast<const __m512i*>(weights + i * CHUNK));
+            auto clamped = _mm512_min_epi16(_mm512_max_epi16(us_vector, min), max);
+            auto mul = _mm512_madd_epi16(clamped, weights_vec);
+            sum = _mm512_add_epi32(sum, mul);
+        }
+        return _mm512_reduce_add_epi32(sum);
+    }
 #else
     template <Color color>
     std::int32_t evaluate() {
