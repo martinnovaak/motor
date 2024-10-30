@@ -183,7 +183,7 @@ private:
             auto us_vector = _mm512_loadu_si512(reinterpret_cast<const __m512i*>(accumulator + i * CHUNK));
             auto weights_vec = _mm512_loadu_si512(reinterpret_cast<const __m512i*>(weights + i * CHUNK));
             auto clamped = _mm512_min_epi16(_mm512_max_epi16(us_vector, min), max);
-            auto mul = _mm512_madd_epi16(clamped, weights_vec);
+            auto mul = _mm512_madd_epi16(clamped, _mm512_mullo_epi16(clamped, weights_vec));
             sum = _mm512_add_epi32(sum, mul);
         }
         return _mm512_reduce_add_epi32(sum);
