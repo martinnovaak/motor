@@ -135,7 +135,8 @@ public:
         entry = (entry * (256 - weight) + diff * weight) / 256;
         entry = std::clamp(entry, -8'192, 8'192);
 
-        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
+        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>())
+                                   ^ murmur_hash_3(chessboard.pin_orthogonal() | chessboard.pin_diagonal());
         int &threat_entry = threat_correction_table[color][threat_key % 32768];
         threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
         threat_entry = std::clamp(threat_entry, -8'192, 8'192);
@@ -165,7 +166,8 @@ public:
     template <Color color>
     std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval) {
         if (std::abs(raw_eval) > 8'000) return raw_eval;
-        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
+        std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>())
+                ^ murmur_hash_3(chessboard.pin_orthogonal() | chessboard.pin_diagonal());
 
         const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 32768];
