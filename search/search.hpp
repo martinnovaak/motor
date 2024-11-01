@@ -130,6 +130,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     data.improving[data.get_ply()] = static_eval;
     int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+    if (!in_check && !improving && static_eval >= beta + 80) improving = 1;
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
