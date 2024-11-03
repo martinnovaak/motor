@@ -429,9 +429,9 @@ public:
             state->pawn_key.update_psqt_hash(color, piece, square);
         } else {
             state->nonpawn_key[color].update_psqt_hash(color, piece, square);
-            if (piece == Queen || piece == Rook) {
+            if (piece == Queen || piece == Knight) {
                 state->major_key.update_psqt_hash(color, piece, square);
-            } else if (piece == Knight || piece == Bishop) {
+            } else if (piece == Rook || piece == Bishop) {
                 state->minor_key.update_psqt_hash(color, piece, square);
             } else {
                 state->minor_key.update_psqt_hash(color, piece, square);
