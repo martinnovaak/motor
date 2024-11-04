@@ -89,6 +89,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    bool tt_hit = false;
 
     if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
@@ -97,6 +98,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         raw_eval = tt_entry.static_eval;
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
+        tt_hit = true;
 
         if constexpr (!is_root) {
             if (tt_entry.depth >= depth + 2 * is_pv) {
@@ -123,9 +125,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
-        if (data.singular_move == 0 && depth >= iir_depth) {
-            depth--;
-        }
+    }
+
+    if (data.singular_move == 0 && depth >= iir_depth && (cutnode || is_pv) && (!tt_hit || tt_entry.depth + 4 < depth)) {
+        depth--;
     }
 
     data.improving[data.get_ply()] = static_eval;
