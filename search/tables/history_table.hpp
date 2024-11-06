@@ -156,9 +156,9 @@ public:
         if (std::abs(raw_eval) > 8'000) return raw_eval;
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
-        const int entry = 25 * correction_table[color][chessboard.get_pawn_key() % 16384];
-        const int threat_entry = 15 * threat_correction_table[color][threat_key % 32768];
-        const int minor_entry = 20 * minor_correction_table[color][chessboard.get_minor_key() % 16384];
+        const int entry = 23 * correction_table[color][chessboard.get_pawn_key() % 16384];
+        const int threat_entry = 14 * threat_correction_table[color][threat_key % 32768];
+        const int minor_entry = 18 * minor_correction_table[color][chessboard.get_minor_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = 20 * (nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384]);
@@ -167,7 +167,7 @@ public:
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            cont_entry = 20 * continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            cont_entry = 18 * continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
         return raw_eval + (entry + threat_entry + nonpawn_entry + minor_entry + cont_entry) / 1024;
