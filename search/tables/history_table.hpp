@@ -8,6 +8,13 @@
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
+#include "../tuning_options.hpp"
+
+TuningOption pawn_weight("pawn_weight", 250, 0, 600);
+TuningOption nonpawn_weight("nonpawn_weight", 200, 0, 600);
+TuningOption threat_weight("threat_weight", 150, 0, 600);
+TuningOption minor_weight("minor_weight", 200, 0, 600);
+TuningOption concorrde_weight("concorrde_weight", 200, 0, 600);
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     key ^= key >> 33;
@@ -156,28 +163,28 @@ public:
         if (std::abs(raw_eval) > 8'000) return raw_eval;
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
-        const int entry = 23 * correction_table[color][chessboard.get_pawn_key() % 16384];
-        const int threat_entry = 14 * threat_correction_table[color][threat_key % 32768];
-        const int minor_entry = 18 * minor_correction_table[color][chessboard.get_minor_key() % 16384];
+        const int entry = pawn_weight.value * correction_table[color][chessboard.get_pawn_key() % 16384];
+        const int threat_entry = threat_weight.value * threat_correction_table[color][threat_key % 32768];
+        const int minor_entry = minor_weight.value * minor_correction_table[color][chessboard.get_minor_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
-        const int nonpawn_entry = 20 * (nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384]);
+        const int nonpawn_entry = nonpawn_weight.value * (nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384]);
 
         int cont_entry = 0;
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            cont_entry = 18 * continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            cont_entry = concorrde_weight.value * continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
         }
 
-        return raw_eval + (entry + threat_entry + nonpawn_entry + minor_entry + cont_entry) / 1024;
+        return raw_eval + (entry + threat_entry + nonpawn_entry + minor_entry + cont_entry) / 10240;
     }
 
 
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
-    std::array < std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
