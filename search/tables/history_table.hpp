@@ -10,11 +10,11 @@
 #include "../search_data.hpp"
 #include "../tuning_options.hpp"
 
-TuningOption pawn_weight("pawn_weight", 250, 0, 600);
-TuningOption nonpawn_weight("nonpawn_weight", 200, 0, 600);
-TuningOption threat_weight("threat_weight", 150, 0, 600);
-TuningOption minor_weight("minor_weight", 200, 0, 600);
-TuningOption concorrde_weight("concorrde_weight", 200, 0, 600);
+TuningOption pawn_weight("pawn_weight", 261, 0, 600);
+TuningOption nonpawn_weight("nonpawn_weight", 196, 0, 600);
+TuningOption threat_weight("threat_weight", 140, 0, 600);
+TuningOption minor_weight("minor_weight", 198, 0, 600);
+TuningOption concorrde_weight("concorrde_weight", 189, 0, 600);
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     key ^= key >> 33;
