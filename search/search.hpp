@@ -38,6 +38,7 @@ TuningOption nmp_div("nmp_div", 245, 50, 400);
 TuningOption prob_beta("prob_beta", 214, 50, 350);
 TuningOption fp_base("fp_base", 124, 50, 350);
 TuningOption fp_mul("fp_mul", 305, 50, 500);
+TuningOption fp_history_div("fp_history_div", 6000, 1000, 25000);
 TuningOption see_quiet("see_quiet", 97, 30, 200);
 TuningOption see_noisy("see_noisy", 36, 10, 150);
 TuningOption asp_window("asp_window", 20, 8, 40);
@@ -230,7 +231,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         continue;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
+                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / fp_history_div.value);
                     if (lmr_depth < fp_depth && static_eval + fp_base.value + fp_mul.value * lmr_depth <= alpha) {
                         continue;
                     }

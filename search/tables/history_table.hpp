@@ -24,6 +24,8 @@ TuningOption nonpawn_weight("nonpawn_weight", 134, 0, 600);
 TuningOption threat_weight("threat_weight", 88, 0, 600);
 TuningOption minor_weight("minor_weight", 146, 0, 600);
 TuningOption concorrde_weight("concorrde_weight", 150, 0, 600);
+TuningOption history_mul("history_mul", 236, 50, 500);
+TuningOption corrhist_max("corrhist_max", 16, 4, 32);
 
 class History {
 public:
@@ -137,35 +139,36 @@ public:
 
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
+        int corr_max = corrhist_max.value * 512;
 
         int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         entry = (entry * (256 - weight) + diff * weight) / 256;
-        entry = std::clamp(entry, -8'192, 8'192);
+        entry = std::clamp(entry, -corr_max, corr_max);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         int &threat_entry = threat_correction_table[color][threat_key % 32768];
         threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
-        threat_entry = std::clamp(threat_entry, -8'192, 8'192);
+        threat_entry = std::clamp(threat_entry, -corr_max, corr_max);
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         int &white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
         white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-        white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
+        white_nonpawn_entry = std::clamp(white_nonpawn_entry, -corr_max, corr_max);
 
         int &black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
         black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-        black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
+        black_nonpawn_entry = std::clamp(black_nonpawn_entry, -corr_max, corr_max);
 
         int &minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
-        minor_entry = std::clamp(minor_entry, -8'192, 8'192);
+        minor_entry = std::clamp(minor_entry, -corr_max, corr_max);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
             int &cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
-            cont_entry = std::clamp(cont_entry, -8'192, 8'192);
+            cont_entry = std::clamp(cont_entry, -corr_max, corr_max);
         }
     }
 
@@ -195,7 +198,7 @@ public:
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
-    std::array < std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
@@ -204,7 +207,7 @@ private:
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
 
     int history_bonus(int depth) const {
-        return std::min(2040, 236 * depth);
+        return std::min(2040, history_mul.value * depth);
     }
 
     void update_history(int &value, int bonus) const {
