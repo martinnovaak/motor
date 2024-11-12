@@ -37,6 +37,7 @@ struct board_info {
     zobrist pawn_key = {};
     zobrist minor_key = {};
     zobrist major_key = {};
+    zobrist wing_key = {};
     std::array<zobrist, 2> nonpawn_key = {};
     std::uint64_t threats = {};
     std::uint64_t checkers = {};
@@ -73,6 +74,7 @@ public:
         state->pawn_key = zobrist();
         state->major_key = zobrist();
         state->minor_key = zobrist();
+        state->wing_key = zobrist();
         state->nonpawn_key[White] = state->nonpawn_key[Black] = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -306,6 +308,7 @@ public:
         state->minor_key = old_info->minor_key;
         state->major_key = old_info->major_key;
         state->nonpawn_key = old_info->nonpawn_key;
+        state->wing_key = old_info->wing_key;
         state->enpassant = Square::Null_Square;
         state->fifty_move_clock++;
         state->castling_rights = old_info->castling_rights;
@@ -341,6 +344,10 @@ public:
 
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
         return { state->nonpawn_key[White].get_key(), state->nonpawn_key[Black].get_key()};
+    }
+
+    [[nodiscard]] std::uint64_t get_wing_key() const {
+        return state->wing_key.get_key();
     }
 
     [[nodiscard]] chess_move get_last_played_move() const {
@@ -414,6 +421,7 @@ public:
         state->major_key = old_state->major_key;
         state->minor_key = old_state->minor_key;
         state->nonpawn_key = old_state->nonpawn_key;
+        state->wing_key = old_state->wing_key;
         state->enpassant = Null_Square;
         state->castling_rights = old_state->castling_rights;
         state->fifty_move_clock = old_state->fifty_move_clock + 1;
@@ -424,6 +432,10 @@ public:
 
     void update_hash(Color color, Piece piece, Square square) {
         state->hash_key.update_psqt_hash(color, piece, square);
+
+        if (bb(square) & 0x81c3e7e7c38100ull) {
+            state->wing_key.update_psqt_hash(color, piece, square);
+        }
 
         if (piece == Pawn) {
             state->pawn_key.update_psqt_hash(color, piece, square);
