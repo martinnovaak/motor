@@ -33,18 +33,18 @@ constexpr int asp_window_max = 650;
 constexpr int asp_depth = 8;
 
 TuningOption razoring("razoring", 500, 200, 700);
-TuningOption rfp("rfp", 154, 50, 300);
-TuningOption nmp_div("nmp_div", 245, 50, 400);
-TuningOption prob_beta("prob_beta", 214, 50, 350);
-TuningOption fp_base("fp_base", 124, 50, 350);
-TuningOption fp_mul("fp_mul", 305, 50, 500);
+TuningOption rfp("rfp", 146, 50, 300);
+TuningOption nmp_div("nmp_div", 235, 50, 400);
+TuningOption prob_beta("prob_beta", 225, 50, 350);
+TuningOption fp_base("fp_base", 126, 50, 350);
+TuningOption fp_mul("fp_mul", 309, 50, 500);
 TuningOption fp_history_div("fp_history_div", 6000, 1000, 25000);
-TuningOption see_quiet("see_quiet", 97, 30, 200);
+TuningOption see_quiet("see_quiet", 103, 30, 200);
 TuningOption see_noisy("see_noisy", 36, 10, 150);
 TuningOption asp_window("asp_window", 20, 8, 40);
-TuningOption se_mul("se_mul", 100, 40, 300);
-TuningOption double_margin("double_margin", 19, 5, 50);
-TuningOption double_exts("double_exts", 7, 4, 20);
+TuningOption se_mul("se_mul", 102, 40, 300);
+TuningOption double_margin("double_margin", 18, 5, 50);
+TuningOption double_exts("double_exts", 8, 4, 20);
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
@@ -255,7 +255,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 tt_entry.bound != Bound::UPPER &&
                 data.singular_move == 0)
             {
-                int s_beta = tt_entry.score - se_mul.value * depth / 80;
+                int s_beta = tt_entry.score - depth;
                 data.singular_move = chessmove.get_value();
                 int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
                 data.singular_move = 0;
