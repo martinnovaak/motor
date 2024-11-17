@@ -11,11 +11,11 @@ struct time_info {
     int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64, max_nodes = INT_MAX / 2;
 };
 
-TuningOption tm_expect_mul("tm_expect_mul", 40, 20, 70);
-TuningOption tm_mul("tm_mul", 80, 40, 150);
-TuningOption tm_stability_const("tm_stability_const", 135, 50, 400);
+TuningOption tm_expect_mul("tm_expect_mul", 41, 20, 70);
+TuningOption tm_mul("tm_mul", 86, 40, 150);
+TuningOption tm_stability_const("tm_stability_const", 137, 50, 400);
 TuningOption tm_stability_mul("tm_stability_mul", 35, 10, 100);
-TuningOption tm_node_const("tm_node_const", 50, 10, 400);
+TuningOption tm_node_const("tm_node_const", 51, 10, 400);
 TuningOption tm_node_mul("tm_node_mul", 200, 50, 400);
 
 class time_keeper {
