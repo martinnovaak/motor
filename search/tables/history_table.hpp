@@ -23,7 +23,7 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}) {}
+              threat_correction_table({}), continuation_correction_table({}), last_visit_table({}) {}
 
     void clear() {
         history_table = {};
@@ -35,21 +35,28 @@ public:
         minor_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
+        last_visit_table = {};
     }
 
     template <Color color, bool is_root>
     void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth, int material_key) {
-        int bonus = history_bonus(depth);
-        int penalty = -bonus;
-
         auto [piece, from, to] = data.prev_moves[data.get_ply()];
         history_move prev = {}, prev2 = {}, prev4 = {};
 
         std::uint64_t threats = chessboard.get_threats();
 
+        bool threat_from = (threats & bb(from));
+        bool threat_to = (threats & bb(to));
+
+        const std::uint16_t last_major_key = last_visit_table[color][threat_from][threat_to][piece][to];
+        const std::uint16_t new_major_key = chessboard.get_major_key() % 65536;
+        last_visit_table[color][threat_from][threat_to][piece][to] = new_major_key;
+        const bool structure_changed = last_major_key != new_major_key;
+
+        int bonus = history_bonus(depth + structure_changed);
+        int penalty = -bonus;
+
         if (chessboard.is_quiet(best_move)) {
-            bool threat_from = (threats & bb(from));
-            bool threat_to = (threats & bb(to));
             update_history(history_table[color][threat_from][threat_to][from][to], bonus);
             update_history(material_history_table[material_key][color][piece][to], bonus);
 
@@ -195,6 +202,7 @@ private:
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
+    std::array<std::array<std::array<std::array<std::array<std::uint16_t, 64>, 6>, 2>, 2>, 2> last_visit_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
