@@ -5,10 +5,18 @@
 #include <cstdint>
 #include <climits>
 #include "../chess_board/chess_move.hpp"
+#include "tuning_options.hpp"
 
 struct time_info {
     int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64, max_nodes = INT_MAX / 2;
 };
+
+TuningOption tm_expect_mul("tm_expect_mul", 41, 20, 70);
+TuningOption tm_mul("tm_mul", 86, 40, 150);
+TuningOption tm_stability_const("tm_stability_const", 137, 50, 400);
+TuningOption tm_stability_mul("tm_stability_mul", 35, 10, 100);
+TuningOption tm_node_const("tm_node_const", 51, 10, 400);
+TuningOption tm_node_mul("tm_node_mul", 200, 50, 400);
 
 class time_keeper {
 public:
@@ -27,10 +35,9 @@ public:
 
         if (time == -1) {
             inf_time = true;
-        }
-        else if(movestogo == 0) {
-            double time_divider = 40 * std::pow(1.0 + 1.5 * std::pow(double(move_count) / 40, 2), 0.5) - move_count;
-            optimal_time_limit = std::clamp(0.8 * (time_minus_threshold / time_divider + increment), 10.0, std::max(50.0, time_minus_threshold / 2.0));
+        } else if (movestogo == 0) {
+            double time_divider = tm_expect_mul.value * std::pow(1.0 + 1.5 * std::pow(double(move_count) / tm_expect_mul.value, 2), 0.5) - move_count;
+            optimal_time_limit = std::clamp((tm_mul.value / 100.0) * (time_minus_threshold / time_divider + increment), 10.0, std::max(50.0, time_minus_threshold / 2.0));
             time_limit = std::clamp(time_minus_threshold / std::log(time_divider) + increment, 10.0, std::max(50.0, time_minus_threshold / 2.0));
         } else {
             time_limit = increment + 950 * time / movestogo / 1000;
@@ -66,11 +73,10 @@ public:
                 stability_count = 0;
                 last_best_move = best_move;
             }
-            constexpr std::array<double, 7> stability_values = {2.2, 1.6, 1.4, 1.1, 1.0, 0.95, 0.9};
-            stability_scale = stability_values[std::min(6, stability_count)];
+            stability_scale = tm_stability_const.value / 100.0 - tm_stability_mul.value / 1000.0 * std::min(10, stability_count);
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
-            opt_scale = bm_frac * 2.0 + 0.5;
+            opt_scale = bm_frac * tm_node_mul.value / 100.0 + tm_node_const.value / 100.0;
         }
 
         if (elapsed() >= std::min(optimal_time_limit * opt_scale * stability_scale, double(time_limit))) {
