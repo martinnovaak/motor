@@ -15,9 +15,7 @@
 #include "../search/bench.hpp"
 #include "../perft.hpp"
 
-std::vector<TuningOption*> tuning_options = {
-        &tm_expect_mul, &tm_mul, &tm_stability_const, &tm_stability_mul, &tm_node_const, &tm_node_mul
-};
+std::vector<TuningOption*> tuning_options = {};
 
 void print_tune_options() {
     std::cout << "name,type,default,min,max,step,0.002" << std::endl;
@@ -53,8 +51,8 @@ bool parse_move(board & b, const std::string& move_string) {
 
 void position_uci(board & b, const std::string & command) {
     // Initialize from FEN string
-    int fen_pos = command.find("fen");
-    int moves_pos = command.find("moves");
+    auto fen_pos = command.find("fen");
+    auto moves_pos = command.find("moves");
 
     if (command.find("startpos") != std::string::npos) {
         b.fen_to_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -67,7 +65,6 @@ void position_uci(board & b, const std::string & command) {
         set_position(b);
         return;
     }
-
 
     std::stringstream move_ss(command.substr(moves_pos + 5));
     std::vector<std::string> moves;
