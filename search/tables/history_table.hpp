@@ -189,9 +189,9 @@ public:
                 (popcount(chessboard.get_pieces(White, Rook) + chessboard.get_pieces(Black, Rook))) * 2 +
                 (popcount(chessboard.get_pieces(White, Queen) + chessboard.get_pieces(Black, Queen))) * 4;
 
-        int material = std::min(game_phase, 12);
+        int material = std::clamp(game_phase, 8, 16);
 
-        return raw_eval + correction * (56 + material) / 64;
+        return raw_eval + correction * (52 + material) / 64;
     }
 
 
