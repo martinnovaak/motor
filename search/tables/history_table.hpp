@@ -18,10 +18,21 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     return key;
 }
 
+std::array<int, 64> quarters = {
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 1, 1, 1,
+        2, 2, 2, 2, 3, 3, 3, 3,
+        2, 2, 2, 2, 3, 3, 3, 3,
+        2, 2, 2, 2, 3, 3, 3, 3,
+        2, 2, 2, 2, 3, 3, 3, 3,
+};
+
 class History {
 public:
     History()
-            : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
+            : history_table({}), material_history_table({}), continuation_table({}), sequence_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}) {}
 
@@ -29,6 +40,7 @@ public:
         history_table = {};
         material_history_table = {};
         continuation_table = {};
+        sequence_table = {};
         capture_table = {};
         correction_table = {};
         nonpawn_correction_table = {};
@@ -59,6 +71,7 @@ public:
                 if (data.get_ply() > 1) {
                     prev2 = data.prev_moves[data.get_ply() - 2];
                     update_history(continuation_table[color][prev2.piece_type][prev2.to][piece][to], bonus);
+                    update_history(sequence_table[color][prev2.piece_type][quarters[prev2.to]][prev.piece_type][quarters[prev.to]][piece][to], bonus);
                     if (data.get_ply() > 3) {
                         prev4 = data.prev_moves[data.get_ply() - 4];
                         update_history(continuation_table[color][prev4.piece_type][prev4.to][piece][to], bonus);
@@ -79,6 +92,7 @@ public:
                     update_history(continuation_table[color][prev.piece_type][prev.to][qpiece][qto], penalty);
                     if (data.get_ply() > 1) {
                         update_history(continuation_table[color][prev2.piece_type][prev2.to][qpiece][qto], penalty);
+                        update_history(sequence_table[color][prev2.piece_type][quarters[prev2.to]][prev.piece_type][quarters[prev.to]][qpiece][qto], penalty);
                         if (data.get_ply() > 3) {
                             update_history(continuation_table[color][prev4.piece_type][prev4.to][qpiece][qto], penalty);
                         }
@@ -111,6 +125,7 @@ public:
             if (ply > 1) {
                 auto prev2 = data.prev_moves[ply - 2];
                 move_score += 92 * continuation_table[color][prev2.piece_type][prev2.to][piece][to] / 100;
+                move_score += sequence_table[color][prev2.piece_type][quarters[prev2.to]][prev.piece_type][quarters[prev.to]][piece][to];
                 if (ply > 3) {
                     auto prev4 = data.prev_moves[ply - 4];
                     move_score += 78 * continuation_table[color][prev4.piece_type][prev4.to][piece][to] / 100;
@@ -189,6 +204,7 @@ private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
+    std::array<std::array<std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 4>, 7>, 4>, 7>, 2> sequence_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
