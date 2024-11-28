@@ -19,7 +19,7 @@ constexpr int razoring = 500;
 constexpr int razoring_depth = 3;
 constexpr int rfp = 154;
 constexpr int rfp_depth = 9;
-constexpr int nmp = 3;
+constexpr int nmp = 4;
 constexpr int nmp_div = 3;
 constexpr int nmp_depth = 3;
 constexpr int lmp_base = 2;
@@ -150,10 +150,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
 
             // NULL MOVE PRUNING
-            if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
+            if (!is_pv && node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 245, 3) + !is_pv;
+                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 245, 3);
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
