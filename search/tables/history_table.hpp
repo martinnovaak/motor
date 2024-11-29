@@ -129,35 +129,35 @@ public:
     void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth) {
 
         int diff = (best_score - raw_eval) * 256;
-        int weight = std::min(128, depth * (depth + 1));
+        int weight = std::min(6 * depth * depth + 12 * depth + 6, 2048);
 
         int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-        entry = (entry * (256 - weight) + diff * weight) / 256;
+        entry = (entry * (4096 - weight) + diff * weight) / 4096;
         entry = std::clamp(entry, -8'192, 8'192);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         int &threat_entry = threat_correction_table[color][threat_key % 32768];
-        threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
+        threat_entry = (threat_entry * (4096 - weight) + diff * weight) / 4096;
         threat_entry = std::clamp(threat_entry, -8'192, 8'192);
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         int &white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
-        white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
+        white_nonpawn_entry = (white_nonpawn_entry * (4096 - weight) + diff * weight) / 4096;
         white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
 
         int &black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
-        black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
+        black_nonpawn_entry = (black_nonpawn_entry * (4096 - weight) + diff * weight) / 4096;
         black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
 
         int &minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-        minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
+        minor_entry = (minor_entry * (4096 - weight) + diff * weight) / 4096;
         minor_entry = std::clamp(minor_entry, -8'192, 8'192);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
             int &cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
-            cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
+            cont_entry = (cont_entry * (4096 - weight) + diff * weight) / 4096;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
         }
     }
