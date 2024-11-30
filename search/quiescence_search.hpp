@@ -21,7 +21,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         return evaluate<color>(chessboard);
     }
 
-    if (chessboard.is_draw()) {
+    if (chessboard.is_draw(data.get_ply())) {
         return 0;
     }
 

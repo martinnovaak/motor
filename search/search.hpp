@@ -67,7 +67,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             return alpha;
         }
 
-        if (chessboard.is_draw()) {
+        if (chessboard.is_draw(data.get_ply())) {
             return 0;
         }
 

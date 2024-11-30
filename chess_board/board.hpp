@@ -265,7 +265,7 @@ public:
         return side_occupancy[side] == (bitboards[side][Pawn] | bitboards[side][King]);
     }
 
-    [[nodiscard]] bool is_draw() const {
+    [[nodiscard]] bool is_draw(int ply) const {
         if (state->fifty_move_clock < 4) {
             return false;
         }
@@ -277,9 +277,14 @@ public:
         const int current_index = state - history.data();
         const int end = std::max(0, current_index - static_cast<int>(state->fifty_move_clock));
 
+        int repetitions = 0;
+
         for (int i = current_index - 4; i >= end; i -= 2) {
             if (history[i].hash_key == state->hash_key) {
-                return true;
+                if (i > current_index - ply) return true;
+
+                repetitions++;
+                if (repetitions >= 2) return true;
             }
         }
 
