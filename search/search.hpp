@@ -243,7 +243,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 }
 
 
-                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth;
+                int see_margin = is_quiet ? -see_quiet * depth : -see_noisy * depth * depth - movelist.get_move_score(moves_searched) / 60;
                 if (depth <= 6 + is_quiet * 4 && !see<color>(chessboard, chessmove, see_margin)) {
                     continue;
                 }
