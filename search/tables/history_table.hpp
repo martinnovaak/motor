@@ -159,6 +159,13 @@ public:
             int &cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
+
+            if (data.get_ply() > 2) {
+                auto prev3 = data.prev_moves[data.get_ply() - 2];
+                int &cont_entry2 = continuation_correction_table[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                cont_entry2 = (cont_entry2 * (256 - weight) + diff * weight) / 256;
+                cont_entry2 = std::clamp(cont_entry2, -8'192, 8'192);
+            }
         }
     }
 
@@ -179,6 +186,10 @@ public:
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            if (data.get_ply() > 2) {
+                auto prev3 = data.prev_moves[data.get_ply() - 2];
+                cont_entry += continuation_correction_table[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+            }
         }
 
         return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + minor_entry * 146 + cont_entry * 150) / (256 * 300);
