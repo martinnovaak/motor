@@ -165,6 +165,13 @@ public:
                 int &cont_entry2 = continuation_correction_table[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
                 cont_entry2 = (cont_entry2 * (256 - weight) + diff * weight) / 256;
                 cont_entry2 = std::clamp(cont_entry2, -8'192, 8'192);
+
+                if (data.get_ply() > 3) {
+                    auto prev4 = data.prev_moves[data.get_ply() - 3];
+                    int &cont_entry3 = continuation_correction_table[prev4.piece_type][prev4.to][prev1.piece_type][prev1.to];
+                    cont_entry3 = (cont_entry3 * (256 - weight) + diff * weight) / 256;
+                    cont_entry3 = std::clamp(cont_entry3, -8'192, 8'192);
+                }
             }
         }
     }
@@ -183,6 +190,7 @@ public:
 
         int cont_entry = 0;
         int cont_entry2 = 0;
+        int cont_entry3 = 0;
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
@@ -190,10 +198,14 @@ public:
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 2];
                 cont_entry2 = continuation_correction_table[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                if (data.get_ply() > 3) {
+                    auto prev4 = data.prev_moves[data.get_ply() - 3];
+                    cont_entry3 = continuation_correction_table[prev4.piece_type][prev4.to][prev1.piece_type][prev1.to];
+                }
             }
         }
 
-        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + minor_entry * 146 + cont_entry * 150 + cont_entry2 * 100) / (256 * 300);
+        return raw_eval + (entry * 192 + threat_entry * 88 + nonpawn_entry * 134 + minor_entry * 146 + cont_entry * 100 + cont_entry2 * 100 + cont_entry3 * 100) / (256 * 300);
     }
 
 
