@@ -303,6 +303,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction += cutnode * 2;
                 }
                 reduction -= tt_pv;
+                reduction -= !in_check && (std::abs(static_eval - raw_eval) > 80);
 
                 reduction = std::clamp(reduction, 0, depth - 2);
             } else {
