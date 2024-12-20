@@ -9,13 +9,13 @@
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
 
-TuningOption pawn_weight("pawn_weight", 100, 0, 600);
-TuningOption nonpawn_weight("nonpawn_weight", 150, 0, 600);
-TuningOption threat_weight("threat_weight", 50, 0, 600);
-TuningOption minor_weight("minor_weight", 0, 0, 600);
-TuningOption concorrde_weight("concorrde_weight", 100, 0, 600);
-TuningOption concorrde2_weight("concorrde2_weight", 100, 0, 600);
-TuningOption concorrde3_weight("concorrde3_weight", 100, 0, 600);
+TuningOption pawn_weight("pawn_weight", 148, 0, 600);
+TuningOption nonpawn_weight("nonpawn_weight", 112, 0, 600);
+TuningOption threat_weight("threat_weight", 62, 0, 600);
+TuningOption minor_weight("minor_weight", 150, 0, 600);
+TuningOption concorrde_weight("concorrde_weight", 95, 0, 600);
+TuningOption concorrde2_weight("concorrde2_weight", 115, 0, 600);
+TuningOption concorrde3_weight("concorrde3_weight", 115, 0, 600);
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     key ^= key >> 33;
