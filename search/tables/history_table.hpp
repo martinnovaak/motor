@@ -197,7 +197,7 @@ private:
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
 
     int history_bonus(int depth) const {
-        return std::min(2040, 236 * depth);
+        return std::min(3000, 300 * depth);
     }
 
     void update_history(int &value, int bonus) const {
