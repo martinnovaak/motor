@@ -438,7 +438,7 @@ public:
     void update_hash(Color color, Piece piece, Square square) {
         state->hash_key.update_psqt_hash(color, piece, square);
 
-        if (bb(square) & 0x9999999999999999ull) {
+        if (bb(square) & 0x1818181818181818ull) {
             state->adeh_key.update_psqt_hash(color, piece, square);
         }
 
