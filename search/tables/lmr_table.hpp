@@ -18,4 +18,16 @@ std::array<std::array<int, 218>, 96> initializeReductions(int lmr = 420) {
 
 auto lmr_table = initializeReductions();
 
+std::array<int, 256> initializeCorrhistBonus() {
+    std::array<int, 256> bonus_table = {};
+
+    for (int j = 1; j <= 256; j++) {
+        bonus_table[j - 1] = std::log2(std::sinh(j * j));
+    }
+
+    return bonus_table;
+}
+
+auto corrhist_bonus_table = initializeCorrhistBonus();
+
 #endif //MOTOR_LMR_TABLE_HPP
