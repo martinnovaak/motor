@@ -89,6 +89,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    int correction = 0;
 
     if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
@@ -97,6 +98,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         raw_eval = tt_entry.static_eval;
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
+        correction = static_eval - raw_eval;
 
         if constexpr (!is_root) {
             if (tt_entry.depth >= depth + 2 * is_pv) {
@@ -123,6 +125,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        correction = static_eval - raw_eval;
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -142,6 +145,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 if (razor_eval <= alpha) {
                     return razor_eval;
                 }
+            }
+
+            if (depth <= 2 && correction > 80 && eval - 50 * depth >= beta) {
+                return eval;
             }
 
             // reverse futility pruning
