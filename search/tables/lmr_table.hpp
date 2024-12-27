@@ -22,7 +22,7 @@ std::array<int, 256> initializeCorrhistBonus() {
     std::array<int, 256> bonus_table = {};
 
     for (int j = 1; j <= 256; j++) {
-        bonus_table[j - 1] = std::log2(std::sinh(2 * j * j));
+        bonus_table[j - 1] = std::log2(std::sinh(1.41 * j * j));
     }
 
     return bonus_table;
