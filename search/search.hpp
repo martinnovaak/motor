@@ -38,7 +38,7 @@ constexpr int double_exts = 7;
 
 constexpr int lmr_depth = 2;
 constexpr int lmr_quiet_history = 13500;
-constexpr int asp_window = 20;
+constexpr int asp_window = 10;
 constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 650;
 constexpr int asp_depth = 8;
@@ -402,7 +402,7 @@ std::int16_t aspiration_window(board& chessboard, search_data& data, std::int16_
             break;
         }
 
-        window += window / 3;
+        window += window / 4;
         if (window > asp_window_max) {
             window = INF;
         }
