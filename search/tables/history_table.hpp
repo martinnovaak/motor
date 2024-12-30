@@ -21,13 +21,17 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
 class History {
 public:
     History()
-            : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
+            : history_table({}), material_history_table({}), pawn_history_table({}),
+              minor_history_table({}), major_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}) {}
 
     void clear() {
         history_table = {};
         material_history_table = {};
+        pawn_history_table = {};
+        minor_history_table = {};
+        major_history_table = {};
         continuation_table = {};
         capture_table = {};
         correction_table = {};
@@ -39,19 +43,28 @@ public:
 
     template <Color color, bool is_root>
     void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth, int material_key) {
-        int bonus = history_bonus(depth);
+        int bonus = history_bonus(depth, false);
         int penalty = -bonus;
+
+        int structure_bonus = history_bonus(depth, true);
+        int structure_penalty = -structure_bonus;
 
         auto [piece, from, to] = data.prev_moves[data.get_ply()];
         history_move prev = {}, prev2 = {}, prev4 = {};
 
         std::uint64_t threats = chessboard.get_threats();
+        int pawn_key = chessboard.get_pawn_key() % 512;
+        int minor_key = chessboard.get_minor_key() % 512;
+        int major_key = chessboard.get_major_key() % 512;
 
         if (chessboard.is_quiet(best_move)) {
             bool threat_from = (threats & bb(from));
             bool threat_to = (threats & bb(to));
             update_history(history_table[color][threat_from][threat_to][from][to], bonus);
-            update_history(material_history_table[material_key][color][piece][to], bonus);
+            update_structure_history(material_history_table[material_key][color][piece][to], structure_bonus);
+            update_structure_history(pawn_history_table[pawn_key][color][piece][to], structure_bonus);
+            update_structure_history(minor_history_table[minor_key][color][piece][to], structure_bonus);
+            update_structure_history(major_history_table[major_key][color][piece][to], structure_bonus);
 
             if constexpr (!is_root) {
                 prev = data.prev_moves[data.get_ply() - 1];
@@ -73,7 +86,10 @@ public:
                 bool qthreat_from = (threats & bb(qfrom));
                 bool qthreat_to = (threats & bb(qto));
                 update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
-                update_history(material_history_table[material_key][color][qpiece][qto], penalty);
+                update_structure_history(material_history_table[material_key][color][qpiece][qto], structure_penalty);
+                update_structure_history(pawn_history_table[pawn_key][color][qpiece][qto], structure_penalty);
+                update_structure_history(minor_history_table[minor_key][color][qpiece][qto], structure_penalty);
+                update_structure_history(major_history_table[major_key][color][qpiece][qto], structure_penalty);
 
                 if constexpr (!is_root) {
                     update_history(continuation_table[color][prev.piece_type][prev.to][qpiece][qto], penalty);
@@ -100,9 +116,15 @@ public:
         std::uint64_t threats = chessboard.get_threats();
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
+        int pawn_key = chessboard.get_pawn_key() % 512;
+        int minor_key = chessboard.get_minor_key() % 512;
+        int major_key = chessboard.get_major_key() % 512;
 
-        int move_score = 94 * history_table[color][threat_from][threat_to][from][to] / 100;
+        int move_score = 80 * history_table[color][threat_from][threat_to][from][to] / 100;
         move_score += material_history_table[material_key][color][piece][to];
+        move_score += pawn_history_table[pawn_key][color][piece][to];
+        move_score += minor_history_table[minor_key][color][piece][to];
+        move_score += major_history_table[major_key][color][piece][to];
 
         int ply = data.get_ply();
         if (ply > 0) {
@@ -188,6 +210,9 @@ public:
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> pawn_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> minor_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> major_history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
@@ -196,12 +221,17 @@ private:
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
 
-    int history_bonus(int depth) const {
+    int history_bonus(int depth, bool structure_bonus) const {
+        if (structure_bonus) return 20 * depth;
         return std::min(2040, 236 * depth);
     }
 
     void update_history(int &value, int bonus) const {
         value += bonus - (value * std::abs(bonus) / 16384);
+    }
+
+    void update_structure_history(int &value, int bonus) const {
+        value += bonus - (value * std::abs(bonus) / 1200);
     }
 
     void update_cap_history(int &value, int bonus) const {
