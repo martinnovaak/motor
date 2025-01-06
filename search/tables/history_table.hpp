@@ -168,7 +168,7 @@ public:
 
                 if (data.get_ply() > 3) {
                     auto prev4 = data.prev_moves[data.get_ply() - 4];
-                    int &cont_entry3 = continuation_correction_table[2][prev4.piece_type][prev4.to][prev1.piece_type][prev1.to];
+                    int &cont_entry3 = continuation_correction_table[2][prev4.piece_type][prev4.to][prev2.piece_type][prev2.to];
                     cont_entry3 = (cont_entry3 * (256 - weight) + diff * weight) / 256;
                     cont_entry3 = std::clamp(cont_entry3, -8'192, 8'192);
                 }
@@ -200,7 +200,7 @@ public:
                 cont_entry2 = continuation_correction_table[1][prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
                 if (data.get_ply() > 3) {
                     auto prev4 = data.prev_moves[data.get_ply() - 4];
-                    cont_entry3 = continuation_correction_table[2][prev4.piece_type][prev4.to][prev1.piece_type][prev1.to];
+                    cont_entry3 = continuation_correction_table[2][prev4.piece_type][prev4.to][prev2.piece_type][prev2.to];
                 }
             }
         }
