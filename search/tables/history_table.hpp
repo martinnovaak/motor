@@ -23,7 +23,7 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              threat_correction_table({}), continuation_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -35,7 +35,6 @@ public:
         minor_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
-        continuation_correction_table2 = {};
     }
 
     template <Color color, bool is_root>
@@ -157,15 +156,22 @@ public:
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            int &cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            int &cont_entry = continuation_correction_table[0][prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
             cont_entry = std::clamp(cont_entry, -8'192, 8'192);
 
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
-                int &cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                int &cont_entry2 = continuation_correction_table[1][prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
                 cont_entry2 = (cont_entry2 * (256 - weight) + diff * weight) / 256;
                 cont_entry2 = std::clamp(cont_entry2, -8'192, 8'192);
+
+                if (data.get_ply() > 3) {
+                    auto prev4 = data.prev_moves[data.get_ply() - 4];
+                    int &cont_entry3 = continuation_correction_table[2][prev4.piece_type][prev4.to][prev1.piece_type][prev1.to];
+                    cont_entry3 = (cont_entry3 * (256 - weight) + diff * weight) / 256;
+                    cont_entry3 = std::clamp(cont_entry3, -8'192, 8'192);
+                }
             }
         }
     }
@@ -184,17 +190,22 @@ public:
 
         int cont_entry = 0;
         int cont_entry2 = 0;
+        int cont_entry3 = 0;
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            cont_entry = continuation_correction_table[0][prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
-                cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                cont_entry2 = continuation_correction_table[1][prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                if (data.get_ply() > 3) {
+                    auto prev4 = data.prev_moves[data.get_ply() - 4];
+                    cont_entry3 = continuation_correction_table[2][prev4.piece_type][prev4.to][prev1.piece_type][prev1.to];
+                }
             }
         }
 
-        return raw_eval + (entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + cont_entry * 180 + cont_entry2 * 180 + cont_entry3 * 180) / (256 * 300);
     }
 
 
@@ -207,8 +218,7 @@ private:
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
-    std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
-    std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 3> continuation_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
