@@ -23,7 +23,8 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}),
+              center_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -37,6 +38,7 @@ public:
         threat_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
+        center_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -159,6 +161,10 @@ public:
         major_entry = (major_entry * (256 - weight) + diff * weight) / 256;
         major_entry = std::clamp(major_entry, -8'192, 8'192);
 
+        int &center_entry = center_correction_table[color][chessboard.get_center_key() % 16384];
+        center_entry = (center_entry * (256 - weight) + diff * weight) / 256;
+        center_entry = std::clamp(center_entry, -8'192, 8'192);
+
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
@@ -184,6 +190,7 @@ public:
         const int threat_entry = threat_correction_table[color][threat_key % 32768];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+        const int center_entry = center_correction_table[color][chessboard.get_center_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -200,7 +207,7 @@ public:
             }
         }
 
-        return raw_eval + (entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180 + center_entry * 120) / (256 * 300);
     }
 
 
@@ -216,6 +223,7 @@ private:
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
+    std::array<std::array<int, 16384>, 2> center_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
