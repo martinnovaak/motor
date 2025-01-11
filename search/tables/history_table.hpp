@@ -8,6 +8,7 @@
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
 #include "../search_data.hpp"
+#include "lmr_table.hpp"
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     key ^= key >> 33;
@@ -131,7 +132,7 @@ public:
     void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth) {
 
         int diff = (best_score - raw_eval) * 256;
-        int weight = std::min(128, depth * (depth + 1));
+        int weight = corrhist_bonus_table[depth];
 
         int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         entry = (entry * (256 - weight) + diff * weight) / 256;

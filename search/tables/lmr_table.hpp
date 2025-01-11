@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cmath>
+#include <algorithm>
 
 std::array<std::array<int, 218>, 96> initializeReductions(int lmr = 420) {
     std::array<std::array<int, 218>, 96> reductions = {};
@@ -16,6 +17,22 @@ std::array<std::array<int, 218>, 96> initializeReductions(int lmr = 420) {
     return reductions;
 }
 
+std::array<int, 256> initializeCorrhistBonus() {
+    std::array<int, 256> bonus_table = {};
+
+    bonus_table[0] = 4;
+    for (int j = 1; j < 256; j++) {
+        double logBase32 = std::log(j) / std::log(32);
+        double sinValue = std::sinh(logBase32);
+        double powerValue = std::pow(sinValue, 1.75);
+        double product = powerValue * 100;
+        bonus_table[j] = static_cast<int>(std::min(product, 200.0));
+    }
+
+    return bonus_table;
+}
+
 auto lmr_table = initializeReductions();
+auto corrhist_bonus_table = initializeCorrhistBonus();
 
 #endif //MOTOR_LMR_TABLE_HPP
