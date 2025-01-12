@@ -23,7 +23,8 @@ public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
               correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}),
+              piece_sequence_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -37,6 +38,7 @@ public:
         threat_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
+        piece_sequence_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -171,6 +173,10 @@ public:
                 int &cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
                 cont_entry2 = (cont_entry2 * (256 - weight) + diff * weight) / 256;
                 cont_entry2 = std::clamp(cont_entry2, -8'192, 8'192);
+
+                int &piece_seq_entry = piece_sequence_correction_table[color][prev3.piece_type][prev2.piece_type][prev1.piece_type];
+                piece_seq_entry = (piece_seq_entry * (256 - weight) + diff * weight) / 256;
+                piece_seq_entry = std::clamp(piece_seq_entry, -8'192, 8'192);
             }
         }
     }
@@ -190,6 +196,7 @@ public:
 
         int cont_entry = 0;
         int cont_entry2 = 0;
+        int piece_seq_entry = 0;
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
@@ -197,10 +204,11 @@ public:
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
                 cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                piece_seq_entry = piece_sequence_correction_table[color][prev3.piece_type][prev2.piece_type][prev1.piece_type];
             }
         }
 
-        return raw_eval + (entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180 + piece_seq_entry * 120) / (256 * 300);
     }
 
 
@@ -216,6 +224,7 @@ private:
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
+    std::array<std::array<std::array<std::array<int, 7>, 7>, 7>, 2> piece_sequence_correction_table;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
