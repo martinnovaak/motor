@@ -29,6 +29,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     std::int16_t static_eval, eval;
 
     Bound flag = Bound::UPPER;
+    std::uint64_t material_key = chessboard.get_material_key();
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
     const TT_entry& tt_entry = tt.retrieve(zobrist_key, data.get_ply());
@@ -46,7 +47,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         }
     } else {
         static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = history->correct_eval<color>(chessboard, data,static_eval);
+        eval = history->correct_eval<color>(chessboard, data,static_eval, material_key);
     }
 
     if (eval >= beta) {
