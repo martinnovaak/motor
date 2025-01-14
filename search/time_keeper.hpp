@@ -78,7 +78,7 @@ public:
             stability_scale = tm_stability_const.value / 100.0 - tm_stability_mul.value / 1000.0 * std::min(10, stability_count);
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
-            corr_scale = (eval_correction < 15) ? 0.95 : (eval_correction > 85) ? 1.05 : 1.0;
+            corr_scale = (eval_correction < 15) ? 0.97 : (eval_correction > 120) ? 1.06 : 1.0;
 
             opt_scale = bm_frac * tm_node_mul.value / 100.0 + tm_node_const.value / 100.0;
         }
