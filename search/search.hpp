@@ -330,6 +330,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if constexpr (is_root) {
             data.update_node_count(from, to, start_nodes);
+            data.update_corr_size(in_check ? 0 : std::abs(static_eval - raw_eval));
         }
 
         if (score > best_score) {
