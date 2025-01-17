@@ -135,12 +135,12 @@ public:
 
         int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
         entry = (entry * (256 - weight) + diff * weight) / 256;
-        entry = std::clamp(entry, -8'192, 8'192);
+        entry = std::clamp(entry, -12'288, 12'288);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         int &threat_entry = threat_correction_table[color][threat_key % 32768];
         threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
-        threat_entry = std::clamp(threat_entry, -8'192, 8'192);
+        threat_entry = std::clamp(threat_entry, -12'288, 12'288);
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         int &white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
@@ -149,7 +149,7 @@ public:
 
         int &black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
         black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-        black_nonpawn_entry = std::clamp(black_nonpawn_entry, -8'192, 8'192);
+        black_nonpawn_entry = std::clamp(black_nonpawn_entry, -12'288, 12'288);
 
         int &minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
@@ -164,13 +164,13 @@ public:
             auto prev2 = data.prev_moves[data.get_ply() - 2];
             int &cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
             cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
-            cont_entry = std::clamp(cont_entry, -8'192, 8'192);
+            cont_entry = std::clamp(cont_entry, -12'288, 12'288);
 
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
                 int &cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
                 cont_entry2 = (cont_entry2 * (256 - weight) + diff * weight) / 256;
-                cont_entry2 = std::clamp(cont_entry2, -8'192, 8'192);
+                cont_entry2 = std::clamp(cont_entry2, -12'288, 12'288);
             }
         }
     }
