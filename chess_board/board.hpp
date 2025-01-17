@@ -344,6 +344,11 @@ public:
         return state->major_key.get_key();
     }
 
+    [[nodiscard]] std::uint64_t get_neighbor_key(Square square) const {
+        return occupancy & KING_ATTACKS[square];
+    }
+
+
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
         return { state->nonpawn_key[White].get_key(), state->nonpawn_key[Black].get_key()};
     }
