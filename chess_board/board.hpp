@@ -345,7 +345,16 @@ public:
     }
 
     [[nodiscard]] std::uint64_t get_neighbor_key(Square square) const {
-        return occupancy & KING_ATTACKS[square];
+        auto murmur_hash_3 = [](std::uint64_t key) -> std::uint64_t {
+            key ^= key >> 33;
+            key *= 0xff51afd7ed558ccd;
+            key ^= key >> 33;
+            key *= 0xc4ceb9fe1a85ec53;
+            key ^= key >> 33;
+            return key;
+        };
+
+        return murmur_hash_3(occupancy & KING_ATTACKS[square]);
     }
 
 
