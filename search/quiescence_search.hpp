@@ -1,6 +1,7 @@
 #ifndef MOTOR_QUIESCENCE_SEARCH_HPP
 #define MOTOR_QUIESCENCE_SEARCH_HPP
 
+#include "tables/history_table.hpp"
 #include "search_data.hpp"
 #include "tables/transposition_table.hpp"
 #include "move_ordering/move_ordering.hpp"
@@ -72,6 +73,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     std::int16_t futility_base = eval + 250;
 
     chess_move best_move;
+    move_list captures;
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
@@ -114,7 +116,11 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             alpha = eval;
             flag = Bound::EXACT;
             best_move = chessmove;
+            move_list quiets = {};
+            history->update<color, false>(data, chessboard, best_move, quiets, captures, 1, 0);
         }
+
+        captures.push_back(chessmove);
     }
 
     tt.store(flag, 0, eval, static_eval, best_move, data.get_ply(), false, zobrist_key);
