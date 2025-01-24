@@ -73,7 +73,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     std::int16_t futility_base = eval + 250;
 
     chess_move best_move;
-    move_list captures;
+    move_list captures, quiets;
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move & chessmove = movelist.get_next_move(moves_searched);
@@ -116,7 +116,6 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             alpha = eval;
             flag = Bound::EXACT;
             best_move = chessmove;
-            move_list quiets = {};
             history->update<color, false>(data, chessboard, best_move, quiets, captures, 1, 0);
         }
 
