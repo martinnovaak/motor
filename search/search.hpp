@@ -87,6 +87,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
+    int correction = -INF;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
 
@@ -96,6 +97,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        correction = static_eval - raw_eval;
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -123,13 +125,16 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        correction = static_eval - raw_eval;
         if (data.singular_move == 0 && depth >= iir_depth) {
             depth--;
         }
     }
 
     data.improving[data.get_ply()] = static_eval;
+    data.correction[data.get_ply()] = correction;
     int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
+    int correction_increasing = !in_check && data.get_ply() > 1 && correction > data.correction[data.get_ply() - 2] && improving;
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
@@ -349,7 +354,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + (best_score > beta + 80), material_key % 512);
+                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + correction_increasing + (best_score > beta + 80), material_key % 512);
                     break;
                 }
             }

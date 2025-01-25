@@ -112,6 +112,7 @@ public:
     }
 
     int improving[96] = {};
+    int correction[96] = {};
 
     history_move prev_moves[96];
 
