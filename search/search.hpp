@@ -214,6 +214,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
+    int fail_low_count = 0;
     std::int16_t best_score = -INF;
     score_moves<color>(chessboard, movelist, data, best_move, material_key % 512);
 
@@ -226,7 +227,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         std::uint64_t start_nodes = data.get_nodes();
 
-        int reduction = lmr_table[depth][moves_searched];
+        int reduction = lmr_table[depth][fail_low_count];
         bool is_quiet = chessboard.is_quiet(chessmove);
 
         if constexpr (!is_root) {
@@ -331,6 +332,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if constexpr (is_root) {
             data.update_node_count(from, to, start_nodes);
         }
+
+        fail_low_count += (score < alpha);
 
         if (score > best_score) {
             best_score = score;
