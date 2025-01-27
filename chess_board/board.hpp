@@ -441,7 +441,6 @@ public:
             } else {
                 state->minor_key.update_psqt_hash(color, piece, square);
                 state->major_key.update_psqt_hash(color, piece, square);
-                state->pawn_key[color].update_psqt_hash(color, piece, square);
             }
         }
     }
