@@ -34,9 +34,7 @@ struct board_info {
     Piece captured_piece = Piece::Null_Piece;
     chess_move move = {};
     zobrist hash_key = {};
-    zobrist pawn_key = {};
-    zobrist minor_key = {};
-    zobrist major_key = {};
+    std::array<zobrist, 6> piece_key = {};
     std::array<zobrist, 2> nonpawn_key = {};
     std::uint64_t threats = {};
     std::uint64_t checkers = {};
@@ -70,9 +68,7 @@ public:
         state = &history[0];
         side = Color::White;
         state->hash_key = zobrist();
-        state->pawn_key = zobrist();
-        state->major_key = zobrist();
-        state->minor_key = zobrist();
+        for (int i = 0; i < 6; i++) state->piece_key[i] = zobrist();
         state->nonpawn_key[White] = state->nonpawn_key[Black] = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -307,9 +303,7 @@ public:
         state->hash_key = old_info->hash_key;
         state->hash_key.update_side_hash();
         state->hash_key.update_enpassant_hash(old_info->enpassant);
-        state->pawn_key = old_info->pawn_key;
-        state->minor_key = old_info->minor_key;
-        state->major_key = old_info->major_key;
+        state->piece_key = old_info->piece_key;
         state->nonpawn_key = old_info->nonpawn_key;
         state->enpassant = Square::Null_Square;
         state->fifty_move_clock++;
@@ -332,16 +326,19 @@ public:
         return state->hash_key.get_key();
     }
 
-    [[nodiscard]] std::uint64_t get_pawn_key() const {
-        return state->pawn_key.get_key();
-    }
+    [[nodiscard]] std::array<std::uint64_t, 20> get_piece_keys() const {
+        std::array<std::uint64_t, 20> triplets;
+        size_t idx = 0;
 
-    [[nodiscard]] std::uint64_t get_minor_key() const {
-        return state->minor_key.get_key();
-    }
+        for (int i = 0; i < 6; ++i) {
+            for (int j = i + 1; j < 6; ++j) {
+                for (int k = j + 1; k < 6; ++k) {
+                    triplets[idx++] = state->piece_key[i].get_key() ^ state->piece_key[j].get_key() ^ state->piece_key[k].get_key();
+                }
+            }
+        }
 
-    [[nodiscard]] std::uint64_t get_major_key() const {
-        return state->major_key.get_key();
+        return triplets;
     }
 
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
@@ -415,9 +412,7 @@ public:
         state->hash_key = old_state->hash_key;
         state->hash_key.update_enpassant_hash(old_state->enpassant);
         state->hash_key.update_side_hash();
-        state->pawn_key = old_state->pawn_key;
-        state->major_key = old_state->major_key;
-        state->minor_key = old_state->minor_key;
+        state->piece_key = old_state->piece_key;
         state->nonpawn_key = old_state->nonpawn_key;
         state->enpassant = Null_Square;
         state->castling_rights = old_state->castling_rights;
@@ -430,18 +425,9 @@ public:
     void update_hash(Color color, Piece piece, Square square) {
         state->hash_key.update_psqt_hash(color, piece, square);
 
-        if (piece == Pawn) {
-            state->pawn_key.update_psqt_hash(color, piece, square);
-        } else {
+        state->piece_key[piece].update_psqt_hash(color, piece, square);
+        if (piece != Pawn) {
             state->nonpawn_key[color].update_psqt_hash(color, piece, square);
-            if (piece == Queen || piece == Rook) {
-                state->major_key.update_psqt_hash(color, piece, square);
-            } else if (piece == Knight || piece == Bishop) {
-                state->minor_key.update_psqt_hash(color, piece, square);
-            } else {
-                state->minor_key.update_psqt_hash(color, piece, square);
-                state->major_key.update_psqt_hash(color, piece, square);
-            }
         }
     }
 
