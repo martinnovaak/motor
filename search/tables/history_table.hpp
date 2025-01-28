@@ -151,7 +151,7 @@ public:
         for (const auto triplet_key : triplets) {
             int &triplet_entry = triplet_correction_table[i][color][triplet_key % 16384];
             triplet_entry = (triplet_entry * (256 - weight) + diff * weight) / 256;
-            triplet_entry = std::clamp(triplet_entry, -6'144, 6'144);
+            triplet_entry = std::clamp(triplet_entry, -8'192, 8'192);
             i++;
         }
 
@@ -201,7 +201,8 @@ public:
             }
         }
 
-        return raw_eval + (threat_entry * 100 + nonpawn_entry * 200 + triplet_value * 25 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + triplet_value * 30 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + correction;
     }
 
 
