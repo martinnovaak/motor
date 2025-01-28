@@ -201,7 +201,7 @@ public:
             }
         }
 
-        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + triplet_value * 50 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + triplet_value * 80 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
         return raw_eval + correction;
     }
 
