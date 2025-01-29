@@ -326,15 +326,13 @@ public:
         return state->hash_key.get_key();
     }
 
-    [[nodiscard]] std::array<std::uint64_t, 20> get_piece_keys() const {
-        std::array<std::uint64_t, 20> triplets;
+    [[nodiscard]] std::array<std::uint64_t, 10> get_piece_keys() const {
+        std::array<std::uint64_t, 10> triplets;
         size_t idx = 0;
 
-        for (int i = 0; i < 6; ++i) {
-            for (int j = i + 1; j < 6; ++j) {
-                for (int k = j + 1; k < 6; ++k) {
-                    triplets[idx++] = state->piece_key[i].get_key() ^ state->piece_key[j].get_key() ^ state->piece_key[k].get_key();
-                }
+        for (int j = 0; j < 5; ++j) {
+            for (int k = j + 1; k < 5; ++k) {
+                triplets[idx++] = state->piece_key[King].get_key() ^ state->piece_key[j].get_key() ^ state->piece_key[k].get_key();
             }
         }
 

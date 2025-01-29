@@ -201,7 +201,7 @@ public:
             }
         }
 
-        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + triplet_value * 80 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + triplet_value * 50 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
         return raw_eval + correction;
     }
 
@@ -213,7 +213,7 @@ private:
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
-    std::array<std::array<std::array<int, 16384>, 2>, 20> triplet_correction_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 10> triplet_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
