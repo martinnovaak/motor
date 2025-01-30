@@ -22,7 +22,7 @@ class History {
 public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
-              correction_table({}), nonpawn_correction_table({}), triplet_correction_table({}),
+              correction_table({}), nonpawn_correction_table({}), quartet_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
@@ -32,7 +32,7 @@ public:
         capture_table = {};
         correction_table = {};
         nonpawn_correction_table = {};
-        triplet_correction_table = {};
+        quartet_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
@@ -146,12 +146,12 @@ public:
         black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
         black_nonpawn_entry = std::clamp(black_nonpawn_entry, -12'288, 12'288);
 
-        auto triplets = chessboard.get_piece_keys();
+        auto quartets = chessboard.get_piece_keys();
         int i = 0;
-        for (const auto triplet_key : triplets) {
-            int &triplet_entry = triplet_correction_table[i][color][triplet_key % 16384];
-            triplet_entry = (triplet_entry * (256 - weight) + diff * weight) / 256;
-            triplet_entry = std::clamp(triplet_entry, -8'192, 8'192);
+        for (const auto quartet_key : quartets) {
+            int &quartet_entry = quartet_correction_table[i][color][quartet_key % 16384];
+            quartet_entry = (quartet_entry * (256 - weight) + diff * weight) / 256;
+            quartet_entry = std::clamp(quartet_entry, -8'192, 8'192);
             i++;
         }
 
@@ -181,11 +181,11 @@ public:
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
 
-        auto triplets = chessboard.get_piece_keys();
-        int triplet_value = 0;
+        auto quartets = chessboard.get_piece_keys();
+        int quartet_value = 0;
         int i = 0;
-        for (const auto triplet_key : triplets) {
-            triplet_value += triplet_correction_table[i][color][triplet_key % 16384];
+        for (const auto quartet_key : quartets) {
+            quartet_value += quartet_correction_table[i][color][quartet_key % 16384];
             i++;
         }
 
@@ -201,7 +201,7 @@ public:
             }
         }
 
-        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + triplet_value * 30 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + quartet_value * 30 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
         return raw_eval + correction;
     }
 
@@ -213,7 +213,7 @@ private:
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
-    std::array<std::array<std::array<int, 16384>, 2>, 20> triplet_correction_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 20> quartet_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;

@@ -326,19 +326,22 @@ public:
         return state->hash_key.get_key();
     }
 
-    [[nodiscard]] std::array<std::uint64_t, 20> get_piece_keys() const {
-        std::array<std::uint64_t, 20> triplets;
+    [[nodiscard]] std::array<std::uint64_t, 15> get_piece_keys() const {
+        std::array<std::uint64_t, 15> quartets;
         size_t idx = 0;
 
         for (int i = 0; i < 6; ++i) {
             for (int j = i + 1; j < 6; ++j) {
                 for (int k = j + 1; k < 6; ++k) {
-                    triplets[idx++] = state->piece_key[i].get_key() ^ state->piece_key[j].get_key() ^ state->piece_key[k].get_key();
+                    for (int l = k + 1; l < 6; ++l) {
+                        quartets[idx++] = state->piece_key[i].get_key() ^ state->piece_key[j].get_key() ^
+                                          state->piece_key[k].get_key() ^ state->piece_key[l].get_key();
+                    }
                 }
             }
         }
 
-        return triplets;
+        return quartets;
     }
 
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
