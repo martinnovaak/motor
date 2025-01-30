@@ -22,7 +22,7 @@ class History {
 public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
-              correction_table({}), nonpawn_correction_table({}), quartet_correction_table({}),
+              pawn_correction_table({}), nonpawn_correction_table({}), quartet_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
@@ -30,7 +30,7 @@ public:
         material_history_table = {};
         continuation_table = {};
         capture_table = {};
-        correction_table = {};
+        pawn_correction_table = {};
         nonpawn_correction_table = {};
         quartet_correction_table = {};
         threat_correction_table = {};
@@ -132,6 +132,10 @@ public:
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
 
+        int &pawn_entry = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
+        pawn_entry = (pawn_entry * (256 - weight) + diff * weight) / 256;
+        pawn_entry = std::clamp(pawn_entry, -12'288, 12'288);
+
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         int &threat_entry = threat_correction_table[color][threat_key % 32768];
         threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
@@ -176,6 +180,7 @@ public:
         if (std::abs(raw_eval) > 8'000) return raw_eval;
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
+        const int pawn_entry = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 32768];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
@@ -201,7 +206,7 @@ public:
             }
         }
 
-        const int correction = (threat_entry * 100 + nonpawn_entry * 200 + quartet_value * 30 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        const int correction = (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + quartet_value * 30 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
         return raw_eval + correction;
     }
 
@@ -211,7 +216,7 @@ private:
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
-    std::array<std::array<int, 16384>, 2> correction_table;
+    std::array<std::array<int, 16384>, 2> pawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 20> quartet_correction_table;
     std::array<std::array<int, 32768>, 2> threat_correction_table;

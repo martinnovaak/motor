@@ -326,6 +326,10 @@ public:
         return state->hash_key.get_key();
     }
 
+    [[nodiscard]] std::uint64_t get_pawn_key() const {
+        return state->piece_key[Pawn].get_key();
+    }
+
     [[nodiscard]] std::array<std::uint64_t, 15> get_piece_keys() const {
         std::array<std::uint64_t, 15> quartets;
         size_t idx = 0;
