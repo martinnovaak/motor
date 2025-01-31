@@ -22,7 +22,7 @@ class History {
 public:
     History()
             : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
-              correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
+              pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
@@ -30,7 +30,7 @@ public:
         material_history_table = {};
         continuation_table = {};
         capture_table = {};
-        correction_table = {};
+        pawn_correction_table = {};
         nonpawn_correction_table = {};
         minor_correction_table = {};
         major_correction_table = {};
@@ -133,44 +133,31 @@ public:
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
 
-        int &entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-        entry = (entry * (256 - weight) + diff * weight) / 256;
-        entry = std::clamp(entry, -12'288, 12'288);
+        auto update_entry = [&](int& entry, int min_clamp, int max_clamp) {
+            entry = (entry * (256 - weight) + diff * weight) / 256;
+            entry = std::clamp(entry, min_clamp, max_clamp);
+        };
+
+        update_entry(pawn_correction_table[color][chessboard.get_pawn_key() % 16384], -12'288, 12'288);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
-        int &threat_entry = threat_correction_table[color][threat_key % 32768];
-        threat_entry = (threat_entry * (256 - weight) + diff * weight) / 256;
-        threat_entry = std::clamp(threat_entry, -12'288, 12'288);
+        update_entry(threat_correction_table[color][threat_key % 16384], -12'288, 12'288);
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
-        int &white_nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384];
-        white_nonpawn_entry = (white_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-        white_nonpawn_entry = std::clamp(white_nonpawn_entry, -8'192, 8'192);
+        update_entry(nonpawn_correction_table[color][White][wkey % 16384], -12'288, 12'288);
+        update_entry(nonpawn_correction_table[color][Black][bkey % 16384], -12'288, 12'288);
 
-        int &black_nonpawn_entry = nonpawn_correction_table[color][Black][bkey % 16384];
-        black_nonpawn_entry = (black_nonpawn_entry * (256 - weight) + diff * weight) / 256;
-        black_nonpawn_entry = std::clamp(black_nonpawn_entry, -12'288, 12'288);
-
-        int &minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-        minor_entry = (minor_entry * (256 - weight) + diff * weight) / 256;
-        minor_entry = std::clamp(minor_entry, -8'192, 8'192);
-
-        int &major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
-        major_entry = (major_entry * (256 - weight) + diff * weight) / 256;
-        major_entry = std::clamp(major_entry, -8'192, 8'192);
+        update_entry(minor_correction_table[color][chessboard.get_minor_key() % 16384], -12'288, 12'288);
+        update_entry(major_correction_table[color][chessboard.get_major_key() % 16384], -12'288, 12'288);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            int &cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
-            cont_entry = (cont_entry * (256 - weight) + diff * weight) / 256;
-            cont_entry = std::clamp(cont_entry, -12'288, 12'288);
+            update_entry(continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to], -12'288, 12'288);
 
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
-                int &cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
-                cont_entry2 = (cont_entry2 * (256 - weight) + diff * weight) / 256;
-                cont_entry2 = std::clamp(cont_entry2, -12'288, 12'288);
+                update_entry(continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to], -12'288, 12'288);
             }
         }
     }
@@ -180,8 +167,8 @@ public:
         if (std::abs(raw_eval) > 8'000) return raw_eval;
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
-        const int entry = correction_table[color][chessboard.get_pawn_key() % 16384];
-        const int threat_entry = threat_correction_table[color][threat_key % 32768];
+        const int pawn_entry = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
+        const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
 
@@ -200,7 +187,7 @@ public:
             }
         }
 
-        return raw_eval + (entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
     }
 
 
@@ -209,11 +196,11 @@ private:
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
-    std::array<std::array<int, 16384>, 2> correction_table;
+    std::array<std::array<int, 16384>, 2> pawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
-    std::array<std::array<int, 32768>, 2> threat_correction_table;
+    std::array<std::array<int, 16384>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
 
