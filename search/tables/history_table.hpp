@@ -133,31 +133,35 @@ public:
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
 
-        auto update_entry = [&](int& entry, int min_clamp, int max_clamp) {
+        constexpr int CORRECTION_CLAMP_MIN = -12'288;
+        constexpr int CORRECTION_CLAMP_MAX = 12'288;
+        constexpr int CORRECTION_TABLE_SIZE = 16384;
+
+        auto update_entry = [&](int& entry) {
             entry = (entry * (256 - weight) + diff * weight) / 256;
-            entry = std::clamp(entry, min_clamp, max_clamp);
+            entry = std::clamp(entry, CORRECTION_CLAMP_MIN, CORRECTION_CLAMP_MAX);
         };
 
-        update_entry(pawn_correction_table[color][chessboard.get_pawn_key() % 16384], -12'288, 12'288);
+        update_entry(pawn_correction_table[color][chessboard.get_pawn_key() % CORRECTION_TABLE_SIZE]);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
-        update_entry(threat_correction_table[color][threat_key % 16384], -12'288, 12'288);
+        update_entry(threat_correction_table[color][threat_key % CORRECTION_TABLE_SIZE]);
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
-        update_entry(nonpawn_correction_table[color][White][wkey % 16384], -12'288, 12'288);
-        update_entry(nonpawn_correction_table[color][Black][bkey % 16384], -12'288, 12'288);
+        update_entry(nonpawn_correction_table[color][White][wkey % CORRECTION_TABLE_SIZE]);
+        update_entry(nonpawn_correction_table[color][Black][bkey % CORRECTION_TABLE_SIZE]);
 
-        update_entry(minor_correction_table[color][chessboard.get_minor_key() % 16384], -12'288, 12'288);
-        update_entry(major_correction_table[color][chessboard.get_major_key() % 16384], -12'288, 12'288);
+        update_entry(minor_correction_table[color][chessboard.get_minor_key() % CORRECTION_TABLE_SIZE]);
+        update_entry(major_correction_table[color][chessboard.get_major_key() % CORRECTION_TABLE_SIZE]);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            update_entry(continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to], -12'288, 12'288);
+            update_entry(continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to]);
 
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
-                update_entry(continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to], -12'288, 12'288);
+                update_entry(continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to]);
             }
         }
     }
