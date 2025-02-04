@@ -21,13 +21,14 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
 class History {
 public:
     History()
-            : history_table({}), material_history_table({}), continuation_table({}), capture_table({}),
+            : history_table({}), material_history_table({}), pawn_continuation_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
         history_table = {};
         material_history_table = {};
+        pawn_continuation_table = {};
         continuation_table = {};
         capture_table = {};
         pawn_correction_table = {};
@@ -48,6 +49,7 @@ public:
         history_move prev = {}, prev2 = {}, prev4 = {};
 
         std::uint64_t threats = chessboard.get_threats();
+        std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
 
         if (chessboard.is_quiet(best_move)) {
             bool threat_from = (threats & bb(from));
@@ -58,6 +60,7 @@ public:
             if constexpr (!is_root) {
                 prev = data.prev_moves[data.get_ply() - 1];
                 update_history(continuation_table[color][prev.piece_type][prev.to][piece][to], bonus);
+                update_history(pawn_continuation_table[color][pawn_key][prev.piece_type][piece][to], bonus);
                 if (data.get_ply() > 1) {
                     prev2 = data.prev_moves[data.get_ply() - 2];
                     update_history(continuation_table[color][prev2.piece_type][prev2.to][piece][to], bonus);
@@ -79,6 +82,7 @@ public:
 
                 if constexpr (!is_root) {
                     update_history(continuation_table[color][prev.piece_type][prev.to][qpiece][qto], penalty);
+                    update_history(pawn_continuation_table[color][pawn_key][prev.piece_type][qpiece][qto], penalty);
                     if (data.get_ply() > 1) {
                         update_history(continuation_table[color][prev2.piece_type][prev2.to][qpiece][qto], penalty);
                         if (data.get_ply() > 3) {
@@ -102,6 +106,7 @@ public:
         std::uint64_t threats = chessboard.get_threats();
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));
+        std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
 
         int move_score = 94 * history_table[color][threat_from][threat_to][from][to] / 100;
         move_score += material_history_table[material_key][color][piece][to];
@@ -110,6 +115,7 @@ public:
         if (ply > 0) {
             auto prev = data.prev_moves[ply - 1];
             move_score += 103 * continuation_table[color][prev.piece_type][prev.to][piece][to] / 100;
+            move_score += pawn_continuation_table[color][pawn_key][prev.piece_type][piece][to];
             if (ply > 1) {
                 auto prev2 = data.prev_moves[ply - 2];
                 move_score += 92 * continuation_table[color][prev2.piece_type][prev2.to][piece][to] / 100;
@@ -198,6 +204,7 @@ public:
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 512> material_history_table;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 7>, 512>, 2> pawn_continuation_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> pawn_correction_table;
