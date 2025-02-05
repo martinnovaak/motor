@@ -40,7 +40,7 @@ public:
 
     template <Color color, bool is_root>
     void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth) {
-        int bonus = history_bonus(depth);
+        int bonus = history_bonus(depth, quiets.size());
         int penalty = -bonus;
 
         auto [piece, from, to] = data.prev_moves[data.get_ply()];
@@ -203,8 +203,8 @@ private:
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
 
-    int history_bonus(int depth) const {
-        return std::min(2040, 236 * depth);
+    int history_bonus(int depth, int quiets) const {
+        return std::min(2500, 236 * depth + 36 * quiets);
     }
 
     void update_history(int &value, int bonus) const {
