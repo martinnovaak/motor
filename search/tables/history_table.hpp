@@ -39,7 +39,7 @@ public:
     }
 
     template <Color color, bool is_root>
-    void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth, int material_key) {
+    void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth) {
         int bonus = history_bonus(depth);
         int penalty = -bonus;
 
@@ -95,7 +95,7 @@ public:
     }
 
     template <Color color>
-    int get_quiet_score(board &chessboard, const search_data &data, Square from, Square to, Piece piece, int material_key) const {
+    int get_quiet_score(board &chessboard, const search_data &data, Square from, Square to, Piece piece) const {
         std::uint64_t threats = chessboard.get_threats();
         bool threat_from = (threats & bb(from));
         bool threat_to = (threats & bb(to));

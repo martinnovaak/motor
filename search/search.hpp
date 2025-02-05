@@ -78,7 +78,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         return quiescence_search<color>(chessboard, data, alpha, beta);
     }
 
-    std::uint64_t material_key = chessboard.get_material_key();
     Bound flag = Bound::UPPER;
 
     std::uint64_t zobrist_key = chessboard.get_hash_key();
@@ -215,7 +214,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     std::int16_t best_score = -INF;
-    score_moves<color>(chessboard, movelist, data, best_move, material_key % 512);
+    score_moves<color>(chessboard, movelist, data, best_move);
 
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
@@ -349,7 +348,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + (best_score > beta + 80), material_key % 512);
+                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + (best_score > beta + 80));
                     break;
                 }
             }
