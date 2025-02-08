@@ -9,7 +9,7 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
-template <Color color>
+template <Color color, bool is_pv>
 std::int16_t quiescence_search(board & chessboard, search_data & data, std::int16_t alpha, std::int16_t beta, std::int8_t depth = 0) {
     constexpr Color enemy_color = (color == White) ? Black : White;
 
@@ -39,9 +39,9 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         tt_move = tt_entry.tt_move;
         static_eval = tt_entry.static_eval;
         eval = tt_eval;
-        if ((tt_entry.bound == Bound::EXACT) ||
+        if (!is_pv && ((tt_entry.bound == Bound::EXACT) ||
             (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
-            (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
+            (tt_entry.bound == Bound::UPPER && tt_eval <= alpha))) {
             return tt_eval;
         }
     } else {
@@ -94,7 +94,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         make_move<color>(chessboard, chessmove);
         data.augment_ply();
         tt.prefetch(chessboard.get_hash_key());
-        std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha, depth - 1);
+        std::int16_t score = -quiescence_search<enemy_color, is_pv>(chessboard, data, -beta, -alpha, depth - 1);
         undo_move<color>(chessboard, chessmove);
         data.reduce_ply();
 
