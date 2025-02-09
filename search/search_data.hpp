@@ -117,7 +117,6 @@ public:
 
     std::uint32_t singular_move = {};
     int stack_eval = {};
-    int double_extension[96] = {};
     std::string best_move = {};
 private:
     std::int16_t ply;

@@ -34,7 +34,6 @@ constexpr int se_depth = 6;
 constexpr int se_depth_margin = 3;
 constexpr int se_mul = 100;
 constexpr int double_margin = 19;
-constexpr int double_exts = 7;
 
 constexpr int lmr_depth = 2;
 constexpr int lmr_quiet_history = 13500;
@@ -197,10 +196,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if constexpr (!is_root) {
-        data.double_extension[data.get_ply()] = data.double_extension[data.get_ply() - 1];
-    }
-
     move_list movelist, quiets, captures;
     generate_all_moves<color, false>(chessboard, movelist);
 
@@ -266,9 +261,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 if (s_score < s_beta) {
                     ext = 1;
                     if constexpr(!is_pv) {
-                        if (s_score + double_margin < s_beta && data.double_extension[data.get_ply()] < double_exts) {
+                        if (s_score + double_margin < s_beta) {
                             ext = 2 + (chessboard.is_quiet(chessmove) && s_score + 62 < s_beta);
-                            data.double_extension[data.get_ply()]++;
                         }
                     }
                 } else if (s_beta >= beta) {
