@@ -150,14 +150,18 @@ public:
         update_entry(minor_correction_table[color][chessboard.get_minor_key() % CORRECTION_TABLE_SIZE]);
         update_entry(major_correction_table[color][chessboard.get_major_key() % CORRECTION_TABLE_SIZE]);
 
-        if (data.get_ply() > 1) {
+        if (data.get_ply() > 0) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
-            auto prev2 = data.prev_moves[data.get_ply() - 2];
-            update_entry(continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to]);
+            if (data.get_ply() > 1) {
+                auto prev2 = data.prev_moves[data.get_ply() - 2];
+                update_entry(continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to]);
 
-            if (data.get_ply() > 2) {
-                auto prev3 = data.prev_moves[data.get_ply() - 3];
-                update_entry(continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to]);
+                for (int i = 3; i < 7; i++) {
+                    if (data.get_ply() >= i) {
+                        auto previ = data.prev_moves[data.get_ply() - i];
+                        update_entry(continuation_correction_table2[color][previ.piece_type][previ.to][prev1.piece_type][prev1.to]);
+                    }
+                }
             }
         }
     }
@@ -177,13 +181,17 @@ public:
 
         int cont_entry = 0;
         int cont_entry2 = 0;
-        if (data.get_ply() > 1) {
+        if (data.get_ply() > 0) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
-            auto prev2 = data.prev_moves[data.get_ply() - 2];
-            cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
-            if (data.get_ply() > 2) {
-                auto prev3 = data.prev_moves[data.get_ply() - 3];
-                cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+            if (data.get_ply() > 1) {
+                auto prev2 = data.prev_moves[data.get_ply() - 2];
+                cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+                for (int i = 3; i < 7; i++) {
+                    if (data.get_ply() >= i) {
+                        auto previ = data.prev_moves[data.get_ply() - i];
+                        cont_entry2 += continuation_correction_table2[color][previ.piece_type][previ.to][prev1.piece_type][prev1.to];
+                    }
+                }
             }
         }
 
@@ -201,7 +209,7 @@ private:
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
-    std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_correction_table2;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
