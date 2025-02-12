@@ -62,6 +62,7 @@ public:
                     if (data.get_ply() > 3) {
                         prev4 = data.prev_moves[data.get_ply() - 4];
                         update_history(continuation_table[color][prev4.piece_type][prev4.to][piece][to], bonus);
+                        update_history(continuation_table[color][prev4.piece_type][prev4.to][prev2.piece_type][prev2.to], bonus);
                     }
                 }
             }
@@ -80,6 +81,7 @@ public:
                         update_history(continuation_table[color][prev2.piece_type][prev2.to][qpiece][qto], penalty);
                         if (data.get_ply() > 3) {
                             update_history(continuation_table[color][prev4.piece_type][prev4.to][qpiece][qto], penalty);
+                            update_history(continuation_table[color][prev4.piece_type][prev4.to][prev2.piece_type][prev2.to], penalty);
                         }
                     }
                 }
@@ -112,6 +114,7 @@ public:
                 if (ply > 3) {
                     auto prev4 = data.prev_moves[ply - 4];
                     move_score += continuation_table[color][prev4.piece_type][prev4.to][piece][to];
+                    move_score += continuation_table[color][prev4.piece_type][prev4.to][prev2.piece_type][prev2.to];
                 }
             }
         }
