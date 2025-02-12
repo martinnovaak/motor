@@ -115,7 +115,7 @@ public:
 
     history_move prev_moves[96];
 
-    std::uint32_t singular_move = {};
+    std::uint32_t singular_move[96] = {};
     int stack_eval = {};
     std::string best_move = {};
 private:

@@ -106,7 +106,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             }
         }
 
-        if (would_tt_prune && data.singular_move == 0) {
+        if (would_tt_prune && data.singular_move[data.get_ply()] == 0) {
             if (is_pv) {
                 depth --;
             } else {
@@ -121,7 +121,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
-        if (data.singular_move == 0 && depth >= iir_depth) {
+        if (data.singular_move[data.get_ply()] == 0 && depth >= iir_depth) {
             depth--;
         }
     }
@@ -131,6 +131,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
     data.prev_moves[data.get_ply()] = {};
     data.reset_killers();
+    data.singular_move[data.get_ply() + 1] = {};
 
     if constexpr (!is_root) {
         if (!in_check && std::abs(beta) < 9'000) {
@@ -200,7 +201,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     generate_all_moves<color, false>(chessboard, movelist);
 
     if (movelist.size() == 0) {
-        if (data.singular_move > 0) return alpha;
+        if (data.singular_move[data.get_ply()] > 0) return alpha;
         if (in_check) {
             return data.mate_value();
         } else {
@@ -214,7 +215,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     for (std::uint8_t moves_searched = 0; moves_searched < movelist.size(); moves_searched++) {
         chess_move& chessmove = movelist.get_next_move(moves_searched);
 
-        if (chessmove.get_value() == data.singular_move) {
+        if (chessmove.get_value() == data.singular_move[data.get_ply()]) {
             continue;
         }
 
@@ -252,12 +253,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 movelist.get_move_score(moves_searched) == 214'748'364 &&
                 tt_entry.depth >= depth - se_depth_margin &&
                 tt_entry.bound != Bound::UPPER &&
-                data.singular_move == 0)
+                data.singular_move[data.get_ply()] == 0)
             {
                 int s_beta = tt_entry.score - se_mul * depth / 80;
-                data.singular_move = chessmove.get_value();
+                data.singular_move[data.get_ply()] = chessmove.get_value();
                 int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
-                data.singular_move = 0;
+                data.singular_move[data.get_ply()] = 0;
                 if (s_score < s_beta) {
                     ext = 1;
                     if constexpr(!is_pv) {
@@ -357,7 +358,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
-    if (data.singular_move == 0) {
+    if (data.singular_move[data.get_ply()] == 0) {
         int avg_eval = (raw_eval + static_eval) / 2;
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
               || (flag == Bound::LOWER && best_score <= avg_eval) || (flag == Bound::UPPER && best_score >= avg_eval))
