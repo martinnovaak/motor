@@ -108,8 +108,8 @@ public:
         const auto [wkey, bkey] = chessboard.get_nonpawn_key();
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
-        move_score += nonpawn_history_table[color][White][wkey % 512][piece][to];
-        move_score += nonpawn_history_table[color][Black][bkey % 512][piece][to];
+        move_score += nonpawn_history_table[color][White][wkey % 512][piece][to] / 2;
+        move_score += nonpawn_history_table[color][Black][bkey % 512][piece][to] / 2;
 
         int ply = data.get_ply();
         if (ply > 0) {
