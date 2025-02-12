@@ -108,7 +108,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
         if (would_tt_prune && data.singular_move == 0) {
             if (is_pv) {
-                depth --;
+                depth -= 1 + (tt_entry.depth >= depth * 2 + 2);
             } else {
                 return tt_eval;
             }
