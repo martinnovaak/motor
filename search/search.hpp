@@ -17,9 +17,9 @@
 constexpr int iir_depth = 4;
 constexpr int razoring = 500;
 constexpr int razoring_depth = 3;
-constexpr int rfp = 100;
+constexpr int rfp = 154;
 constexpr int rfp_depth = 9;
-constexpr int nmp = 4;
+constexpr int nmp = 3;
 constexpr int nmp_div = 3;
 constexpr int nmp_depth = 3;
 constexpr int lmp_base = 2;
