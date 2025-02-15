@@ -111,7 +111,7 @@ void uci_go(board& b, const std::string& command) {
         } else if (tokens[i] == "depth") {
             info.max_depth = std::stoi(tokens[i + 1]); 
         } else if (tokens[i] == "movetime") {
-            // info.movetime = std::stoi(tokens[i + 1]);  // NOT SUPPORTED RIGHT NOW
+            info.wtime = info.btime = 10 * std::max(10, std::stoi(tokens[i + 1]));
         } else if (tokens[i] == "infinite") {
             // info.infinite = true;                      
         } else if (tokens[i] == "nodes") {
