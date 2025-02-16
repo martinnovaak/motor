@@ -8,7 +8,8 @@
 #include "tuning_options.hpp"
 
 struct time_info {
-    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64, max_nodes = INT_MAX / 2;
+    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64;
+    std::uint64_t max_nodes = static_cast<std::uint64_t>(INT_MAX) / 2;
 };
 
 TuningOption tm_expect_mul("tm_expect_mul", 41, 20, 70);
@@ -20,9 +21,10 @@ TuningOption tm_node_mul("tm_node_mul", 200, 50, 400);
 
 class time_keeper {
 public:
-    time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0), max_nodes(INT_MAX / 2), total_nodes(0), node_count{} {}
+    time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0),
+                    max_nodes(static_cast<std::uint64_t>(INT_MAX) / 2), total_nodes(0), node_count{} {}
 
-    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, int nodes = INT_MAX / 2) {
+    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, std::uint64_t nodes = static_cast<std::uint64_t>(INT_MAX) / 2) {
         start_time = std::chrono::steady_clock::now();
         stop = false;
         const int time_minus_threshold = time - 50;
@@ -51,7 +53,7 @@ public:
         return stop;
     }
 
-    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth) { // called in iterative deepening
+    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth) {
         if (stop) {
             return true;
         }
@@ -105,7 +107,7 @@ public:
         return static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count());
     }
 
-    std::uint64_t NPS(uint64_t nodes){
+    std::uint64_t NPS(uint64_t nodes) {
         total_nodes += nodes;
         std::uint64_t elapsed_time = elapsed();
 
@@ -134,7 +136,7 @@ private:
     bool inf_time;
     int time_limit;
     int optimal_time_limit;
-    int max_nodes;
+    std::uint64_t max_nodes;
     std::uint64_t total_nodes;
     std::array<std::array<int, 64>, 64> node_count;
     chess_move last_best_move;
