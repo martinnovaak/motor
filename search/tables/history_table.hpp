@@ -138,7 +138,12 @@ public:
             entry = std::clamp(entry, CORRECTION_CLAMP_MIN, CORRECTION_CLAMP_MAX);
         };
 
-        update_entry(pawn_correction_table[color][chessboard.get_pawn_key() % CORRECTION_TABLE_SIZE]);
+        const auto [wpkey, bpkey] = chessboard.get_pawn_key();
+        const auto wbpkey = wpkey ^ bpkey;
+
+        update_entry(pawn_correction_table[White][color][wpkey % CORRECTION_TABLE_SIZE]);
+        update_entry(pawn_correction_table[Black][color][bpkey % CORRECTION_TABLE_SIZE]);
+        update_entry(pawn_correction_table[2][color][wbpkey % CORRECTION_TABLE_SIZE]);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         update_entry(threat_correction_table[color][threat_key % CORRECTION_TABLE_SIZE]);
@@ -167,12 +172,15 @@ public:
         if (std::abs(raw_eval) > 8'000) return raw_eval;
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
-        const int pawn_entry = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
+        const auto [wpkey, bpkey] = chessboard.get_pawn_key();
+        const auto wbpkey = wpkey ^ bpkey;
+        const int half_pawn_entry = pawn_correction_table[White][color][wpkey % 16384] + pawn_correction_table[Black][color][bpkey % 16384];
+        const int pawn_entry = pawn_correction_table[2][color][wbpkey % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
 
-        auto [wkey, bkey] = chessboard.get_nonpawn_key();
+        const auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
 
         int cont_entry = 0;
@@ -187,7 +195,7 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (half_pawn_entry * 100 + pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
     }
 
 
@@ -195,7 +203,7 @@ private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
-    std::array<std::array<int, 16384>, 2> pawn_correction_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 3> pawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
