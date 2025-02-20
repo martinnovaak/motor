@@ -112,10 +112,10 @@ public:
         const auto pawn_key = static_cast<int>(chessboard.get_pawn_key() % 512);
         const auto [wkey, bkey] = chessboard.get_nonpawn_key();
 
-        int move_score = history_table[color][threat_from][threat_to][from][to];
-        move_score += nonpawn_history_table[color][White][wkey % 512][piece][to];
-        move_score += nonpawn_history_table[color][Black][bkey % 512][piece][to];
-        move_score += pawn_history_table[pawn_key][color][piece][to];
+        int move_score = history_table[color][threat_from][threat_to][from][to] / 2;
+        move_score += nonpawn_history_table[color][White][wkey % 512][piece][to] / 2;
+        move_score += nonpawn_history_table[color][Black][bkey % 512][piece][to] / 2;
+        move_score += pawn_history_table[pawn_key][color][piece][to] / 2;
 
         int ply = data.get_ply();
         if (ply > 0) {
