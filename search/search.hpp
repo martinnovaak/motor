@@ -87,10 +87,12 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    bool tt_noisy = false;
 
     if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
         tt_move = tt_entry.tt_move;
+        tt_noisy = !chessboard.is_quiet(tt_move);
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
@@ -152,7 +154,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (node_type != NodeType::Null && depth >= nmp_depth && eval >= beta && static_eval >= beta && !chessboard.pawn_endgame()) {
                 chessboard.make_null_move<color>();
                 tt.prefetch(chessboard.get_hash_key());
-                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 245, 3);
+                int R = nmp + depth / nmp_div + improving + std::min((static_eval - beta) / 245, 3) + tt_noisy;
                 data.augment_ply();
                 std::int16_t nullmove_score = -alpha_beta<enemy_color, NodeType::Null>(chessboard, data, -beta, -alpha, depth - R, !cutnode);
                 data.reduce_ply();
