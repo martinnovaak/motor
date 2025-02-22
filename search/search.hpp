@@ -87,6 +87,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    int correction = 0;
 
     if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
@@ -94,6 +95,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        correction = static_eval - raw_eval;
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -121,6 +123,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(chessboard);
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        correction = static_eval - raw_eval;
         if (data.singular_move[data.get_ply()] == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -310,6 +313,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (score > alpha && reduction > 0) {
                 if constexpr (!is_root) {
                     new_depth += (score > best_score + 80);
+                    new_depth += moves_searched > 3 && std::abs(correction) > 100;
                     new_depth -= (score < best_score + new_depth);
                 }
 
@@ -362,7 +366,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         int avg_eval = (raw_eval + static_eval) / 2;
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
               || (flag == Bound::LOWER && best_score <= avg_eval) || (flag == Bound::UPPER && best_score >= avg_eval))
-        ) {
+                ) {
             history->update_correction_history<color>(chessboard, data, best_score, avg_eval, depth);
         }
 
