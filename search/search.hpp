@@ -255,14 +255,14 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 tt_entry.bound != Bound::UPPER &&
                 data.singular_move[data.get_ply()] == 0)
             {
-                int s_beta = tt_entry.score - se_mul * depth / 80;
+                int s_beta = tt_entry.score - 3 * depth / 4;
                 data.singular_move[data.get_ply()] = chessmove.get_value();
                 int s_score = alpha_beta<color, NodeType::Non_PV>(chessboard, data, s_beta - 1, s_beta, (depth - 1) / 2, cutnode);
                 data.singular_move[data.get_ply()] = 0;
                 if (s_score < s_beta) {
                     ext = 1;
                     if constexpr(!is_pv) {
-                        if (s_score + double_margin < s_beta) {
+                        if (s_score + 10 < s_beta) {
                             ext = 2 + (chessboard.is_quiet(chessmove) && s_score + 62 < s_beta);
                         }
                     }
