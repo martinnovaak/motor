@@ -23,7 +23,8 @@ public:
     History()
             : history_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              br_correction_table({}), kq_correction_table({}), threat_correction_table({}),
+              continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
         history_table = {};
@@ -33,6 +34,8 @@ public:
         nonpawn_correction_table = {};
         minor_correction_table = {};
         major_correction_table = {};
+        br_correction_table = {};
+        kq_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
@@ -149,6 +152,8 @@ public:
 
         update_entry(minor_correction_table[color][chessboard.get_minor_key() % CORRECTION_TABLE_SIZE]);
         update_entry(major_correction_table[color][chessboard.get_major_key() % CORRECTION_TABLE_SIZE]);
+        update_entry(br_correction_table[color][chessboard.get_br_key() % CORRECTION_TABLE_SIZE]);
+        update_entry(kq_correction_table[color][chessboard.get_kq_key() % CORRECTION_TABLE_SIZE]);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
@@ -171,6 +176,8 @@ public:
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+        const int br_entry = br_correction_table[color][chessboard.get_br_key() % 16384];
+        const int kq_entry = kq_correction_table[color][chessboard.get_kq_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -187,7 +194,7 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180 + br_entry * 100 + kq_entry * 100) / (256 * 300);
     }
 
 
@@ -199,6 +206,8 @@ private:
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
+    std::array<std::array<int, 16384>, 2> br_correction_table;
+    std::array<std::array<int, 16384>, 2> kq_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
