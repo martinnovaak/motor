@@ -65,7 +65,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     move_list movelist;
     if (in_check) {
         generate_all_moves<color, false>(chessboard, movelist);
-        score_moves<color>(chessboard, movelist, data, tt_move);
+        qs_score_evasions<color>(chessboard, movelist, data, tt_move);
         if (movelist.size() == 0) {
             return data.mate_value();
         }

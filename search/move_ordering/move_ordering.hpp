@@ -44,6 +44,29 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
     }
 }
 
+template <Color color>
+void qs_score_evasions(board & chessboard, move_list & movelist, search_data & data, const chess_move & tt_move) {
+    int move_index = 0;
+    for (chess_move & move : movelist) {
+        const Square from = move.get_from();
+        const Square to   = move.get_to();
+        int move_score;
+        if (move == tt_move) {
+            move_score = 214748364;
+        } else if (!chessboard.is_quiet(move)) {
+            int cap_score = history->get_capture_score(chessboard.get_piece(from), to, chessboard.get_piece(to));
+            move_score = 10'000'000 + mvv[chessboard.get_piece(to)];
+            move_score += cap_score;
+        } else {
+            move_score = history->get_quiet_score<color>(chessboard, data, from, to, chessboard.get_piece(from));
+            move_score += 32'000 * (data.get_killer() == move);
+        }
+
+        movelist[move_index] = move_score;
+        move_index++;
+    }
+}
+
 void qs_score_moves(board & chessboard, move_list & movelist) {
     int move_index = 0;
     for(chess_move & move : movelist) {
