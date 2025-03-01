@@ -422,6 +422,7 @@ void iterative_deepening(board& chessboard, search_data& data, int max_depth) {
 
         if (depth < asp_depth) {
             score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth, false);
+            tt.increase_age();
         } else {
             score = aspiration_window<color>(chessboard, data, score, depth);
         }
