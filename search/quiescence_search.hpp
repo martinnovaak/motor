@@ -74,7 +74,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         qs_score_moves(chessboard, movelist);
     }
 
-    std::int16_t futility_base = eval + 125;
+    std::int16_t futility_base = eval + 350;
 
     chess_move best_move;
 
