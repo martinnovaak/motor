@@ -129,8 +129,8 @@ public:
         int diff = (best_score - raw_eval) * 256;
         int weight = std::min(128, depth * (depth + 1));
 
-        constexpr int CORRECTION_CLAMP_MIN = -12'288;
-        constexpr int CORRECTION_CLAMP_MAX = 12'288;
+        constexpr int CORRECTION_CLAMP_MIN = -16384;
+        constexpr int CORRECTION_CLAMP_MAX = 16384;
         constexpr int CORRECTION_TABLE_SIZE = 16384;
 
         auto update_entry = [&](int& entry) {
