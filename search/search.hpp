@@ -231,7 +231,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         break;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
+                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 8000);
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         break;
                     }
@@ -291,7 +291,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             // late move reduction
             if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
                 if (is_quiet) {
-                    reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
+                    reduction -= movelist.get_move_score(moves_searched) / 16000;
                     reduction += cutnode * 2;
                 } else {
                     reduction += cutnode;
