@@ -127,7 +127,7 @@ public:
     void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth) {
 
         int diff = (best_score - raw_eval) * 256;
-        int weight = std::min(128, depth * (depth + 1) / 2);
+        int weight = std::min(192, depth * (depth + 1) * 2);
 
         constexpr int CORRECTION_CLAMP_MIN = -12'288;
         constexpr int CORRECTION_CLAMP_MAX = 12'288;
