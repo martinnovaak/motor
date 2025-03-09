@@ -477,12 +477,10 @@ public:
     }
 
     std::uint64_t get_material_key() const {
-        auto murmur_hash_3 = [](std::uint64_t key) -> std::uint64_t {
-            key ^= key >> 33;
-            key *= 0xff51afd7ed558ccd;
-            key ^= key >> 33;
-            key *= 0xc4ceb9fe1a85ec53;
-            key ^= key >> 33;
+        auto mxm = [](std::uint64_t key) -> std::uint64_t {
+            key *= 0xbf58476d1ce4e5b9ull;
+            key ^= key >> 56;
+            key *= 0x94d049bb133111ebull;
             return key;
         };
 
@@ -496,7 +494,7 @@ public:
             }
         }
 
-        return murmur_hash_3(material_key);
+        return mxm(material_key);
     }
 };
 

@@ -145,6 +145,7 @@ public:
         };
 
         update_entry(pawn_correction_table[color][chessboard.get_pawn_key() % CORRECTION_TABLE_SIZE]);
+        update_entry(material_correction_table[color][chessboard.get_material_key() % CORRECTION_TABLE_SIZE]);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         update_entry(threat_correction_table[color][threat_key % CORRECTION_TABLE_SIZE]);
@@ -177,6 +178,7 @@ public:
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+        const int material_entry = material_correction_table[color][chessboard.get_material_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -193,7 +195,7 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (pawn_entry * 200 + material_entry * 100 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
     }
 
 
@@ -204,6 +206,7 @@ private:
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> pawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
+    std::array<std::array<int, 16384>, 2> material_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
