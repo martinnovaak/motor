@@ -45,7 +45,7 @@ public:
         int penalty = -bonus;
 
         auto [piece, from, to] = data.prev_moves[data.get_ply()];
-        history_move prev = {}, prev2 = {}, prev4 = {};
+        history_move prev = {}, prev2 = {}, prev4 = {}, prev6 = {};
 
         const std::uint64_t threats = chessboard.get_threats();
         const std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
@@ -65,6 +65,10 @@ public:
                     if (data.get_ply() > 3) {
                         prev4 = data.prev_moves[data.get_ply() - 4];
                         update_history(continuation_table[color][prev4.piece_type][prev4.to][piece][to], bonus);
+                        if (data.get_ply() > 5) {
+                            prev6 = data.prev_moves[data.get_ply() - 6];
+                            update_history(continuation_table[color][prev6.piece_type][prev6.to][piece][to], bonus);
+                        }
                     }
                 }
             }
@@ -84,6 +88,9 @@ public:
                         update_history(continuation_table[color][prev2.piece_type][prev2.to][qpiece][qto], penalty);
                         if (data.get_ply() > 3) {
                             update_history(continuation_table[color][prev4.piece_type][prev4.to][qpiece][qto], penalty);
+                            if (data.get_ply() > 5) {
+                                update_history(continuation_table[color][prev6.piece_type][prev6.to][qpiece][qto], penalty);
+                            }
                         }
                     }
                 }
@@ -118,6 +125,10 @@ public:
                 if (ply > 3) {
                     auto prev4 = data.prev_moves[ply - 4];
                     move_score += continuation_table[color][prev4.piece_type][prev4.to][piece][to];
+                    if (ply > 5) {
+                        auto prev6 = data.prev_moves[ply - 6];
+                        move_score += continuation_table[color][prev6.piece_type][prev6.to][piece][to];
+                    }
                 }
             }
         }
