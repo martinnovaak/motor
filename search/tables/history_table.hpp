@@ -114,8 +114,8 @@ public:
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
         move_score += pawn_history_table[color][pawn_key][piece][to];
-        move_score += nonpawn_history_table[color][White][wnkey % 512][piece][to];
-        move_score += nonpawn_history_table[color][Black][bnkey % 512][piece][to];
+        move_score += nonpawn_history_table[color][White][wnkey % 512][piece][to] / 3;
+        move_score += nonpawn_history_table[color][Black][bnkey % 512][piece][to] / 3;
 
         int ply = data.get_ply();
         if (ply > 0) {
