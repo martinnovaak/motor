@@ -145,7 +145,6 @@ public:
         };
 
         update_entry(pawn_correction_table[color][chessboard.get_pawn_key() % CORRECTION_TABLE_SIZE]);
-        update_entry(material_correction_table[color][chessboard.get_material_key() % CORRECTION_TABLE_SIZE]);
 
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
         update_entry(threat_correction_table[color][threat_key % CORRECTION_TABLE_SIZE]);
@@ -161,6 +160,7 @@ public:
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
             update_entry(continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to]);
+            update_entry(material_correction_table[color][chessboard.get_material_key() % 512][prev1.piece_type][prev1.to]);
 
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
@@ -178,17 +178,18 @@ public:
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
-        const int material_entry = material_correction_table[color][chessboard.get_material_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
 
         int cont_entry = 0;
         int cont_entry2 = 0;
+        int material_entry = 0;
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
             cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            material_entry = material_correction_table[color][chessboard.get_material_key() % 512][prev1.piece_type][prev1.to];
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
                 cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
@@ -206,7 +207,7 @@ private:
     std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
     std::array<std::array<int, 16384>, 2> pawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
-    std::array<std::array<int, 16384>, 2> material_correction_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> material_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
