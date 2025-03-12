@@ -36,11 +36,13 @@ constexpr int se_mul = 100;
 constexpr int double_margin = 19;
 
 constexpr int lmr_depth = 2;
-constexpr int lmr_quiet_history = 13500;
 constexpr int asp_window = 20;
 constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 650;
 constexpr int asp_depth = 8;
+
+TuningOption lmr_quiet_history("lmr_quiet_history", 13500, 5000, 25000);
+TuningOption fp_history("fp_history", 6000, 2000, 20000);
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
@@ -231,7 +233,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                         break;
                     }
 
-                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / 6000);
+                    int lmr_depth = std::max(0, depth - reduction - !improving + movelist.get_move_score(moves_searched) / fp_history.value);
                     if (lmr_depth < fp_depth && static_eval + fp_base + fp_mul * lmr_depth <= alpha) {
                         break;
                     }
@@ -291,7 +293,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             // late move reduction
             if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
                 if (is_quiet) {
-                    reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
+                    reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history.value;
                     reduction += cutnode * 2;
                 } else {
                     reduction += cutnode;

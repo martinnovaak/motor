@@ -18,6 +18,16 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     return key;
 }
 
+TuningOption pawn_weight("pawn_weight", 200, 0, 600);
+TuningOption nonpawn_weight("nonpawn_weight", 200, 0, 600);
+TuningOption threat_weight("threat_weight", 100, 0, 600);
+TuningOption major_weight("major_weight", 120, 0, 600);
+TuningOption minor_weight("minor_weight", 150, 0, 600);
+TuningOption contcorr1_weight("contcorr1_weight", 180, 0, 600);
+TuningOption contcorr2_weight("contcorr2_weight", 180, 0, 600);
+TuningOption corr_max_weight("corr_max_weight", 48, 20, 72);
+TuningOption corr_mul_weight("corr_mul_weight", 100, 20, 400);
+
 class History {
 public:
     History()
@@ -133,10 +143,11 @@ public:
     void update_correction_history(board& chessboard, const search_data &data, int best_score, int raw_eval, int depth) {
 
         int diff = (best_score - raw_eval) * 256;
-        int weight = std::min(128, depth * (depth + 1));
+        int weight = std::min(128, depth * (depth + 1) * 100 / corr_mul_weight.value);
 
-        constexpr int CORRECTION_CLAMP_MIN = -12'288;
-        constexpr int CORRECTION_CLAMP_MAX = 12'288;
+        int CORRECTION_CLAMP_MAX = corr_max_weight.value * 256;
+        int CORRECTION_CLAMP_MIN = -CORRECTION_CLAMP_MAX;
+
         constexpr int CORRECTION_TABLE_SIZE = 16384;
 
         auto update_entry = [&](int& entry) {
@@ -193,7 +204,11 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        int correction = (pawn_entry * pawn_weight.value + threat_entry * threat_weight.value + nonpawn_entry * nonpawn_weight.value
+                + minor_entry * minor_weight.value + major_entry * major_weight.value + cont_entry * contcorr1_weight.value
+                + cont_entry2 * contcorr2_weight.value) / (256 * 300);
+
+        return raw_eval + correction;
     }
 
 
