@@ -41,8 +41,8 @@ constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 650;
 constexpr int asp_depth = 8;
 
-TuningOption lmr_quiet_history("lmr_quiet_history", 13500, 5000, 25000);
-TuningOption fp_history("fp_history", 6000, 2000, 20000);
+TuningOption lmr_quiet_history("lmr_quiet_history", 12500, 5000, 25000);
+TuningOption fp_history("fp_history", 5670, 2000, 20000);
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {

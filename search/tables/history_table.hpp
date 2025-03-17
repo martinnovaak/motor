@@ -18,14 +18,14 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     return key;
 }
 
-TuningOption pawn_weight("pawn_weight", 200, 0, 600);
-TuningOption nonpawn_weight("nonpawn_weight", 200, 0, 600);
-TuningOption threat_weight("threat_weight", 100, 0, 600);
-TuningOption major_weight("major_weight", 120, 0, 600);
-TuningOption minor_weight("minor_weight", 150, 0, 600);
-TuningOption contcorr1_weight("contcorr1_weight", 180, 0, 600);
-TuningOption contcorr2_weight("contcorr2_weight", 180, 0, 600);
-TuningOption corr_max_weight("corr_max_weight", 48, 20, 72);
+TuningOption pawn_weight("pawn_weight", 198, 0, 600);
+TuningOption nonpawn_weight("nonpawn_weight", 223, 0, 600);
+TuningOption threat_weight("threat_weight", 91, 0, 600);
+TuningOption major_weight("major_weight", 128, 0, 600);
+TuningOption minor_weight("minor_weight", 152, 0, 600);
+TuningOption contcorr1_weight("contcorr1_weight", 188, 0, 600);
+TuningOption contcorr2_weight("contcorr2_weight", 192, 0, 600);
+TuningOption corr_max_weight("corr_max_weight", 54, 20, 72);
 TuningOption corr_mul_weight("corr_mul_weight", 100, 20, 400);
 
 class History {
