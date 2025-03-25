@@ -193,7 +193,7 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 90 + nonpawn_entry * 225 + minor_entry * 155 + major_entry * 130 + cont_entry * 185 + cont_entry2 * 185) / (256 * 300);
+        return raw_eval + (pawn_entry * 220 + threat_entry * 90 + nonpawn_entry * 240 + minor_entry * 160 + major_entry * 130 + cont_entry * 190 + cont_entry2 * 190) / (256 * 300);
     }
 
 
