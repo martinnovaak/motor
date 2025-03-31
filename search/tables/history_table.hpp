@@ -106,18 +106,18 @@ public:
         const std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
-        move_score += pawn_history_table[color][pawn_key][piece][to];
+        move_score += 2 * pawn_history_table[color][pawn_key][piece][to];
 
         int ply = data.get_ply();
         if (ply > 0) {
             auto prev = data.prev_moves[ply - 1];
-            move_score += continuation_table[color][prev.piece_type][prev.to][piece][to];
+            move_score += continuation_table[color][prev.piece_type][prev.to][piece][to] * 3 / 2;
             if (ply > 1) {
                 auto prev2 = data.prev_moves[ply - 2];
                 move_score += continuation_table[color][prev2.piece_type][prev2.to][piece][to];
                 if (ply > 3) {
                     auto prev4 = data.prev_moves[ply - 4];
-                    move_score += continuation_table[color][prev4.piece_type][prev4.to][piece][to];
+                    move_score += continuation_table[color][prev4.piece_type][prev4.to][piece][to] / 2;
                 }
             }
         }
