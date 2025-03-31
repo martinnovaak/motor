@@ -55,7 +55,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     if (eval >= beta) {
-        return eval;
+        return (eval + beta) / 2;
     }
 
     if (eval > alpha) {
