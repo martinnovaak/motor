@@ -14,7 +14,7 @@ std::int16_t evaluate(board& chessboard) {
 
     int material = std::min(game_phase, 24);
 
-    return network.evaluate<color>() * (54 + material) / 64;
+    return network.evaluate<color>() * (71 + material) / 80;
 }
 
 void set_position(board& chessboard) {
