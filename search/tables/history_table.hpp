@@ -89,12 +89,14 @@ public:
                 }
             }
         } else {
-            update_cap_history(capture_table[piece][to][chessboard.get_piece(to)], bonus);
+            const auto threat_to = static_cast<bool>(threats & bb(to));
+            update_cap_history(capture_table[color][threat_to][piece][to][chessboard.get_piece(to)], bonus);
         }
 
         for (const auto &capture : captures) {
-            auto cap_to = capture.get_to();
-            update_cap_history(capture_table[chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], penalty);
+            const auto cap_to = capture.get_to();
+            const auto threat_to = static_cast<bool>(threats & bb(cap_to));
+            update_cap_history(capture_table[color][threat_to][chessboard.get_piece(capture.get_from())][cap_to][chessboard.get_piece(cap_to)], penalty);
         }
     }
 
@@ -125,8 +127,10 @@ public:
         return move_score;
     }
 
-    int get_capture_score(Piece from_piece, Square to, Piece to_piece) const {
-        return capture_table[from_piece][to][to_piece];
+    template <Color color>
+    int get_capture_score(board & chessboard, Piece from_piece, Square to, Piece to_piece) const {
+        const auto threat_to = static_cast<bool>(chessboard.get_threats() & bb(to));
+        return capture_table[color][threat_to][from_piece][to][to_piece];
     }
 
     template<Color color>
@@ -201,7 +205,7 @@ private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> pawn_history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
-    std::array<std::array<std::array<int, 7>, 64>, 6> capture_table;
+    std::array<std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 2>, 2> capture_table;
     std::array<std::array<int, 16384>, 2> pawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
     std::array<std::array<int, 16384>, 2> minor_correction_table;
