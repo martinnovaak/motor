@@ -366,9 +366,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             history->update_correction_history<color>(chessboard, data, best_score, avg_eval, depth);
         }
 
-        if (!would_tt_prune) {
-            tt.store(flag, depth, best_score, raw_eval, best_move, data.get_ply(), tt_pv, zobrist_key);
-        }
+        tt.store(flag, std::max(1, depth - would_tt_prune), best_score, raw_eval, best_move, data.get_ply(), tt_pv, zobrist_key);
     }
 
     return best_score;
