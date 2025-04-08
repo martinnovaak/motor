@@ -296,7 +296,6 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 } else {
                     reduction += cutnode;
                 }
-                reduction -= chessboard.in_check();
                 reduction += !improving;
                 reduction -= tt_pv;
 
