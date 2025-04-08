@@ -285,6 +285,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         int new_depth = depth - 1 + ext;
 
         std::int16_t score;
+        int num_fail_highs = 0;
         if (moves_searched == 0) {
             score = -alpha_beta<enemy_color, NodeType::PV>(chessboard, data, -beta, -alpha, new_depth, false);
         } else {
@@ -336,6 +337,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
 
             if (score > alpha) {
                 alpha = score;
+                num_fail_highs += 1;
                 flag = Bound::EXACT;
                 best_move = chessmove;
 
@@ -344,7 +346,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     if (is_quiet) {
                         data.update_killer(chessmove);
                     }
-                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + (best_score > beta + 80));
+                    history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + (best_score > beta + 80), num_fail_highs);
                     break;
                 }
             }

@@ -40,8 +40,8 @@ public:
     }
 
     template <Color color, bool is_root>
-    void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth) {
-        int bonus = history_bonus(depth);
+    void update(search_data &data, board &chessboard, const chess_move &best_move, move_list &quiets, move_list &captures, int depth, int num_fail_highs) {
+        int bonus = history_bonus(depth) * num_fail_highs;
         int penalty = -bonus;
 
         auto [piece, from, to] = data.prev_moves[data.get_ply()];
