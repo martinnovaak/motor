@@ -341,6 +341,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     flag = Bound::LOWER;
                     if (is_quiet) {
                         data.update_killer(chessmove);
+                        history->set_positional_move<color>(chessboard, chessmove);
                     }
                     history->update<color, is_root>(data, chessboard, best_move, quiets, captures, depth + (best_score > beta + 80));
                     break;

@@ -23,7 +23,8 @@ public:
     History()
             : history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}),
+              positional_moves({}){}
 
     void clear() {
         history_table = {};
@@ -37,6 +38,7 @@ public:
         threat_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
+        positional_moves = {};
     }
 
     template <Color color, bool is_root>
@@ -200,6 +202,15 @@ public:
         return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
     }
 
+    template <Color color>
+    void set_positional_move(const board &chessboard, const chess_move &chessmove) {
+        positional_moves[color][chessboard.get_pawn_key() % 8192] = chessmove;
+    }
+
+    template <Color color>
+    chess_move get_positional_move(const board &chessboard) {
+        return positional_moves[color][chessboard.get_pawn_key() % 8192];
+    }
 
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
@@ -213,6 +224,7 @@ private:
     std::array<std::array<int, 16384>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
+    std::array<std::array<chess_move, 8192>, 2> positional_moves;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
