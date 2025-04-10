@@ -204,12 +204,16 @@ public:
 
     template <Color color>
     void set_positional_move(const board &chessboard, const chess_move &chessmove) {
-        positional_moves[color][chessboard.get_pawn_key() % 8192] = chessmove;
+        const auto nonpawn_key = chessboard.get_nonpawn_key();
+        const auto key = color == White ? nonpawn_key.first : nonpawn_key.second;
+        positional_moves[color][key % 8192] = chessmove;
     }
 
     template <Color color>
     chess_move get_positional_move(const board &chessboard) {
-        return positional_moves[color][chessboard.get_pawn_key() % 8192];
+        const auto nonpawn_key = chessboard.get_nonpawn_key();
+        const auto key = color == White ? nonpawn_key.first : nonpawn_key.second;
+        return positional_moves[color][key % 8192];
     }
 
 private:
