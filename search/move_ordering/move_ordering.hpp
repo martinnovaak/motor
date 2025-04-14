@@ -37,7 +37,7 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         } else {
             move_score = history->get_quiet_score<color>(chessboard, data, from, to, chessboard.get_piece(from));
             move_score += 32'000 * (data.get_killer() == move);
-            move_score += 4'000 * (history->get_positional_move<color>(chessboard) == move);
+            move_score += 1'000 * (history->get_positional_move<color>(chessboard) == move);
         }
         
         movelist[move_index] = move_score;
