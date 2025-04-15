@@ -87,6 +87,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     std::int16_t eval, static_eval, raw_eval;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
+    bool tt_hit = false;
 
     if (tt_entry.zobrist == tt.upper(zobrist_key)) {
         best_move = tt_entry.tt_move;
@@ -95,6 +96,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         raw_eval = tt_entry.static_eval;
         eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
         tt_pv = tt_pv || tt_entry.tt_pv;
+        tt_hit = true;
 
         if constexpr (!is_root) {
             if (tt_entry.depth >= depth + 2 * is_pv) {
@@ -294,7 +296,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
                 }
                 reduction += !improving;
-                reduction -= tt_pv;
+                reduction -= (tt_hit && tt_pv && tt_entry.score < alpha);
                 reduction += cutnode * 2;
 
                 reduction = std::clamp(reduction, 0, depth - 2);
