@@ -292,6 +292,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
             if (depth >= lmr_depth && movelist.get_move_score(moves_searched) < 1'000'000) {
                 if (is_quiet) {
                     reduction -= movelist.get_move_score(moves_searched) / lmr_quiet_history;
+                } else if (movelist.get_move_score(moves_searched) < 64'000) {
+                    reduction -= movelist.get_move_score(moves_searched) / 10'000;
                 }
                 reduction += !improving;
                 reduction -= tt_pv;
