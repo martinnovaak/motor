@@ -22,7 +22,8 @@ TuningOption tm_node_mul("tm_node_mul", 200, 50, 400);
 class time_keeper {
 public:
     time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0),
-                    max_nodes(static_cast<std::uint64_t>(INT_MAX) / 2), total_nodes(0), node_count{} {}
+                    max_nodes(static_cast<std::uint64_t>(INT_MAX) / 2), total_nodes(0), node_count{},
+                    eval_correction(0) {}
 
     void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, std::uint64_t nodes = static_cast<std::uint64_t>(INT_MAX) / 2) {
         start_time = std::chrono::steady_clock::now();
@@ -34,6 +35,7 @@ public:
         node_count = {};
         last_best_move = {};
         stability_count = 0;
+        eval_correction = 0;
 
         if (time == -1) {
             inf_time = true;
@@ -68,6 +70,7 @@ public:
 
         double opt_scale = 1.0;
         double stability_scale = 1.0;
+        double corr_scale = 1.0;
         if (depth > 6) {
             if (last_best_move == best_move) {
                 stability_count++;
@@ -79,9 +82,10 @@ public:
 
             double bm_frac = 1.0 - double(node_count[best_move.get_from()][best_move.get_to()]) / nodes;
             opt_scale = bm_frac * tm_node_mul.value / 100.0 + tm_node_const.value / 100.0;
+            corr_scale = (eval_correction < 20) ? 0.98 : (eval_correction < 150) ? 1.0 : (eval_correction < 195) ? 1.05 : 1.10;
         }
 
-        if (elapsed() >= std::min(optimal_time_limit * opt_scale * stability_scale, double(time_limit))) {
+        if (elapsed() >= std::min(optimal_time_limit * opt_scale * stability_scale * corr_scale, double(time_limit))) {
             stop = true;
         }
         return stop;
@@ -105,6 +109,10 @@ public:
     int elapsed() {
         auto elapsed_time = std::chrono::steady_clock::now() - start_time;
         return static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count());
+    }
+
+    void update_corr_size(int correction) {
+        eval_correction = correction;
     }
 
     std::uint64_t NPS(uint64_t nodes) {
@@ -141,6 +149,7 @@ private:
     std::array<std::array<int, 64>, 64> node_count;
     chess_move last_best_move;
     int stability_count;
+    int eval_correction;
 };
 
 #endif //MOTOR_TIME_KEEPER_HPP

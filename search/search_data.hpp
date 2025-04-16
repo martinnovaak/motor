@@ -107,6 +107,10 @@ public:
         timekeeper.update_node_count(from, to, nodes_searched - node_count);
     }
 
+    void update_corr_size(int corr) {
+        timekeeper.update_corr_size(corr);
+    }
+
     std::uint64_t nps() {
         return timekeeper.NPS(nodes_searched);
     }
