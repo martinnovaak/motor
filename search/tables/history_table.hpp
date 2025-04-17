@@ -21,12 +21,13 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
 class History {
 public:
     History()
-            : history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
+            : butterfly_history_table({}), pt_history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
-        history_table = {};
+        butterfly_history_table = {};
+        pt_history_table = {};
         pawn_history_table = {};
         continuation_table = {};
         capture_table = {};
@@ -53,7 +54,8 @@ public:
         if (chessboard.is_quiet(best_move)) {
             bool threat_from = (threats & bb(from));
             bool threat_to = (threats & bb(to));
-            update_history(history_table[color][threat_from][threat_to][from][to], bonus);
+            update_history(butterfly_history_table[color][threat_from][threat_to][from][to], bonus);
+            update_history(pt_history_table[color][threat_from][threat_to][piece][to], bonus);
             update_history(pawn_history_table[color][pawn_key][piece][to], bonus);
 
             if constexpr (!is_root) {
@@ -75,7 +77,8 @@ public:
                 auto qpiece = chessboard.get_piece(qfrom);
                 bool qthreat_from = (threats & bb(qfrom));
                 bool qthreat_to = (threats & bb(qto));
-                update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
+                update_history(butterfly_history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
+                update_history(pt_history_table[color][qthreat_from][qthreat_to][qpiece][qto], penalty);
                 update_history(pawn_history_table[color][pawn_key][qpiece][qto], penalty);
 
                 if constexpr (!is_root) {
@@ -107,7 +110,7 @@ public:
         const bool threat_to = (threats & bb(to));
         const std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
 
-        int move_score = history_table[color][threat_from][threat_to][from][to];
+        int move_score = (butterfly_history_table[color][threat_from][threat_to][from][to] + pt_history_table[color][threat_from][threat_to][piece][to]) / 2;
         move_score += pawn_history_table[color][pawn_key][piece][to];
 
         int ply = data.get_ply();
@@ -202,7 +205,8 @@ public:
 
 
 private:
-    std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> butterfly_history_table;
+    std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 2>, 2> pt_history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> pawn_history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 2>, 2> capture_table;
