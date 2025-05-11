@@ -93,7 +93,11 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        if (tt_move.get_value() == 0 || chessboard.is_quiet(tt_move)) {
+            eval = static_eval = history->correct_eval<color>(chessboard, data, raw_eval);
+        } else {
+            eval = static_eval = raw_eval;
+        }
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
