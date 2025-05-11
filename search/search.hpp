@@ -126,6 +126,8 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
+    int correction = in_check ? 0 : static_eval - raw_eval;
+
     data.improving[data.get_ply()] = static_eval;
     int improving = !in_check && data.get_ply() > 1 && static_eval > data.improving[data.get_ply() - 2];
 
@@ -296,6 +298,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                 reduction += !improving;
                 reduction -= tt_pv;
                 reduction += cutnode * 2;
+                reduction -= correction > 100;
 
                 reduction = std::clamp(reduction, 0, depth - 2);
             } else {
