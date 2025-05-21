@@ -7,7 +7,7 @@
 
 #include <immintrin.h>
 
-constexpr unsigned int HIDDEN_SIZE = 1024;
+constexpr unsigned int HIDDEN_SIZE = 1536;
 constexpr int QA = 403;
 constexpr int QB = 81;
 constexpr int Cells = 8;
@@ -31,7 +31,7 @@ struct Weights {
     std::int16_t output_bias;
 };
 
-INCBIN(Weights, "nnue.bin");
+INCBIN(Weights, "sb650.bin");
 const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
 
 enum class Operation {
