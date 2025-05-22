@@ -1,6 +1,6 @@
 # Motor
 
-UCI chess engine written in C++ 20 with (768 x 8 -> 1024) x 2 -> 1 NNUE trained with [forge](https://github.com/martinnovaak/forge).
+UCI chess engine written in C++ 20 with (768 x 8 -> 1536) x 2 -> 1 NNUE trained with [bullet](https://github.com/jw1912/bullet). Previous nets were trained with custom trainer [forge](https://github.com/martinnovaak/forge).
 A custom test [testing tool](https://github.com/martinnovaak/engineduel) was previously used to develop the engine. From June 2024, [Openbench](https://github.com/AndyGrant/OpenBench) is used instead for testing.
 
 Engine contains legal movegen with [kidergarten bitboards](https://github.com/martinnovaak/motor/blob/main/chess_board/slider_attacks/kindergarten.md).
