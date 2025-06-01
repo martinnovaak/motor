@@ -21,13 +21,18 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
 class History {
 public:
     History()
-            : history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
+            : history_table({}), pawn_history_table({}), white_nonpawn_history_table({}), black_nonpawn_history_table({}),
+              minor_history_table({}), major_history_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
         history_table = {};
         pawn_history_table = {};
+        white_nonpawn_history_table = {};
+        black_nonpawn_history_table = {};
+        major_correction_table = {};
+        minor_correction_table = {};
         continuation_table = {};
         capture_table = {};
         pawn_correction_table = {};
@@ -49,12 +54,21 @@ public:
 
         const std::uint64_t threats = chessboard.get_threats();
         const std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
+        const auto [wkey, bkey] = chessboard.get_nonpawn_key();
+        const auto white_nonpawn_key = wkey % 512;
+        const auto black_nonpawn_key = bkey % 512;
+        const auto major_key = chessboard.get_major_key() % 512;
+        const auto minor_key = chessboard.get_minor_key() % 512;
 
         if (chessboard.is_quiet(best_move)) {
             bool threat_from = (threats & bb(from));
             bool threat_to = (threats & bb(to));
             update_history(history_table[color][threat_from][threat_to][from][to], bonus);
             update_history(pawn_history_table[color][pawn_key][piece][to], bonus);
+            update_history(white_nonpawn_history_table[color][white_nonpawn_key][piece][to], bonus);
+            update_history(black_nonpawn_history_table[color][black_nonpawn_key][piece][to], bonus);
+            update_history(major_history_table[color][major_key][piece][to], bonus);
+            update_history(minor_history_table[color][minor_key][piece][to], bonus);
 
             if constexpr (!is_root) {
                 prev = data.prev_moves[data.get_ply() - 1];
@@ -77,6 +91,10 @@ public:
                 bool qthreat_to = (threats & bb(qto));
                 update_history(history_table[color][qthreat_from][qthreat_to][qfrom][qto], penalty);
                 update_history(pawn_history_table[color][pawn_key][qpiece][qto], penalty);
+                update_history(white_nonpawn_history_table[color][white_nonpawn_key][qpiece][qto], penalty);
+                update_history(black_nonpawn_history_table[color][black_nonpawn_key][qpiece][qto], penalty);
+                update_history(major_history_table[color][major_key][qpiece][qto], penalty);
+                update_history(minor_history_table[color][minor_key][qpiece][qto], penalty);
 
                 if constexpr (!is_root) {
                     update_history(continuation_table[color][prev.piece_type][prev.to][qpiece][qto], penalty);
@@ -106,9 +124,19 @@ public:
         const bool threat_from = (threats & bb(from));
         const bool threat_to = (threats & bb(to));
         const std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
+        const auto [wkey, bkey] = chessboard.get_nonpawn_key();
+        const auto white_nonpawn_key = wkey % 512;
+        const auto black_nonpawn_key = bkey % 512;
+        const auto major_key = chessboard.get_major_key() % 512;
+        const auto minor_key = chessboard.get_minor_key() % 512;
+
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
         move_score += pawn_history_table[color][pawn_key][piece][to];
+        move_score += white_nonpawn_history_table[color][white_nonpawn_key][piece][to] / 10;
+        move_score += black_nonpawn_history_table[color][black_nonpawn_key][piece][to] / 10;
+        move_score += major_history_table[color][major_key][piece][to] / 10;
+        move_score += minor_history_table[color][minor_key][piece][to] / 10;
 
         int ply = data.get_ply();
         if (ply > 0) {
@@ -204,6 +232,10 @@ public:
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> pawn_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> white_nonpawn_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> black_nonpawn_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> minor_history_table;
+    std::array<std::array<std::array<std::array<int, 64>, 7>, 512>, 2> major_history_table;
     std::array<std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7>, 2> continuation_table;
     std::array<std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 2>, 2> capture_table;
     std::array<std::array<int, 16384>, 2> pawn_correction_table;
