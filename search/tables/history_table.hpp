@@ -127,16 +127,12 @@ public:
         const auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const auto white_nonpawn_key = wkey % 512;
         const auto black_nonpawn_key = bkey % 512;
-        const auto major_key = chessboard.get_major_key() % 512;
-        const auto minor_key = chessboard.get_minor_key() % 512;
 
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
         move_score += pawn_history_table[color][pawn_key][piece][to];
         move_score += white_nonpawn_history_table[color][white_nonpawn_key][piece][to] / 10;
         move_score += black_nonpawn_history_table[color][black_nonpawn_key][piece][to] / 10;
-        move_score += major_history_table[color][major_key][piece][to] / 10;
-        move_score += minor_history_table[color][minor_key][piece][to] / 10;
 
         int ply = data.get_ply();
         if (ply > 0) {
