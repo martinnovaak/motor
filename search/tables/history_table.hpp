@@ -130,9 +130,9 @@ public:
 
 
         int move_score = history_table[color][threat_from][threat_to][from][to];
-        move_score += pawn_history_table[color][pawn_key][piece][to];
-        move_score += white_nonpawn_history_table[color][white_nonpawn_key][piece][to] / 10;
-        move_score += black_nonpawn_history_table[color][black_nonpawn_key][piece][to] / 10;
+        move_score += pawn_history_table[color][pawn_key][piece][to] / 2;
+        move_score += white_nonpawn_history_table[color][white_nonpawn_key][piece][to] / 6;
+        move_score += black_nonpawn_history_table[color][black_nonpawn_key][piece][to] / 6;
 
         int ply = data.get_ply();
         if (ply > 0) {
