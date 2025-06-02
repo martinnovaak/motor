@@ -45,7 +45,7 @@ public:
         int penalty = -bonus;
 
         auto [piece, from, to] = data.prev_moves[data.get_ply()];
-        history_move prev = {}, prev2 = {}, prev4 = {};
+        history_move prev = {}, prev2 = {};
 
         const std::uint64_t threats = chessboard.get_threats();
         const std::uint64_t pawn_key = chessboard.get_pawn_key() % 512;
@@ -62,10 +62,6 @@ public:
                 if (data.get_ply() > 1) {
                     prev2 = data.prev_moves[data.get_ply() - 2];
                     update_history(continuation_table[color][prev2.piece_type][prev2.to][piece][to], bonus);
-                    if (data.get_ply() > 3) {
-                        prev4 = data.prev_moves[data.get_ply() - 4];
-                        update_history(continuation_table[color][prev4.piece_type][prev4.to][piece][to], bonus);
-                    }
                 }
             }
 
@@ -82,9 +78,6 @@ public:
                     update_history(continuation_table[color][prev.piece_type][prev.to][qpiece][qto], penalty);
                     if (data.get_ply() > 1) {
                         update_history(continuation_table[color][prev2.piece_type][prev2.to][qpiece][qto], penalty);
-                        if (data.get_ply() > 3) {
-                            update_history(continuation_table[color][prev4.piece_type][prev4.to][qpiece][qto], penalty);
-                        }
                     }
                 }
             }
@@ -117,10 +110,6 @@ public:
             if (ply > 1) {
                 auto prev2 = data.prev_moves[ply - 2];
                 move_score += continuation_table[color][prev2.piece_type][prev2.to][piece][to];
-                if (ply > 3) {
-                    auto prev4 = data.prev_moves[ply - 4];
-                    move_score += continuation_table[color][prev4.piece_type][prev4.to][piece][to];
-                }
             }
         }
 
