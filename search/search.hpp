@@ -74,7 +74,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
     }
 
     if (depth <= 0) {
-        return quiescence_search<color>(chessboard, data, alpha, beta);
+        return quiescence_search<color, node_type>(chessboard, data, alpha, beta);
     }
 
     Bound flag = Bound::UPPER;
@@ -139,7 +139,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         if (data.singular_move[data.get_ply()] == 0 && !in_check && std::abs(beta) < 9'000) {
             // razoring
             if (depth < razoring_depth && eval + razoring * depth <= alpha) {
-                std::int16_t razor_eval = quiescence_search<color>(chessboard, data, alpha, beta);
+                std::int16_t razor_eval = quiescence_search<color, NodeType::Non_PV>(chessboard, data, alpha, beta);
                 if (razor_eval <= alpha) {
                     return razor_eval;
                 }
@@ -181,7 +181,7 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
                     make_move<color>(chessboard, chessmove);
                     data.augment_ply();
                     tt.prefetch(chessboard.get_hash_key());
-                    std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -probcut_beta,-probcut_beta + 1);
+                    std::int16_t score = -quiescence_search<enemy_color, NodeType::Non_PV>(chessboard, data, -probcut_beta,-probcut_beta + 1);
 
                     if (score >= probcut_beta) {
                         score = -alpha_beta<enemy_color, NodeType::Non_PV>(chessboard, data, -probcut_beta,-probcut_beta + 1, depth - 3, !cutnode);
