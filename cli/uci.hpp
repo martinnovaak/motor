@@ -15,7 +15,11 @@
 #include "../search/bench.hpp"
 #include "../perft.hpp"
 
-std::vector<TuningOption*> tuning_options = {};
+std::vector<TuningOption*> tuning_options = {
+        &pawn_weight, &nonpawn_weight, &threat_weight, &minor_weight, &major_weight, &contcorr1_weight, &contcorr2_weight,
+        &history_mul_weight
+};
+
 
 void print_tune_options() {
     std::cout << "name,type,default,min,max,step,0.002" << std::endl;
