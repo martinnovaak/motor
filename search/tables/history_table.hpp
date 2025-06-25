@@ -163,11 +163,11 @@ public:
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            update_entry(continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to]);
+            update_entry(continuation_correction_table[prev2.to][prev1.to]);
 
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
-                update_entry(continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to]);
+                update_entry(continuation_correction_table2[prev3.to][prev1.to]);
             }
         }
     }
@@ -190,10 +190,10 @@ public:
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            cont_entry = continuation_correction_table[prev2.to][prev1.to];
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
-                cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                cont_entry2 = continuation_correction_table2[prev3.to][prev1.to];
             }
         }
 
@@ -211,8 +211,8 @@ private:
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
-    std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
-    std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
+    std::array<std::array<int, 64>, 64> continuation_correction_table;
+    std::array<std::array<int, 64>, 64> continuation_correction_table2;
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
