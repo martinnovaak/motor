@@ -358,6 +358,10 @@ std::int16_t alpha_beta(board& chessboard, search_data& data, std::int16_t alpha
         }
     }
 
+    if (best_score > beta && std::abs(beta) < 10'000 && std::abs(alpha) < 10'000) {
+        best_score = (best_score * depth + beta) / (depth + 1);
+    }
+
     if (data.singular_move[data.get_ply()] == 0) {
         int avg_eval = (raw_eval + static_eval * 2) / 3;
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
