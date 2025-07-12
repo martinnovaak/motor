@@ -35,8 +35,10 @@ struct board_info {
     chess_move move = {};
     zobrist hash_key = {};
     zobrist pawn_key = {};
-    zobrist minor_key = {};
-    zobrist major_key = {};
+    zobrist knight_key = {};
+    zobrist bishop_key = {};
+    zobrist rook_key = {};
+    zobrist queen_key = {};
     std::array<zobrist, 2> nonpawn_key = {};
     std::uint64_t threats = {};
     std::uint64_t checkers = {};
@@ -71,8 +73,10 @@ public:
         side = Color::White;
         state->hash_key = zobrist();
         state->pawn_key = zobrist();
-        state->major_key = zobrist();
-        state->minor_key = zobrist();
+        state->knight_key = zobrist();
+        state->bishop_key = zobrist();
+        state->rook_key = zobrist();
+        state->queen_key = zobrist();
         state->nonpawn_key[White] = state->nonpawn_key[Black] = zobrist();
 
         std::string board_str, side_str, castling_str, enpassant_str; //, fifty_move_clock, full_move_number
@@ -308,8 +312,10 @@ public:
         state->hash_key.update_side_hash();
         state->hash_key.update_enpassant_hash(old_info->enpassant);
         state->pawn_key = old_info->pawn_key;
-        state->minor_key = old_info->minor_key;
-        state->major_key = old_info->major_key;
+        state->knight_key = old_info->knight_key;
+        state->bishop_key = old_info->bishop_key;
+        state->rook_key = old_info->rook_key;
+        state->queen_key = old_info->queen_key;
         state->nonpawn_key = old_info->nonpawn_key;
         state->enpassant = Square::Null_Square;
         state->fifty_move_clock++;
@@ -336,12 +342,20 @@ public:
         return state->pawn_key.get_key();
     }
 
-    [[nodiscard]] std::uint64_t get_minor_key() const {
-        return state->minor_key.get_key();
+    [[nodiscard]] std::uint64_t get_knight_key() const {
+        return state->knight_key.get_key();
     }
 
-    [[nodiscard]] std::uint64_t get_major_key() const {
-        return state->major_key.get_key();
+    [[nodiscard]] std::uint64_t get_bishop_key() const {
+        return state->bishop_key.get_key();
+    }
+
+    [[nodiscard]] std::uint64_t get_rook_key() const {
+        return state->rook_key.get_key();
+    }
+
+    [[nodiscard]] std::uint64_t get_queen_key() const {
+        return state->queen_key.get_key();
     }
 
     [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> get_nonpawn_key() const {
@@ -416,8 +430,10 @@ public:
         state->hash_key.update_enpassant_hash(old_state->enpassant);
         state->hash_key.update_side_hash();
         state->pawn_key = old_state->pawn_key;
-        state->major_key = old_state->major_key;
-        state->minor_key = old_state->minor_key;
+        state->knight_key = old_state->knight_key;
+        state->bishop_key = old_state->bishop_key;
+        state->rook_key = old_state->rook_key;
+        state->queen_key = old_state->queen_key;
         state->nonpawn_key = old_state->nonpawn_key;
         state->enpassant = Null_Square;
         state->castling_rights = old_state->castling_rights;
@@ -434,13 +450,14 @@ public:
             state->pawn_key.update_psqt_hash(color, piece, square);
         } else {
             state->nonpawn_key[color].update_psqt_hash(color, piece, square);
-            if (piece == Queen || piece == Rook) {
-                state->major_key.update_psqt_hash(color, piece, square);
-            } else if (piece == Knight || piece == Bishop) {
-                state->minor_key.update_psqt_hash(color, piece, square);
-            } else {
-                state->minor_key.update_psqt_hash(color, piece, square);
-                state->major_key.update_psqt_hash(color, piece, square);
+            if (piece == Knight) {
+                state->knight_key.update_psqt_hash(color, piece, square);
+            } else if (piece == Bishop) {
+                state->bishop_key.update_psqt_hash(color, piece, square);
+            } else if (piece == Rook) {
+                state->rook_key.update_psqt_hash(color, piece, square);
+            } else if (piece == Queen) {
+                state->queen_key.update_psqt_hash(color, piece, square);
             }
         }
     }

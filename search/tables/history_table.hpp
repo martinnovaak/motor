@@ -22,7 +22,7 @@ class History {
 public:
     History()
             : history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
-              pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
+              pawn_correction_table({}), nonpawn_correction_table({}), material_correction_table({}),
               threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
@@ -32,8 +32,7 @@ public:
         capture_table = {};
         pawn_correction_table = {};
         nonpawn_correction_table = {};
-        minor_correction_table = {};
-        major_correction_table = {};
+        material_correction_table = {};
         threat_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
@@ -157,8 +156,24 @@ public:
         update_entry(nonpawn_correction_table[color][White][wkey % CORRECTION_TABLE_SIZE]);
         update_entry(nonpawn_correction_table[color][Black][bkey % CORRECTION_TABLE_SIZE]);
 
-        update_entry(minor_correction_table[color][chessboard.get_minor_key() % CORRECTION_TABLE_SIZE]);
-        update_entry(major_correction_table[color][chessboard.get_major_key() % CORRECTION_TABLE_SIZE]);
+        const auto k_key = chessboard.get_knight_key();
+        const auto b_key = chessboard.get_bishop_key();
+        const auto r_key = chessboard.get_rook_key();
+        const auto q_key = chessboard.get_queen_key();
+
+        const auto kb = k_key | b_key;
+        const auto kr = k_key | r_key;
+        const auto kq = k_key | q_key;
+        const auto br = b_key | r_key;
+        const auto bq = b_key | q_key;
+        const auto rq = r_key | q_key;
+
+        update_entry(material_correction_table[0][color][kb % CORRECTION_TABLE_SIZE]);
+        update_entry(material_correction_table[1][color][kr % CORRECTION_TABLE_SIZE]);
+        update_entry(material_correction_table[2][color][kq % CORRECTION_TABLE_SIZE]);
+        update_entry(material_correction_table[3][color][br % CORRECTION_TABLE_SIZE]);
+        update_entry(material_correction_table[4][color][bq % CORRECTION_TABLE_SIZE]);
+        update_entry(material_correction_table[5][color][rq % CORRECTION_TABLE_SIZE]);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
@@ -179,8 +194,26 @@ public:
 
         const int pawn_entry = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
-        const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-        const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+
+        const auto k_key = chessboard.get_knight_key();
+        const auto b_key = chessboard.get_bishop_key();
+        const auto r_key = chessboard.get_rook_key();
+        const auto q_key = chessboard.get_queen_key();
+
+        const auto kb = k_key | b_key;
+        const auto kr = k_key | r_key;
+        const auto kq = k_key | q_key;
+        const auto br = b_key | r_key;
+        const auto bq = b_key | q_key;
+        const auto rq = r_key | q_key;
+
+        int material_entry = 0;
+        material_entry += material_correction_table[0][color][kb % 16384] * 100;
+        material_entry += material_correction_table[0][color][kr % 16384] * 80;
+        material_entry += material_correction_table[0][color][kq % 16384] * 50;
+        material_entry += material_correction_table[0][color][br % 16384] * 80;
+        material_entry += material_correction_table[0][color][bq % 16384] * 50;
+        material_entry += material_correction_table[0][color][rq % 16384] * 30;
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -197,7 +230,7 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + material_entry + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
     }
 
 
@@ -208,8 +241,7 @@ private:
     std::array<std::array<std::array<std::array<std::array<int, 7>, 64>, 6>, 2>, 2> capture_table;
     std::array<std::array<int, 16384>, 2> pawn_correction_table;
     std::array<std::array<std::array<int, 16384>, 2>, 2> nonpawn_correction_table;
-    std::array<std::array<int, 16384>, 2> minor_correction_table;
-    std::array<std::array<int, 16384>, 2> major_correction_table;
+    std::array<std::array<std::array<int, 16384>, 2>, 6> material_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
