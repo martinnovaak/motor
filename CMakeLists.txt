@@ -25,6 +25,7 @@ add_executable(motor_tests
         tests/attacks_tests.cpp
         tests/rays_tests.cpp
         tests/zobrist_tests.cpp
+        tests/chess_move_tests.cpp
 )
 target_link_libraries(motor_tests motor_core Catch2::Catch2WithMain)
 
