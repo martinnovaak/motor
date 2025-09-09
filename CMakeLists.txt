@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 # Core library
 add_library(motor_core STATIC
         src/core/attacks.cpp
+        src/core/board.cpp
 )
 target_include_directories(motor_core PUBLIC src/core)
 
@@ -24,8 +25,9 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(motor_tests
         tests/attacks_tests.cpp
         tests/rays_tests.cpp
+        tests/zobrist_tests.cpp
         tests/chess_move_tests.cpp
-        tests/test_zobrist.cpp
+        tests/board_tests.cpp
 )
 target_link_libraries(motor_tests motor_core Catch2::Catch2WithMain)
 
