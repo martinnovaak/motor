@@ -67,7 +67,7 @@ namespace motor::attacks {
     bool isValidTransition(int from, int to, int direction) {
         if (to < 0 || to >= BOARD_SIZE)
             return false;
-        if (std::abs((from % 8) - (from - to) % 8) >= 2)
+        if (std::abs((to % 8) - ((to - direction) % 8)) >= 2)
             return false;
         return true;
     }
@@ -105,11 +105,11 @@ namespace motor::attacks {
     }
 
     std::uint64_t generateDiagonalMask(int square) {
-        return generateRayOccupancy(0, square, {7, -7}, [](int, std::uint64_t) { return 0; });
+        return generateRayOccupancy(0, square, {9, -9}, [](int, std::uint64_t) { return 0; });
     }
 
     std::uint64_t generateAntiDiagonalMask(int square) {
-        return generateRayOccupancy(0, square, {9, -9}, [](int, std::uint64_t) { return 0; });
+        return generateRayOccupancy(0, square, {7, -7}, [](int, std::uint64_t) { return 0; });
     }
 
     std::uint8_t computeDiagonal(int square, std::uint64_t occ) {
