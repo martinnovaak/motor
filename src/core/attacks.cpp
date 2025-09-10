@@ -67,17 +67,8 @@ namespace motor::attacks {
     bool isValidTransition(int from, int to, int direction) {
         if (to < 0 || to >= BOARD_SIZE)
             return false;
-        const int fromRank = from / RANK_SIZE;
-        const int toRank = to / RANK_SIZE;
-
-        if (std::abs(direction) == 1)
-            return fromRank == toRank;
-
-        if (std::abs(direction) == 7 || std::abs(direction) == 9) {
-            const int fromFile = from % RANK_SIZE;
-            const int toFile = to % RANK_SIZE;
-            return std::abs(toFile - fromFile) == 1;
-        }
+        if (std::abs((from % 8) - (from - to) % 8) >= 2)
+            return false;
         return true;
     }
 
