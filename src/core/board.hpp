@@ -172,6 +172,8 @@ namespace motor {
 
         void resetFiftyMoveCounter() { getCurrentStateRef().FiftyMoveCounter = 0; }
 
+        [[nodiscard]] int getFiftyMoveCounter() const { return getCurrentState().FiftyMoveCounter; }
+
         void setEnpassantSquare(Square square) {
             auto &currentState = getCurrentStateRef();
             currentState.Keys.updateEnPassant(currentState.EnpassantSquare, square);
