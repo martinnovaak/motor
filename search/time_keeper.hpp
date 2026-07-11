@@ -1,6 +1,7 @@
 #ifndef MOTOR_TIME_KEEPER_HPP
 #define MOTOR_TIME_KEEPER_HPP
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <climits>
@@ -12,6 +13,19 @@ struct time_info {
     std::uint64_t max_nodes = static_cast<std::uint64_t>(INT_MAX) / 2;
 };
 
+// state shared by all search threads and the UCI thread
+struct shared_search_state {
+    std::atomic<bool> stop{false};
+    std::atomic<std::uint64_t> nodes{0};
+
+    void new_search() {
+        stop.store(false, std::memory_order_relaxed);
+        nodes.store(0, std::memory_order_relaxed);
+    }
+};
+
+shared_search_state shared_state;
+
 TuningOption tm_expect_mul("tm_expect_mul", 41, 20, 70);
 TuningOption tm_mul("tm_mul", 86, 40, 150);
 TuningOption tm_stability_const("tm_stability_const", 137, 50, 400);
@@ -21,12 +35,11 @@ TuningOption tm_node_mul("tm_node_mul", 200, 50, 400);
 
 class time_keeper {
 public:
-    time_keeper() : stop(false), inf_time(false), time_limit(0), optimal_time_limit(0),
+    time_keeper() : inf_time(false), time_limit(0), optimal_time_limit(0),
                     max_nodes(static_cast<std::uint64_t>(INT_MAX) / 2), total_nodes(0), node_count{} {}
 
     void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, std::uint64_t nodes = static_cast<std::uint64_t>(INT_MAX) / 2) {
         start_time = std::chrono::steady_clock::now();
-        stop = false;
         const int time_minus_threshold = time - 50;
         max_nodes = nodes;
         total_nodes = 0;
@@ -50,15 +63,18 @@ public:
     }
 
     [[nodiscard]] bool stopped() const {
-        return stop;
+        return shared_state.stop.load(std::memory_order_relaxed);
     }
 
-    bool can_end(std::uint64_t nodes, const chess_move& best_move, int depth) {
-        if (stop) {
+    bool can_end(const chess_move& best_move, int depth) {
+        const std::uint64_t nodes = total_nodes;
+
+        if (stopped()) {
             return true;
         }
 
-        if (total_nodes >= max_nodes) {
+        if (shared_state.nodes.load(std::memory_order_relaxed) >= max_nodes) {
+            stop_timer();
             return true;
         }
 
@@ -82,24 +98,27 @@ public:
         }
 
         if (elapsed() >= std::min(optimal_time_limit * opt_scale * stability_scale, double(time_limit))) {
-            stop = true;
+            stop_timer();
         }
-        return stop;
+        return stopped();
     }
 
-    bool should_end(std::uint64_t nodes = 0) { // called in alphabeta
-        if (stop || total_nodes >= max_nodes) {
+    bool should_end(std::uint64_t nodes, bool main_thread) { // called in alphabeta
+        if (stopped()) {
             return true;
         }
 
-        if (inf_time) {
+        if (!main_thread) {
             return false;
         }
 
-        if((nodes & 1023) == 0) {
-            stop = elapsed() >= time_limit;
+        if ((nodes & 1023) == 0) {
+            if (shared_state.nodes.load(std::memory_order_relaxed) >= max_nodes ||
+                (!inf_time && elapsed() >= time_limit)) {
+                stop_timer();
+            }
         }
-        return stop;
+        return stopped();
     }
 
     int elapsed() {
@@ -112,7 +131,7 @@ public:
         std::uint64_t elapsed_time = elapsed();
 
         if(elapsed_time > 0) {
-            return (total_nodes / elapsed_time) * 1000;
+            return (shared_state.nodes.load(std::memory_order_relaxed) / elapsed_time) * 1000;
         }
 
         return 0;
@@ -123,7 +142,7 @@ public:
     }
 
     void stop_timer() {
-        stop = true;
+        shared_state.stop.store(true, std::memory_order_relaxed);
     }
 
     void update_node_count(int from, int to, int delta) {
@@ -132,7 +151,6 @@ public:
 
 private:
     std::chrono::time_point<std::chrono::steady_clock> start_time;
-    bool stop;
     bool inf_time;
     int time_limit;
     int optimal_time_limit;

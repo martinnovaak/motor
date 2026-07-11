@@ -31,11 +31,11 @@ void score_moves(board & chessboard, move_list & movelist, search_data & data, c
         if (move == tt_move) {
             move_score = 214748364;
         } else if (!chessboard.is_quiet(move)) {
-            int cap_score = history->get_capture_score<color>(chessboard, chessboard.get_piece(from), to, chessboard.get_piece(to));
+            int cap_score = data.history->get_capture_score<color>(chessboard, chessboard.get_piece(from), to, chessboard.get_piece(to));
             move_score = 10'000'000 * see<color>(chessboard, move, -cap_score / 40) + mvv[chessboard.get_piece(to)];
             move_score += cap_score;
         } else {
-            move_score = history->get_quiet_score<color>(chessboard, data, from, to, chessboard.get_piece(from));
+            move_score = data.history->get_quiet_score<color>(chessboard, data, from, to, chessboard.get_piece(from));
             move_score += 32'000 * (data.get_killer() == move);
         }
         

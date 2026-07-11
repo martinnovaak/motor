@@ -14,8 +14,6 @@
 #include "fen_utilities.hpp"
 #include "pinmask.hpp"
 
-#include "../evaluation/nnue.hpp"
-
 constexpr int castling_mask[64] = {
         13, 15, 15, 15, 12, 15, 15, 14,
         15, 15, 15, 15, 15, 15, 15, 15,
@@ -59,6 +57,24 @@ public:
         state = &history[0];
         std::ranges::fill(pieces, Piece::Null_Piece);
         fen_to_board(fen);
+    }
+
+    board (const board & other) {
+        *this = other;
+    }
+
+    board & operator=(const board & other) {
+        if (this == &other) {
+            return *this;
+        }
+        pieces = other.pieces;
+        bitboards = other.bitboards;
+        side_occupancy = other.side_occupancy;
+        occupancy = other.occupancy;
+        history = other.history;
+        state = history.data() + (other.state - other.history.data());
+        side = other.side;
+        return *this;
     }
 
     void fen_to_board(const std::string& fen) {

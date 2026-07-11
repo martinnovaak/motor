@@ -1,11 +1,11 @@
 #ifndef MOTOR_MAKEMOVE_HPP
 #define MOTOR_MAKEMOVE_HPP
 
-#include "../chess_board/board.hpp"
-#include "../evaluation/nnue.hpp"
+#include "position.hpp"
 
 template <Color color>
-std::int16_t evaluate(board& chessboard) {
+std::int16_t evaluate(position& pos) {
+    board& chessboard = pos.chessboard;
     int game_phase =
             (popcount(chessboard.get_pieces(White, Knight) + chessboard.get_pieces(Black, Knight))) +
             (popcount(chessboard.get_pieces(White, Bishop) + chessboard.get_pieces(Black, Bishop))) +
@@ -14,11 +14,12 @@ std::int16_t evaluate(board& chessboard) {
 
     int material = std::min(game_phase, 24);
 
-    return network.evaluate<color>() * (56 + material) / 64;
+    return pos.network.evaluate<color>() * (56 + material) / 64;
 }
 
-void set_position(board& chessboard) {
-    network.refresh();
+void set_position(position& pos) {
+    board& chessboard = pos.chessboard;
+    pos.network.refresh();
     int wking = lsb(chessboard.get_pieces(White, King));
     int bking = lsb(chessboard.get_pieces(Black, King));
 
@@ -28,58 +29,59 @@ void set_position(board& chessboard) {
 
             while (bitboard) {
                 Square square = pop_lsb(bitboard);
-                network.update_accumulator<Operation::Set>(piece, side, square, wking, bking);
+                pos.network.update_accumulator<Operation::Set>(piece, side, square, wking, bking);
             }
         }
     }
 }
 
 template<Color color>
-void update_bucket(board& chessboard, int king) {
-    network.refresh_current_accumulator<color>();
+void update_bucket(position& pos, int king) {
+    pos.network.refresh_current_accumulator<color>();
 
     for (Color side : {White, Black}) {
         for (Piece piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
-            std::uint64_t bitboard = chessboard.get_pieces(side, piece);
+            std::uint64_t bitboard = pos.chessboard.get_pieces(side, piece);
 
             while (bitboard) {
                 Square square = pop_lsb(bitboard);
-                network.update_accumulator<Operation::Set, color>(piece, side, square, king);
+                pos.network.update_accumulator<Operation::Set, color>(piece, side, square, king);
             }
         }
     }
 }
 
 template<Color side, bool update_nnue>
-void unset_piece(board & b, Piece piece, Square to, int wking, int bking) {
-    b.unset_piece<side>(piece, to);
+void unset_piece(position& pos, Piece piece, Square to, int wking, int bking) {
+    pos.chessboard.unset_piece<side>(piece, to);
 
     if constexpr (update_nnue) {
-        network.update_accumulator<Operation::Unset>(piece, side, to, wking, bking);
+        pos.network.update_accumulator<Operation::Unset>(piece, side, to, wking, bking);
     }
 }
 
 template<Color side, bool update_nnue>
-void set_piece(board & b, Piece piece, Square to, int wking, int bking) {
-    b.set_piece<side>(piece, to);
+void set_piece(position& pos, Piece piece, Square to, int wking, int bking) {
+    pos.chessboard.set_piece<side>(piece, to);
 
     if constexpr (update_nnue) {
-        network.update_accumulator<Operation::Set>(piece, side, to, wking, bking);
+        pos.network.update_accumulator<Operation::Set>(piece, side, to, wking, bking);
     }
 }
 
 template<Color side, bool update_nnue>
-void move_piece(board & b, Piece piece, Square from, Square to, int wking, int bking) {
-    b.move_piece<side>(piece, from, to);
+void move_piece(position& pos, Piece piece, Square from, Square to, int wking, int bking) {
+    pos.chessboard.move_piece<side>(piece, from, to);
 
     if constexpr (update_nnue) {
-        network.update_accumulator<Operation::Unset>(piece, side, from, wking, bking);
-        network.update_accumulator<Operation::Set>(piece, side, to, wking, bking);
+        pos.network.update_accumulator<Operation::Unset>(piece, side, from, wking, bking);
+        pos.network.update_accumulator<Operation::Set>(piece, side, to, wking, bking);
     }
 }
 
 template<Color side, bool update_nnue = true>
-void make_move(board & b, chess_move m) {
+void make_move(position& pos, chess_move m) {
+    board& b = pos.chessboard;
     constexpr Color their_side = side == White ? Black : White;
     constexpr Direction PawnDirection = side == White ? NORTH : SOUTH;
     const Square from = m.get_from();
@@ -94,7 +96,7 @@ void make_move(board & b, chess_move m) {
     int bking = lsb(b.get_pieces(Black, King));
 
     if constexpr (update_nnue) {
-        network.push();
+        pos.network.push();
 
         if (piece == King && (((side == White) && buckets[from] != buckets[to]) || ((side == Black) && buckets[from ^ 56] != buckets[to ^ 56]))) {
             if constexpr (side == White) {
@@ -102,7 +104,7 @@ void make_move(board & b, chess_move m) {
             } else {
                 bking = to;
             }
-            update_bucket<side>(b, to);
+            update_bucket<side>(pos, to);
         }
     }
 
@@ -111,14 +113,14 @@ void make_move(board & b, chess_move m) {
         case NORMAL: {
             if (capture != Null_Piece) {
                 b.update_hash(their_side, capture, to);
-                unset_piece<their_side, update_nnue>(b, b.get_piece(to), to, wking, bking);
+                unset_piece<their_side, update_nnue>(pos, b.get_piece(to), to, wking, bking);
                 b.reset_fifty_move_clock();
                 b.update_castling_rights(to);
             }
 
             b.update_hash(side, piece, from);
             b.update_hash(side, piece, to);
-            move_piece<side, update_nnue>(b, b.get_piece(from), from, to, wking, bking);
+            move_piece<side, update_nnue>(pos, b.get_piece(from), from, to, wking, bking);
 
             if (piece == Pawn) {
                 b.reset_fifty_move_clock();
@@ -145,8 +147,8 @@ void make_move(board & b, chess_move m) {
             b.update_hash(side, King, to);
             b.update_hash(side, Rook, rookFrom);
             b.update_hash(side, Rook, rookTo);
-            move_piece<side, update_nnue>(b, King, from, to, wking, bking);
-            move_piece<side, update_nnue>(b, Rook, rookFrom, rookTo, wking, bking);
+            move_piece<side, update_nnue>(pos, King, from, to, wking, bking);
+            move_piece<side, update_nnue>(pos, Rook, rookFrom, rookTo, wking, bking);
 
             break;
         }
@@ -154,14 +156,14 @@ void make_move(board & b, chess_move m) {
             const Piece promotionType = m.get_promotion();
             if (capture != Null_Piece) {
                 b.update_hash(their_side, capture, to);
-                unset_piece<their_side, update_nnue>(b, b.get_piece(to), to, wking, bking);
+                unset_piece<their_side, update_nnue>(pos, b.get_piece(to), to, wking, bking);
                 b.update_castling_rights(to);
             }
 
             b.update_hash(side, Pawn, from);
             b.update_hash(side, promotionType, to);
-            unset_piece<side, update_nnue>(b, Pawn, from, wking, bking);
-            set_piece<side, update_nnue>(b, promotionType, to, wking, bking);
+            unset_piece<side, update_nnue>(pos, Pawn, from, wking, bking);
+            set_piece<side, update_nnue>(pos, promotionType, to, wking, bking);
             break;
         }
         case EN_PASSANT: {
@@ -169,8 +171,8 @@ void make_move(board & b, chess_move m) {
             b.update_hash(their_side, Pawn, epsq);
             b.update_hash(side, Pawn, from);
             b.update_hash(side, Pawn, to);
-            unset_piece<their_side, update_nnue>(b, Pawn, epsq, wking, bking);
-            move_piece<side, update_nnue>(b, Pawn, from, to, wking, bking);
+            unset_piece<their_side, update_nnue>(pos, Pawn, epsq, wking, bking);
+            move_piece<side, update_nnue>(pos, Pawn, from, to, wking, bking);
 
             b.reset_fifty_move_clock();
             break;
@@ -181,14 +183,15 @@ void make_move(board & b, chess_move m) {
 }
 
 template<Color side, bool update_nnue = true>
-void undo_move(board & b, chess_move m) {
+void undo_move(position& pos, chess_move m) {
+    board& b = pos.chessboard;
     constexpr Color their_side = side == White ? Black : White;
     const Square from = m.get_from();
     const Square to = m.get_to();
     const Piece capture = b.get_captured_piece();
 
     if constexpr (update_nnue) {
-        network.pull();
+        pos.network.pull();
     }
 
     b.undo_state<side>();

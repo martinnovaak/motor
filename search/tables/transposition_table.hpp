@@ -89,14 +89,15 @@ public:
     TT_entry retrieve(const std::uint64_t zobrist_key, const std::int16_t ply) {
         TT_CLUSTER &cluster = tt_table[get_index(zobrist_key)];
 
-        for (auto &entry : cluster.entries) {
+        for (const auto &entry : cluster.entries) {
             if (entry.zobrist == upper(zobrist_key)) {
-                entry.score = [&] {
-                    if (entry.score > 19'000) return static_cast<int16_t>(entry.score - ply);
-                    if (entry.score < -19'000) return static_cast<int16_t>(entry.score + ply);
-                    return entry.score;
+                TT_entry result = entry;
+                result.score = [&] {
+                    if (result.score > 19'000) return static_cast<int16_t>(result.score - ply);
+                    if (result.score < -19'000) return static_cast<int16_t>(result.score + ply);
+                    return result.score;
                 }();
-                return entry;
+                return result;
             }
         }
         return TT_entry{};
