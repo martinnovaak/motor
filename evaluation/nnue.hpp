@@ -2,7 +2,10 @@
 #define MOTOR_NNUE_HPP
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
 
+#include "../chess_board/board.hpp"
 #include "incbin.hpp"
 
 #if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
@@ -40,6 +43,22 @@ enum class Operation {
     Set, Unset
 };
 
+struct feature_change {
+    Piece piece = Null_Piece;
+    Color color = White;
+    Square square = Null_Square;
+    Operation operation = Operation::Set;
+};
+
+struct accumulator_state {
+    static constexpr std::size_t MAX_CHANGES = 4;
+
+    std::array<feature_change, MAX_CHANGES> changes{};
+    std::array<Square, 2> king_square{Null_Square, Null_Square};
+    std::uint8_t change_count = 0;
+    bool computed = false;
+};
+
 int screlu(int x) {
     std::int16_t clamped = std::clamp(x, 0, QA);
     return clamped * clamped;
@@ -57,23 +76,16 @@ class perspective_network
 public:
     std::array<std::array<std::int16_t, hidden_size>, 128> white_accumulator_stack;
     std::array<std::array<std::int16_t, hidden_size>, 128> black_accumulator_stack;
+    std::array<accumulator_state, 128> state_stack;
     unsigned int index;
 
     perspective_network() {
         refresh();
     }
 
-    template <Color perspective>
-    void refresh_current_accumulator() {
-        if constexpr (perspective == White) {
-            white_accumulator_stack[index] = weights.feature_bias;
-        } else {
-            black_accumulator_stack[index] = weights.feature_bias;
-        }
-    }
-
     void refresh() {
         white_accumulator_stack[0] = black_accumulator_stack[0] = weights.feature_bias;
+        state_stack[0] = {};
         index = 0;
     }
 
@@ -81,10 +93,66 @@ public:
         white_accumulator_stack[index + 1] = white_accumulator_stack[index];
         black_accumulator_stack[index + 1] = black_accumulator_stack[index];
         index++;
+        state_stack[index] = {};
+        state_stack[index].king_square = state_stack[index - 1].king_square;
     }
 
     void pull() {
         index--;
+    }
+
+    void set_king_squares(Square white_king, Square black_king) {
+        state_stack[index].king_square = {white_king, black_king};
+    }
+
+    template<Operation operation>
+    void record_change(Piece piece, Color color, Square square) {
+        auto& state = state_stack[index];
+        state.changes[state.change_count++] = {piece, color, square, operation};
+    }
+
+    void mark_current_computed() {
+        state_stack[index].computed = true;
+    }
+
+    void materialize(const board& chessboard) {
+        auto& current_state = state_stack[index];
+        if (current_state.computed) {
+            return;
+        }
+
+        const Square white_king = current_state.king_square[White];
+        const Square black_king = current_state.king_square[Black];
+
+        if (index == 0) {
+            refresh_accumulator<White>(chessboard, white_king);
+            refresh_accumulator<Black>(chessboard, black_king);
+        } else {
+            const auto& parent_state = state_stack[index - 1];
+            const bool white_bucket_changed = buckets[white_king] !=
+                                              buckets[parent_state.king_square[White]];
+            const bool black_bucket_changed = buckets[black_king ^ 56] !=
+                                              buckets[parent_state.king_square[Black] ^ 56];
+
+            if (!white_bucket_changed && !black_bucket_changed) {
+                apply_frame<White>(white_king);
+                apply_frame<Black>(black_king);
+            } else {
+                if (white_bucket_changed) {
+                    refresh_accumulator<White>(chessboard, white_king);
+                } else {
+                    apply_frame<White>(white_king);
+                }
+
+                if (black_bucket_changed) {
+                    refresh_accumulator<Black>(chessboard, black_king);
+                } else {
+                    apply_frame<Black>(black_king);
+                }
+            }
+        }
+
+        current_state.computed = true;
     }
 
     int get_square_index(int square, int king_square) {
@@ -146,6 +214,41 @@ public:
         }
     }
 
+private:
+    template<Color perspective>
+    void apply_frame(Square king) {
+        const auto& state = state_stack[index];
+        for (std::uint8_t change_index = 0; change_index < state.change_count; change_index++) {
+            const feature_change& change = state.changes[change_index];
+            if (change.operation == Operation::Set) {
+                update_accumulator<Operation::Set, perspective>(change.piece, change.color,
+                                                                change.square, king);
+            } else {
+                update_accumulator<Operation::Unset, perspective>(change.piece, change.color,
+                                                                  change.square, king);
+            }
+        }
+    }
+
+    template<Color perspective>
+    void refresh_accumulator(const board& chessboard, Square king) {
+        auto& current_accumulator = perspective == White
+                ? white_accumulator_stack[index]
+                : black_accumulator_stack[index];
+
+        current_accumulator = weights.feature_bias;
+        for (Color side : {White, Black}) {
+            for (Piece piece : {Pawn, Knight, Bishop, Rook, Queen, King}) {
+                std::uint64_t bitboard = chessboard.get_pieces(side, piece);
+                while (bitboard) {
+                    const Square square = pop_lsb(bitboard);
+                    update_accumulator<Operation::Set, perspective>(piece, side, square, king);
+                }
+            }
+        }
+    }
+
+public:
 #ifndef __AVX2__
     template <Color color>
     std::int32_t evaluate() {
