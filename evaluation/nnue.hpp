@@ -5,7 +5,9 @@
 
 #include "incbin.hpp"
 
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
 #include <immintrin.h>
+#endif
 
 constexpr unsigned int HIDDEN_SIZE = 1536;
 constexpr int QA = 403;
@@ -197,7 +199,5 @@ private:
     }
 #endif // __AVX2__
 };
-
-perspective_network<HIDDEN_SIZE> network;
 
 #endif //MOTOR_NNUE_HPP

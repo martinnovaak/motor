@@ -10,7 +10,8 @@
 #include "../executioner/makemove.hpp"
 
 template <Color color>
-std::int16_t quiescence_search(board & chessboard, search_data & data, std::int16_t alpha, std::int16_t beta, std::int8_t depth = 0) {
+std::int16_t quiescence_search(position& pos, search_data & data, std::int16_t alpha, std::int16_t beta, std::int8_t depth = 0) {
+    board& chessboard = pos.chessboard;
     constexpr Color enemy_color = (color == White) ? Black : White;
 
     if(data.should_end()) {
@@ -18,7 +19,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
     }
 
     if (data.get_ply() > 92) {
-        return evaluate<color>(chessboard);
+        return evaluate<color>(pos);
     }
 
     if (chessboard.is_draw(data.get_ply())) {
@@ -38,7 +39,7 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
         std::int16_t tt_eval = tt_entry.score;
         tt_move = tt_entry.tt_move;
         static_eval = tt_entry.static_eval;
-        eval = history->correct_eval<color>(chessboard, data, static_eval);
+        eval = data.history->correct_eval<color>(chessboard, data, static_eval);
         if ((tt_entry.bound == Bound::EXACT) ||
             (tt_entry.bound == Bound::LOWER && tt_eval >= beta) ||
             (tt_entry.bound == Bound::UPPER && tt_eval <= alpha)) {
@@ -50,8 +51,8 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             eval = tt_eval;
         }
     } else {
-        static_eval = eval = in_check ? -INF : evaluate<color>(chessboard);
-        eval = history->correct_eval<color>(chessboard, data,static_eval);
+        static_eval = eval = in_check ? -INF : evaluate<color>(pos);
+        eval = data.history->correct_eval<color>(chessboard, data,static_eval);
     }
 
     if (eval >= beta) {
@@ -96,11 +97,11 @@ std::int16_t quiescence_search(board & chessboard, search_data & data, std::int1
             }
         }
 
-        make_move<color>(chessboard, chessmove);
+        make_move<color>(pos, chessmove);
         data.augment_ply();
         tt.prefetch(chessboard.get_hash_key());
-        std::int16_t score = -quiescence_search<enemy_color>(chessboard, data, -beta, -alpha, depth - 1);
-        undo_move<color>(chessboard, chessmove);
+        std::int16_t score = -quiescence_search<enemy_color>(pos, data, -beta, -alpha, depth - 1);
+        undo_move<color>(pos, chessmove);
         data.reduce_ply();
 
         if (score <= eval) {

@@ -15,6 +15,8 @@ enum class NodeType : std::uint8_t {
 
 transposition_table<TT_cluster> tt(32 * 1024 * 1024);
 
+class History;
+
 struct history_move {
     Piece piece_type = Piece::Null_Piece;
     Square from = Square::A1;
@@ -30,7 +32,10 @@ public:
     }
 
     bool should_end() {
-        return timekeeper.should_end(nodes_searched);
+        if ((nodes_searched & 1023) == 0) {
+            flush_nodes();
+        }
+        return timekeeper.should_end(nodes_searched, main_thread);
     }
 
     bool time_stopped() {
@@ -38,7 +43,16 @@ public:
     }
 
     bool time_is_up(int depth) {
-        return timekeeper.can_end(nodes(), principal_variation_table.get_best_move(), depth);
+        if (!main_thread) {
+            return timekeeper.stopped();
+        }
+        return timekeeper.can_end(principal_variation_table.get_best_move(), depth);
+    }
+
+    // push locally counted nodes into the shared counter
+    void flush_nodes() {
+        shared_state.nodes.fetch_add(nodes_searched - flushed_nodes, std::memory_order_relaxed);
+        flushed_nodes = nodes_searched;
     }
 
     void update_pv_length() {
@@ -88,7 +102,8 @@ public:
     }
 
     std::uint64_t nodes() {
-        return timekeeper.get_total_nodes();
+        flush_nodes();
+        return shared_state.nodes.load(std::memory_order_relaxed);
     }
 
     std::uint64_t searched_nodes() {
@@ -96,7 +111,9 @@ public:
     }
 
     void reset_nodes() {
+        flush_nodes();
         nodes_searched = 0;
+        flushed_nodes = 0;
     }
 
     [[nodiscard]] std::uint64_t get_nodes() const {
@@ -110,6 +127,9 @@ public:
     std::uint64_t nps() {
         return timekeeper.NPS(nodes_searched);
     }
+
+    History* history = nullptr;
+    bool main_thread = true;
 
     int improving[96] = {};
 
@@ -126,6 +146,7 @@ private:
     time_keeper timekeeper;
 
     std::uint64_t nodes_searched;
+    std::uint64_t flushed_nodes = 0;
     chess_move killer_moves[96] = {};
 };
 

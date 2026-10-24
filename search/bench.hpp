@@ -57,17 +57,18 @@ const std::string fens[] = {
 };
 
 template <Color color>
-std::uint64_t bench_iterative_deepening(board& chessboard, int max_depth) {
+std::uint64_t bench_iterative_deepening(position& pos, History& hist, int max_depth) {
     search_data data;
+    data.history = &hist;
     time_info info;
     data.set_timekeeper(info.wtime, info.winc, info.movestogo, 1, INT_MAX / 2);
 
     int score;
     for (int depth = 1; depth <= max_depth; depth++) {
         if (depth < 6) {
-            score = alpha_beta<color, NodeType::Root>(chessboard, data, -10'000, 10'000, depth, false);
+            score = alpha_beta<color, NodeType::Root>(pos, data, -10'000, 10'000, depth, false);
         } else {
-            score = aspiration_window<color>(chessboard, data, score, depth);
+            score = aspiration_window<color>(pos, data, score, depth);
         }
     }
 
@@ -77,13 +78,15 @@ std::uint64_t bench_iterative_deepening(board& chessboard, int max_depth) {
 void bench(int depth) {
 	std::uint64_t nodes = 0;
 
-    board b;
+    auto pos = std::make_unique<position>();
+    auto hist = std::make_unique<History>();
+    shared_state.new_search();
     auto start = std::chrono::steady_clock::now();
 
     for (const auto & fen : fens) {
-        b.fen_to_board(fen);
-        set_position(b);
-        nodes += (b.get_side() == Color::White) ? bench_iterative_deepening<Color::White>(b, depth) : bench_iterative_deepening<Color::Black>(b, depth);
+        pos->chessboard.fen_to_board(fen);
+        set_position(*pos);
+        nodes += (pos->chessboard.get_side() == Color::White) ? bench_iterative_deepening<Color::White>(*pos, *hist, depth) : bench_iterative_deepening<Color::Black>(*pos, *hist, depth);
     }
 
     auto end = std::chrono::steady_clock::now();

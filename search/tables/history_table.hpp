@@ -228,6 +228,4 @@ private:
     }
 };
 
-std::unique_ptr<History> history = std::make_unique<History>();
-
 #endif // HISTORY_HPP
