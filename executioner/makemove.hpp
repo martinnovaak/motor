@@ -77,8 +77,6 @@ void make_move(position& pos, chess_move m) {
     const Piece capture = b.get_piece(to);
 
     if constexpr (update_nnue) {
-        // A parent obtained from the TT may not have needed its accumulator.
-        // Materialize it only when it is actually about to expand a child.
         pos.network.materialize(b);
         pos.network.push();
     }

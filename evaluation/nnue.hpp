@@ -90,8 +90,6 @@ public:
     }
 
     void push() {
-        white_accumulator_stack[index + 1] = white_accumulator_stack[index];
-        black_accumulator_stack[index + 1] = black_accumulator_stack[index];
         index++;
         state_stack[index] = {};
         state_stack[index].king_square = state_stack[index - 1].king_square;
@@ -121,35 +119,33 @@ public:
             return;
         }
 
+        if (index == 0) {
+            refresh_accumulator<White>(chessboard, current_state.king_square[White]);
+            refresh_accumulator<Black>(chessboard, current_state.king_square[Black]);
+            current_state.computed = true;
+            return;
+        }
+
+        const auto& parent_state = state_stack[index - 1];
         const Square white_king = current_state.king_square[White];
         const Square black_king = current_state.king_square[Black];
+        const bool refresh_white = buckets[white_king] !=
+                                   buckets[parent_state.king_square[White]];
+        const bool refresh_black = buckets[black_king ^ 56] !=
+                                   buckets[parent_state.king_square[Black] ^ 56];
 
-        if (index == 0) {
+        if (refresh_white) {
             refresh_accumulator<White>(chessboard, white_king);
+        } else {
+            white_accumulator_stack[index] = white_accumulator_stack[index - 1];
+            apply_frame<White>(white_king);
+        }
+
+        if (refresh_black) {
             refresh_accumulator<Black>(chessboard, black_king);
         } else {
-            const auto& parent_state = state_stack[index - 1];
-            const bool white_bucket_changed = buckets[white_king] !=
-                                              buckets[parent_state.king_square[White]];
-            const bool black_bucket_changed = buckets[black_king ^ 56] !=
-                                              buckets[parent_state.king_square[Black] ^ 56];
-
-            if (!white_bucket_changed && !black_bucket_changed) {
-                apply_frame<White>(white_king);
-                apply_frame<Black>(black_king);
-            } else {
-                if (white_bucket_changed) {
-                    refresh_accumulator<White>(chessboard, white_king);
-                } else {
-                    apply_frame<White>(white_king);
-                }
-
-                if (black_bucket_changed) {
-                    refresh_accumulator<Black>(chessboard, black_king);
-                } else {
-                    apply_frame<Black>(black_king);
-                }
-            }
+            black_accumulator_stack[index] = black_accumulator_stack[index - 1];
+            apply_frame<Black>(black_king);
         }
 
         current_state.computed = true;
