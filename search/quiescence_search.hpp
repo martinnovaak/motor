@@ -12,6 +12,7 @@
 template <Color color>
 std::int16_t quiescence_search(position& pos, search_data & data, std::int16_t alpha, std::int16_t beta, std::int8_t depth = 0) {
     board& chessboard = pos.chessboard;
+    auto& tt = data.table();
     constexpr Color enemy_color = (color == White) ? Black : White;
 
     if(data.should_end()) {

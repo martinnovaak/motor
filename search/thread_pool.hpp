@@ -76,7 +76,7 @@ public:
             resize(1);
         }
         wait_until_finished();
-        shared_state.new_search();
+        shared_context.new_search();
         root_info = info;
         for (auto& ctx : contexts) {
             ctx->pos = root;
@@ -90,7 +90,7 @@ public:
     }
 
     void stop_searching() {
-        shared_state.stop.store(true, std::memory_order_relaxed);
+        shared_context.stop();
     }
 
     void wait_until_finished() {
@@ -108,6 +108,14 @@ public:
         for (auto& ctx : contexts) {
             ctx->history->clear();
         }
+    }
+
+    void resize_hash(std::uint64_t bytes) {
+        shared_context.table.resize(bytes);
+    }
+
+    void clear_hash() {
+        shared_context.table.clear();
     }
 
     void shutdown() {
@@ -161,7 +169,7 @@ private:
         search_thread_context& ctx = *contexts[id];
         board& chessboard = ctx.pos.chessboard;
 
-        search_data data;
+        search_data data(shared_context);
         data.history = ctx.history.get();
         data.main_thread = (id == 0);
 
@@ -187,6 +195,7 @@ private:
 
     std::vector<std::unique_ptr<native_thread>> threads;
     std::vector<std::unique_ptr<search_thread_context>> contexts;
+    search_context shared_context;
     time_info root_info;
 
     std::mutex mutex;

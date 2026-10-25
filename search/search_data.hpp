@@ -4,16 +4,14 @@
 #include <cstdint>
 
 #include "pv_table.hpp"
+#include "search_context.hpp"
 #include "time_keeper.hpp"
-#include "tables/transposition_table.hpp"
 
 constexpr std::int16_t INF = 20'000;
 
 enum class NodeType : std::uint8_t {
     Root, PV, Non_PV, Null
 };
-
-transposition_table<TT_cluster> tt(32 * 1024 * 1024);
 
 class History;
 
@@ -25,7 +23,9 @@ struct history_move {
 
 class search_data {
 public:
-    search_data() : ply(0), principal_variation_table(), timekeeper(), nodes_searched(0)  {}
+    explicit search_data(search_context& context)
+        : context(context), ply(0), principal_variation_table(),
+          timekeeper(context.shared), nodes_searched(0) {}
 
     void set_timekeeper(int time, int bonus, int movestogo, int move_count, int max_nodes) {
         timekeeper.reset(time, bonus, movestogo, move_count, max_nodes);
@@ -51,7 +51,7 @@ public:
 
     // push locally counted nodes into the shared counter
     void flush_nodes() {
-        shared_state.nodes.fetch_add(nodes_searched - flushed_nodes, std::memory_order_relaxed);
+        context.shared.nodes.fetch_add(nodes_searched - flushed_nodes, std::memory_order_relaxed);
         flushed_nodes = nodes_searched;
     }
 
@@ -103,7 +103,7 @@ public:
 
     std::uint64_t nodes() {
         flush_nodes();
-        return shared_state.nodes.load(std::memory_order_relaxed);
+        return context.shared.nodes.load(std::memory_order_relaxed);
     }
 
     std::uint64_t searched_nodes() {
@@ -128,6 +128,10 @@ public:
         return timekeeper.NPS(nodes_searched);
     }
 
+    transposition_table<TT_cluster>& table() {
+        return context.table;
+    }
+
     History* history = nullptr;
     bool main_thread = true;
 
@@ -139,6 +143,7 @@ public:
     int stack_eval = {};
     std::string best_move = {};
 private:
+    search_context& context;
     std::int16_t ply;
 
     pv_table principal_variation_table;

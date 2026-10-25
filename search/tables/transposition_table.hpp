@@ -1,8 +1,11 @@
 #ifndef MOTOR_TRANSPOSITION_TABLE_HPP
 #define MOTOR_TRANSPOSITION_TABLE_HPP
 
-#include <vector>
+#include <array>
 #include <cstdint>
+#include <vector>
+
+#include "../../chess_board/chess_move.hpp"
 
 enum class Bound : std::uint8_t {
     INVALID,// Type 0 - invalid TT entryy
