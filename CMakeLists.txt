@@ -41,12 +41,9 @@ if(NOT EVALFILE)
 endif()
 
 get_filename_component(EVALFILE "${EVALFILE}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
-get_filename_component(MOTOR_NETWORK_DIRECTORY "${EVALFILE}" DIRECTORY)
-get_filename_component(MOTOR_NETWORK_FILENAME "${EVALFILE}" NAME)
 
 add_executable(motor main.cpp)
-target_include_directories(motor PRIVATE "${MOTOR_NETWORK_DIRECTORY}")
-target_compile_definitions(motor PRIVATE NNUE_FILE="${MOTOR_NETWORK_FILENAME}")
+target_compile_definitions(motor PRIVATE NNUE_FILE="${EVALFILE}")
 
 # Rebuild when the embedded network changes
 set_property(SOURCE main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")

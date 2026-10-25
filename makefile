@@ -28,9 +28,8 @@ else
 endif
 
 EVALFILE ?= nnue.bin
-NNUE_DIRECTORY = $(dir $(abspath $(EVALFILE)))
-NNUE_FILENAME = $(notdir $(EVALFILE))
-CXXFLAGS += -I"$(NNUE_DIRECTORY)" -DNNUE_FILE=\"$(NNUE_FILENAME)\"
+NNUE_PATH = $(abspath $(EVALFILE))
+CXXFLAGS += -DNNUE_FILE=\"$(NNUE_PATH)\"
 
 nnue.bin: net.txt
 	curl --location --fail --retry 3 --output "$@" "$(NNUE_URL)"
