@@ -165,7 +165,7 @@ void uci_process(position& p, const std::string& line) {
     } else if (command == "ucinewgame") {
         if (search_pool.is_searching()) return;
         search_pool.clear_histories();
-        tt.clear();
+        search_pool.clear_hash();
     } else if (command == "setoption") {
         if (search_pool.is_searching()) return;
         std::string token;
@@ -177,7 +177,7 @@ void uci_process(position& p, const std::string& line) {
 
         if (tokens.size() >= 4) {
             if (tokens[1] == "Hash" || tokens[1] == "hash") {
-                tt.resize(std::stoi(tokens[3]) * 1024 * 1024);
+                search_pool.resize_hash(std::stoi(tokens[3]) * 1024 * 1024);
             } else if (tokens[1] == "Threads" || tokens[1] == "threads") {
                 search_pool.resize(std::clamp(std::stoi(tokens[3]), 1, 256));
             }
@@ -196,7 +196,7 @@ void uci_process(position& p, const std::string& line) {
         }
     } else if (command == "bench") {
         if (search_pool.is_searching()) return;
-        tt.clear();
+        search_pool.clear_hash();
         bench(13);
     } else if (command == "perft") {
         if (search_pool.is_searching()) return;

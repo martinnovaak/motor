@@ -6,25 +6,13 @@
 #include <cstdint>
 #include <climits>
 #include "../chess_board/chess_move.hpp"
+#include "search_context.hpp"
 #include "tuning_options.hpp"
 
 struct time_info {
     int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64;
     std::uint64_t max_nodes = static_cast<std::uint64_t>(INT_MAX) / 2;
 };
-
-// state shared by all search threads and the UCI thread
-struct shared_search_state {
-    std::atomic<bool> stop{false};
-    std::atomic<std::uint64_t> nodes{0};
-
-    void new_search() {
-        stop.store(false, std::memory_order_relaxed);
-        nodes.store(0, std::memory_order_relaxed);
-    }
-};
-
-shared_search_state shared_state;
 
 TuningOption tm_expect_mul("tm_expect_mul", 41, 20, 70);
 TuningOption tm_mul("tm_mul", 86, 40, 150);
@@ -35,7 +23,8 @@ TuningOption tm_node_mul("tm_node_mul", 200, 50, 400);
 
 class time_keeper {
 public:
-    time_keeper() : inf_time(false), time_limit(0), optimal_time_limit(0),
+    explicit time_keeper(shared_search_state& shared_state)
+        : shared_state(shared_state), inf_time(false), time_limit(0), optimal_time_limit(0),
                     max_nodes(static_cast<std::uint64_t>(INT_MAX) / 2), total_nodes(0), node_count{} {}
 
     void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, std::uint64_t nodes = static_cast<std::uint64_t>(INT_MAX) / 2) {
@@ -150,6 +139,7 @@ public:
     }
 
 private:
+    shared_search_state& shared_state;
     std::chrono::time_point<std::chrono::steady_clock> start_time;
     bool inf_time;
     int time_limit;

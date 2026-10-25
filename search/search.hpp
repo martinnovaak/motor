@@ -45,6 +45,7 @@ constexpr int asp_depth = 8;
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(position& pos, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
     board& chessboard = pos.chessboard;
+    auto& tt = data.table();
     constexpr Color enemy_color = color == White ? Black : White;
     constexpr bool is_pv = node_type == NodeType::PV || node_type == NodeType::Root;
     constexpr bool is_root = node_type == NodeType::Root;
@@ -407,7 +408,7 @@ std::int16_t aspiration_window(position& pos, search_data& data, std::int16_t sc
     }
 
     if (data.main_thread) {
-        tt.increase_age();
+        data.table().increase_age();
     }
     return score;
 }

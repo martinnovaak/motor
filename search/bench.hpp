@@ -57,8 +57,9 @@ const std::string fens[] = {
 };
 
 template <Color color>
-std::uint64_t bench_iterative_deepening(position& pos, History& hist, int max_depth) {
-    search_data data;
+std::uint64_t bench_iterative_deepening(position& pos, History& hist,
+                                        search_context& context, int max_depth) {
+    search_data data(context);
     data.history = &hist;
     time_info info;
     data.set_timekeeper(info.wtime, info.winc, info.movestogo, 1, INT_MAX / 2);
@@ -80,13 +81,14 @@ void bench(int depth) {
 
     auto pos = std::make_unique<position>();
     auto hist = std::make_unique<History>();
-    shared_state.new_search();
+    search_context context;
+    context.new_search();
     auto start = std::chrono::steady_clock::now();
 
     for (const auto & fen : fens) {
         pos->chessboard.fen_to_board(fen);
         set_position(*pos);
-        nodes += (pos->chessboard.get_side() == Color::White) ? bench_iterative_deepening<Color::White>(*pos, *hist, depth) : bench_iterative_deepening<Color::Black>(*pos, *hist, depth);
+        nodes += (pos->chessboard.get_side() == Color::White) ? bench_iterative_deepening<Color::White>(*pos, *hist, context, depth) : bench_iterative_deepening<Color::Black>(*pos, *hist, context, depth);
     }
 
     auto end = std::chrono::steady_clock::now();
