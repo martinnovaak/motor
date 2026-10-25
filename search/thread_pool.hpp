@@ -179,10 +179,10 @@ private:
 
         std::string best_move;
         if (chessboard.get_side() == White) {
-            data.set_timekeeper(root_info.wtime, root_info.winc, root_info.movestogo, chessboard.move_count(), root_info.max_nodes);
+            data.set_timekeeper(root_info.wtime, root_info.winc, root_info.movestogo, chessboard.move_count(), root_info.max_nodes, root_info.movetime);
             best_move = iterative_deepening<White>(ctx.pos, data, root_info.max_depth);
         } else {
-            data.set_timekeeper(root_info.btime, root_info.binc, root_info.movestogo, chessboard.move_count(), root_info.max_nodes);
+            data.set_timekeeper(root_info.btime, root_info.binc, root_info.movestogo, chessboard.move_count(), root_info.max_nodes, root_info.movetime);
             best_move = iterative_deepening<Black>(ctx.pos, data, root_info.max_depth);
         }
 
