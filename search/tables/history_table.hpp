@@ -2,8 +2,9 @@
 #define HISTORY_HPP
 
 #include <array>
-#include <memory>
 #include <algorithm>
+#include <bit>
+#include <memory>
 #include "../../chess_board/board.hpp"
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
@@ -18,12 +19,79 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     return key;
 }
 
+template <Color color>
+std::uint64_t king_shelter_key(const board& chessboard) {
+    const Square king = chessboard.get_king_square<color>();
+    const int king_file = king % 8;
+    const int king_rank = king / 8;
+    const int file_direction = king_file < 4 ? 1 : -1;
+
+    auto distance_bucket = [](int distance) {
+        if (distance == 0) return 0;
+        if (distance == 1) return 1;
+        if (distance == 2) return 2;
+        if (distance <= 4) return 3;
+        return 4;
+    };
+
+    const std::uint64_t forward_ranks = [&] {
+        if constexpr (color == White) {
+            return king_rank == RANK_8
+                ? 0ULL
+                : full_board << ((king_rank + 1) * 8);
+        } else {
+            return king_rank == RANK_1
+                ? 0ULL
+                : (1ULL << (king_rank * 8)) - 1;
+        }
+    }();
+
+    auto nearest_pawn_distance = [&](std::uint64_t pawns, int file) {
+        if (file < FILE_A || file > FILE_H) {
+            return 0;
+        }
+
+        const std::uint64_t candidates = pawns & files[file] & forward_ranks;
+        if (candidates == 0) {
+            return 0;
+        }
+
+        if constexpr (color == White) {
+            return static_cast<int>(std::countr_zero(candidates) / 8) - king_rank;
+        } else {
+            return king_rank
+                 - static_cast<int>((63 - std::countl_zero(candidates)) / 8);
+        }
+    };
+
+    const std::uint64_t friendly_pawns = chessboard.get_pieces(color, Pawn);
+    constexpr Color enemy = color == White ? Black : White;
+    const std::uint64_t enemy_pawns = chessboard.get_pieces(enemy, Pawn);
+
+    const int normalized_king_rank = color == White ? king_rank : 7 - king_rank;
+    const int normalized_king_file = std::min(king_file, 7 - king_file);
+    std::uint64_t key = normalized_king_file | (normalized_king_rank << 2);
+    int shift = 5;
+    for (int file_delta = -1; file_delta <= 1; ++file_delta) {
+        const int file = king_file + file_delta * file_direction;
+        key |= static_cast<std::uint64_t>(
+                distance_bucket(nearest_pawn_distance(friendly_pawns, file))) << shift;
+        shift += 3;
+        key |= static_cast<std::uint64_t>(
+                distance_bucket(nearest_pawn_distance(enemy_pawns, file))) << shift;
+        shift += 3;
+    }
+
+    return key;
+}
+
 class History {
 public:
     History()
             : history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              threat_correction_table({}), king_shelter_correction_table({}),
+              continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
         history_table = {};
@@ -35,6 +103,7 @@ public:
         minor_correction_table = {};
         major_correction_table = {};
         threat_correction_table = {};
+        king_shelter_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
     }
@@ -159,6 +228,8 @@ public:
 
         update_entry(minor_correction_table[color][chessboard.get_minor_key() % CORRECTION_TABLE_SIZE]);
         update_entry(major_correction_table[color][chessboard.get_major_key() % CORRECTION_TABLE_SIZE]);
+        const std::uint64_t shelter_key = king_shelter_key<color>(chessboard);
+        update_entry(king_shelter_correction_table[color][murmur_hash_3(shelter_key) % CORRECTION_TABLE_SIZE]);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
@@ -181,6 +252,8 @@ public:
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+        const std::uint64_t shelter_key = king_shelter_key<color>(chessboard);
+        const int shelter_entry = king_shelter_correction_table[color][murmur_hash_3(shelter_key) % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -197,7 +270,7 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + shelter_entry * 100 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
     }
 
 
@@ -211,6 +284,7 @@ private:
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
+    std::array<std::array<int, 16384>, 2> king_shelter_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
 
