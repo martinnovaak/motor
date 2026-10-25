@@ -70,6 +70,13 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <UseDefaultEvalFile Condition="'$(EvalFile)'==''">true</UseDefaultEvalFile>
+    <EvalFile Condition="'$(EvalFile)'==''">$(MSBuildProjectDirectory)\nnue.bin</EvalFile>
+    <NnueFullPath>$([System.IO.Path]::GetFullPath('$(EvalFile)'))</NnueFullPath>
+    <NnueDirectory>$([System.IO.Path]::GetDirectoryName('$(NnueFullPath)'))</NnueDirectory>
+    <NnueFileName>$([System.IO.Path]::GetFileName('$(NnueFullPath)'))</NnueFileName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -132,6 +139,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(NnueDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NNUE_FILE=\&quot;$(NnueFileName)\&quot;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -166,8 +179,30 @@
     <ClInclude Include="search\time_keeper.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="net.txt" />
     <None Include="README.md" />
   </ItemGroup>
+  <Target Name="DownloadNnue"
+          Condition="'$(UseDefaultEvalFile)'=='true'"
+          Inputs="$(MSBuildProjectDirectory)\net.txt"
+          Outputs="$(NnueFullPath)">
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\net.txt">
+      <Output TaskParameter="Lines" ItemName="NnueUrl" />
+    </ReadLinesFromFile>
+    <Error Condition="'@(NnueUrl)'==''"
+           Text="net.txt must contain the NNUE URL." />
+    <DownloadFile SourceUrl="@(NnueUrl)"
+                  DestinationFolder="$(NnueDirectory)"
+                  DestinationFileName="$(NnueFileName)"
+                  Retries="3"
+                  SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="PrepareNnue"
+          BeforeTargets="ClCompile"
+          DependsOnTargets="DownloadNnue">
+    <Error Condition="!Exists('$(NnueFullPath)')"
+           Text="NNUE file not found: $(NnueFullPath)" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

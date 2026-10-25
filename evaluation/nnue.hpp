@@ -39,10 +39,14 @@ struct Weights {
 #error "Motor requires a compiler with #embed support (Clang 19 or newer)"
 #endif
 
+#ifndef NNUE_FILE
+#define NNUE_FILE "../nnue.bin"
+#endif
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc23-extensions"
 alignas(64) constexpr unsigned char weights_data[] = {
-#embed "../nnue.bin"
+#embed NNUE_FILE
 };
 #pragma clang diagnostic pop
 
