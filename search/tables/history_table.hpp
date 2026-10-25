@@ -18,12 +18,69 @@ auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
     return key;
 }
 
+constexpr auto make_king_outer_rings() {
+    std::array<std::uint64_t, 64> rings = {};
+
+    for (int king = 0; king < 64; ++king) {
+        const int king_file = king % 8;
+        const int king_rank = king / 8;
+
+        for (int rank_delta = -2; rank_delta <= 2; ++rank_delta) {
+            for (int file_delta = -2; file_delta <= 2; ++file_delta) {
+                if (rank_delta != -2 && rank_delta != 2 && file_delta != -2 && file_delta != 2) {
+                    continue;
+                }
+
+                const int file = king_file + file_delta;
+                const int rank = king_rank + rank_delta;
+                if (file < FILE_A || file > FILE_H || rank < RANK_1 || rank > RANK_8) {
+                    continue;
+                }
+
+                rings[king] |= 1ULL << (rank * 8 + file);
+            }
+        }
+    }
+
+    return rings;
+}
+
+constexpr auto king_outer_rings = make_king_outer_rings();
+
+template <Color color>
+std::uint16_t king_pressure_key(const board& chessboard) {
+    constexpr Color enemy = color == White ? Black : White;
+    const Square king = chessboard.get_king_square<color>();
+    const int king_file = king % 8;
+    const int king_rank = king / 8;
+
+    const std::uint64_t inner_ring = KING_ATTACKS[king];
+    const std::uint64_t outer_ring = king_outer_rings[king];
+    const std::uint64_t threats = chessboard.get_threats();
+    const std::uint64_t own_occupancy = chessboard.get_side_occupancy<color>();
+
+    const int normalized_file = std::min(king_file, 7 - king_file);
+    const int normalized_rank = color == White ? king_rank : 7 - king_rank;
+    const int inner_attacks = std::min(7, static_cast<int>(popcount(threats & inner_ring)));
+    const int outer_attacks = std::min(7, static_cast<int>(popcount(threats & outer_ring)));
+    const int attacked_occupants = std::min(3, static_cast<int>(popcount(threats & inner_ring & own_occupancy)));
+    const bool enemy_queen = chessboard.get_pieces(enemy, Queen) != 0;
+
+    return normalized_file
+         | (normalized_rank << 2)
+         | (inner_attacks << 5)
+         | (outer_attacks << 8)
+         | (attacked_occupants << 11)
+         | (enemy_queen << 13);
+}
+
 class History {
 public:
     History()
             : history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              threat_correction_table({}), king_pressure_correction_table({}),
+              continuation_correction_table({}), continuation_correction_table2({}) {}
 
     void clear() {
         history_table = {};
@@ -35,6 +92,7 @@ public:
         minor_correction_table = {};
         major_correction_table = {};
         threat_correction_table = {};
+        king_pressure_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
     }
@@ -159,6 +217,7 @@ public:
 
         update_entry(minor_correction_table[color][chessboard.get_minor_key() % CORRECTION_TABLE_SIZE]);
         update_entry(major_correction_table[color][chessboard.get_major_key() % CORRECTION_TABLE_SIZE]);
+        update_entry(king_pressure_correction_table[color][king_pressure_key<color>(chessboard)]);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
@@ -181,6 +240,7 @@ public:
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+        const int king_pressure_entry = king_pressure_correction_table[color][king_pressure_key<color>(chessboard)];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -197,7 +257,9 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200
+             + minor_entry * 150 + major_entry * 120 + king_pressure_entry * 80
+             + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
     }
 
 
@@ -211,6 +273,7 @@ private:
     std::array<std::array<int, 16384>, 2> minor_correction_table;
     std::array<std::array<int, 16384>, 2> major_correction_table;
     std::array<std::array<int, 16384>, 2> threat_correction_table;
+    std::array<std::array<int, 16384>, 2> king_pressure_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
 
