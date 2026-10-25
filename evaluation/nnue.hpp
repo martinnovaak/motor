@@ -9,6 +9,8 @@
 
 #if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
 #include <immintrin.h>
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#include <arm_neon.h>
 #endif
 
 constexpr unsigned int HIDDEN_SIZE = 1536;
@@ -259,7 +261,7 @@ private:
     }
 
 public:
-#ifndef __AVX2__
+#if !defined(__AVX2__) && !defined(__aarch64__) && !defined(_M_ARM64)
     template <Color color>
     std::int32_t evaluate() {
         std::int32_t sum = 0;
@@ -288,6 +290,7 @@ public:
     }
 
 private:
+#if defined(__AVX2__)
     std::int32_t flatten(const std::int16_t* accumulator, const std::int16_t* weights) {
         constexpr int CHUNK = 16;
         auto sum = _mm256_setzero_si256();
@@ -310,7 +313,36 @@ private:
         __m128i horizontal_sum_128 = _mm_hadd_epi32(combined_128, combined_128);
         return _mm_cvtsi128_si32(horizontal_sum_128);
     }
-#endif // __AVX2__
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    // NEON equivalent of the AVX2 kernel: clamp to [0, QA], take the low 16 bits
+    // of clamped * weight (exact while |clamped * weight| < 2^15, i.e. |weight| <= QB),
+    // then widen-multiply-accumulate by clamped into 32-bit lanes like madd does
+    std::int32_t flatten(const std::int16_t* accumulator, const std::int16_t* weights) {
+        constexpr std::size_t CHUNK = 8;
+        constexpr std::size_t UNROLL = 4;
+        const int16x8_t min = vdupq_n_s16(0);
+        const int16x8_t max = vdupq_n_s16(QA);
+        // independent accumulators so the vmlal chains can overlap
+        int32x4_t sum_lo[UNROLL] = {};
+        int32x4_t sum_hi[UNROLL] = {};
+        for (std::size_t i = 0; i < hidden_size; i += UNROLL * CHUNK) {
+            for (std::size_t j = 0; j < UNROLL; j++) {
+                int16x8_t us_vector = vld1q_s16(accumulator + i + j * CHUNK);
+                int16x8_t weights_vec = vld1q_s16(weights + i + j * CHUNK);
+                int16x8_t clamped = vminq_s16(vmaxq_s16(us_vector, min), max);
+                int16x8_t mul = vmulq_s16(clamped, weights_vec);
+                sum_lo[j] = vmlal_s16(sum_lo[j], vget_low_s16(clamped), vget_low_s16(mul));
+                sum_hi[j] = vmlal_high_s16(sum_hi[j], clamped, mul);
+            }
+        }
+        int32x4_t sum = vdupq_n_s32(0);
+        for (std::size_t j = 0; j < UNROLL; j++) {
+            sum = vaddq_s32(sum, vaddq_s32(sum_lo[j], sum_hi[j]));
+        }
+        return vaddvq_s32(sum);
+    }
+#endif
+#endif
 };
 
 #endif //MOTOR_NNUE_HPP
