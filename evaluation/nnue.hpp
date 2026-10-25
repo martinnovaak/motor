@@ -6,7 +6,6 @@
 #include <cstdint>
 
 #include "../chess_board/board.hpp"
-#include "incbin.hpp"
 
 #if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
 #include <immintrin.h>
@@ -36,8 +35,19 @@ struct Weights {
     std::int16_t output_bias;
 };
 
-INCBIN(Weights, "nnue.bin");
-const Weights& weights = *reinterpret_cast<const Weights*>(gWeightsData);
+#if !defined(__has_embed)
+#error "Motor requires a compiler with #embed support (Clang 19 or newer)"
+#endif
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc23-extensions"
+alignas(64) constexpr unsigned char weights_data[] = {
+#embed "../nnue.bin"
+};
+#pragma clang diagnostic pop
+
+static_assert(sizeof(weights_data) >= sizeof(Weights), "nnue.bin is smaller than the Weights struct");
+const Weights& weights = *reinterpret_cast<const Weights*>(weights_data);
 
 enum class Operation {
     Set, Unset
