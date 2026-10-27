@@ -155,17 +155,21 @@ private:
                 seen_generation = generation;
             }
 
-            run_search(id);
+            const std::string best_move = run_search(id);
 
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 active_workers--;
             }
             cv_done.notify_all();
+
+            if (id == 0) {
+                std::cout << "bestmove " << best_move << std::endl;
+            }
         }
     }
 
-    void run_search(std::size_t id) {
+    std::string run_search(std::size_t id) {
         search_thread_context& ctx = *contexts[id];
         board& chessboard = ctx.pos.chessboard;
 
@@ -183,14 +187,13 @@ private:
         }
 
         if (id == 0) {
-            // main thread is done: stop the helpers, wait for them, then report
             stop_searching();
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv_done.wait(lock, [this] { return active_workers == 1; });
             }
-            std::cout << "bestmove " << best_move << std::endl;
         }
+        return best_move;
     }
 
     std::vector<std::unique_ptr<native_thread>> threads;
