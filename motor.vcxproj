@@ -149,7 +149,6 @@
     <ClInclude Include="chess_board\zobrist_keys.hpp" />
     <ClInclude Include="cli\uci.hpp" />
     <ClInclude Include="evaluation\evaluation.hpp" />
-    <ClInclude Include="evaluation\incbin.hpp" />
     <ClInclude Include="evaluation\nnue.hpp" />
     <ClInclude Include="move_generation\move_generator.hpp" />
     <ClInclude Include="move_generation\move_list.hpp" />
