@@ -1,8 +1,10 @@
 #ifndef MOTOR_TIME_KEEPER_HPP
 #define MOTOR_TIME_KEEPER_HPP
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <climits>
 #include "../chess_board/chess_move.hpp"
@@ -10,7 +12,7 @@
 #include "tuning_options.hpp"
 
 struct time_info {
-    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, max_depth = 64;
+    int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, movetime = 0, max_depth = 64;
     std::uint64_t max_nodes = static_cast<std::uint64_t>(INT_MAX) / 2;
 };
 
@@ -27,7 +29,7 @@ public:
         : shared_state(shared_state), inf_time(false), time_limit(0), optimal_time_limit(0),
                     max_nodes(static_cast<std::uint64_t>(INT_MAX) / 2), total_nodes(0), node_count{} {}
 
-    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, std::uint64_t nodes = static_cast<std::uint64_t>(INT_MAX) / 2) {
+    void reset(int time, int increment = 0, int movestogo = 0, int move_count = 1, std::uint64_t nodes = static_cast<std::uint64_t>(INT_MAX) / 2, int movetime = 0) {
         start_time = std::chrono::steady_clock::now();
         const int time_minus_threshold = time - 50;
         max_nodes = nodes;
@@ -36,6 +38,12 @@ public:
         node_count = {};
         last_best_move = {};
         stability_count = 0;
+
+        if (movetime > 0) {
+            // fixed time per move: use (almost) all of it, no early stop
+            optimal_time_limit = time_limit = std::max(10, movetime - 25);
+            return;
+        }
 
         if (time == -1) {
             inf_time = true;
@@ -47,8 +55,10 @@ public:
             time_limit = increment + 950 * time / movestogo / 1000;
             optimal_time_limit = time_limit / 4 * 3;
         }
-        optimal_time_limit = std::min(optimal_time_limit, time_minus_threshold);
-        time_limit = std::min(time_limit, time_minus_threshold);
+        if (!inf_time) {
+            optimal_time_limit = std::min(optimal_time_limit, time_minus_threshold);
+            time_limit = std::min(time_limit, time_minus_threshold);
+        }
     }
 
     [[nodiscard]] bool stopped() const {

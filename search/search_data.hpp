@@ -27,8 +27,8 @@ public:
         : context(context), ply(0), principal_variation_table(),
           timekeeper(context.shared), nodes_searched(0) {}
 
-    void set_timekeeper(int time, int bonus, int movestogo, int move_count, int max_nodes) {
-        timekeeper.reset(time, bonus, movestogo, move_count, max_nodes);
+    void set_timekeeper(int time, int bonus, int movestogo, int move_count, std::uint64_t max_nodes, int movetime = 0) {
+        timekeeper.reset(time, bonus, movestogo, move_count, max_nodes, movetime);
     }
 
     bool should_end() {
