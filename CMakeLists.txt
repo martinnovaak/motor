@@ -43,7 +43,13 @@ endif()
 get_filename_component(EVALFILE "${EVALFILE}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
 
 add_executable(motor main.cpp)
+add_executable(motor-datagen datagen/main.cpp)
 target_compile_definitions(motor PRIVATE NNUE_FILE="${EVALFILE}")
+target_compile_definitions(motor-datagen PRIVATE NNUE_FILE="${EVALFILE}")
+
+find_package(Threads REQUIRED)
+target_link_libraries(motor-datagen PRIVATE Threads::Threads)
 
 # Rebuild when the embedded network changes
 set_property(SOURCE main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")
+set_property(SOURCE datagen/main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")

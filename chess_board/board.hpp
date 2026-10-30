@@ -277,6 +277,14 @@ public:
         return state->enpassant;
     }
 
+    [[nodiscard]] std::uint8_t castling_rights() const {
+        return state->castling_rights;
+    }
+
+    [[nodiscard]] std::uint8_t halfmove_clock() const {
+        return state->fifty_move_clock;
+    }
+
     [[nodiscard]] bool pawn_endgame() const {
         return side_occupancy[side] == (bitboards[side][Pawn] | bitboards[side][King]);
     }
