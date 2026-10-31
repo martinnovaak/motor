@@ -23,26 +23,31 @@ std::uint64_t number(const char* value, const char* name) {
 
 void usage(const char* executable) {
     std::cerr << "usage: " << executable
-              << " <openings.epd> <output.bin> [threads] [nodes] [games] [max-plies]\n"
-              << "  games defaults to the number of EPD positions\n";
+              << " <openings.epd|random> <output.bin> [threads] [nodes] [games]"
+                 " [max-plies] [seed]\n"
+              << "  games defaults to the number of EPD positions\n"
+              << "  random generates Viridithas-style random startpos openings and"
+                 " requires games\n";
 }
 
 } // namespace
 
 int main(int argc, char** argv) {
-    if (argc < 3 || argc > 7) {
+    if (argc < 3 || argc > 8) {
         usage(argv[0]);
         return EXIT_FAILURE;
     }
 
     try {
         motor::datagen::Options options;
-        options.openings = argv[1];
+        options.random_openings = std::string(argv[1]) == "random";
+        if (!options.random_openings) options.openings = argv[1];
         options.output = argv[2];
         if (argc > 3) options.threads = number(argv[3], "thread count");
         if (argc > 4) options.nodes = number(argv[4], "node limit");
         if (argc > 5) options.games = number(argv[5], "game count");
         if (argc > 6) options.max_plies = number(argv[6], "max plies");
+        if (argc > 7) options.seed = number(argv[7], "seed");
 
         motor::datagen::run(options);
         return EXIT_SUCCESS;
