@@ -29,23 +29,15 @@ else
     COMPILER = clang++-19
 endif
 
-RANDOM_NNUE ?= 1
-
-ifeq ($(RANDOM_NNUE),1)
-	CXXFLAGS += -DRANDOM_NNUE
-	NETWORK_DEPENDENCY =
-else
-	EVALFILE ?= nnue.bin
-	NNUE_PATH = $(abspath $(EVALFILE))
-	CXXFLAGS += -DNNUE_FILE=\"$(NNUE_PATH)\"
-	NETWORK_DEPENDENCY = $(EVALFILE)
-endif
+EVALFILE ?= nnue.bin
+NNUE_PATH = $(abspath $(EVALFILE))
+CXXFLAGS += -DNNUE_FILE=\"$(NNUE_PATH)\"
 
 nnue.bin: net.txt
 	curl --location --fail --retry 3 --output "$@" "$(NNUE_URL)"
 
-all: $(NETWORK_DEPENDENCY)
+all: $(EVALFILE)
 	$(COMPILER) $(CXXFLAGS) main.cpp -o $(EXE)$(SUFFIX)
 
-datagen: $(NETWORK_DEPENDENCY)
+datagen: $(EVALFILE)
 	$(COMPILER) $(CXXFLAGS) datagen/main.cpp -o motor-datagen$(SUFFIX)

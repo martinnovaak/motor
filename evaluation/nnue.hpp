@@ -14,41 +14,6 @@
 #include <arm_neon.h>
 #endif
 
-#if defined(RANDOM_NNUE)
-
-Weights make_random_weights() {
-    std::uint64_t state = 1;
-    const auto random = [&state]() {
-        state ^= state >> 12;
-        state ^= state << 25;
-        state ^= state >> 27;
-        return state * 2685821657736338717ULL;
-    };
-
-    Weights result{};
-    for (auto& feature : result.feature_weight) {
-        for (std::int16_t& weight : feature) {
-            int sample = 0;
-            for (int index = 0; index < 12; index++) {
-                sample += static_cast<int>(random() >> 56);
-            }
-            const int centered = sample - 1530;
-            weight = static_cast<std::int16_t>(centered / 64);
-        }
-    }
-    for (std::size_t index = 0; index < HIDDEN_SIZE; index++) {
-        result.output_weight_STM[index] = static_cast<std::int16_t>(
-                static_cast<int>(random() % 41) - 20);
-        result.output_weight_NSTM[index] = static_cast<std::int16_t>(
-                static_cast<int>(random() % 41) - 20);
-    }
-    return result;
-}
-
-alignas(64) const Weights weights = make_random_weights();
-
-#else
-
 #if !defined(__has_embed)
 #error "Motor requires a compiler with #embed support (Clang 19 or newer)"
 #endif
@@ -66,8 +31,6 @@ alignas(64) constexpr unsigned char weights_data[] = {
 
 static_assert(sizeof(weights_data) >= sizeof(Weights), "nnue.bin is smaller than the Weights struct");
 const Weights& weights = *reinterpret_cast<const Weights*>(weights_data);
-
-#endif
 
 enum class Operation {
     Set, Unset
