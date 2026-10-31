@@ -7,11 +7,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS "-march=native")
 
-option(RANDOM_NNUE "Initialize a deterministic random NNUE at startup" OFF)
-
-if(NOT RANDOM_NNUE)
-    set(EVALFILE "" CACHE FILEPATH "NNUE network to embed")
-    if(NOT EVALFILE)
+set(EVALFILE "" CACHE FILEPATH "NNUE network to embed")
+if(NOT EVALFILE)
         set_property(
                 DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
                 "${CMAKE_SOURCE_DIR}/net.txt"
@@ -41,24 +38,18 @@ if(NOT RANDOM_NNUE)
                                 "Failed to download NNUE: ${MOTOR_NETWORK_STATUS_MESSAGE}")
                 endif()
         endif()
-    endif()
-    get_filename_component(EVALFILE "${EVALFILE}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
 endif()
+get_filename_component(EVALFILE "${EVALFILE}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
 
 add_executable(motor main.cpp)
 add_executable(motor-datagen datagen/main.cpp)
 
-if(RANDOM_NNUE)
-    target_compile_definitions(motor PRIVATE RANDOM_NNUE)
-    target_compile_definitions(motor-datagen PRIVATE RANDOM_NNUE)
-else()
-    target_compile_definitions(motor PRIVATE NNUE_FILE="${EVALFILE}")
-    target_compile_definitions(motor-datagen PRIVATE NNUE_FILE="${EVALFILE}")
+target_compile_definitions(motor PRIVATE NNUE_FILE="${EVALFILE}")
+target_compile_definitions(motor-datagen PRIVATE NNUE_FILE="${EVALFILE}")
 
-    # Rebuild when the embedded network changes
-    set_property(SOURCE main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")
-    set_property(SOURCE datagen/main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")
-endif()
+# Rebuild when the embedded network changes
+set_property(SOURCE main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")
+set_property(SOURCE datagen/main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")
 
 find_package(Threads REQUIRED)
 target_link_libraries(motor-datagen PRIVATE Threads::Threads)
