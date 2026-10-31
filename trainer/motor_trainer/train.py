@@ -72,9 +72,26 @@ def train(args: argparse.Namespace) -> None:
         seed=args.seed,
     )
     model = MotorNnue().to(device)
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay,
-    )
+    schedule_free = args.optimizer == "schedule-free-adamw"
+    if schedule_free:
+        try:
+            from schedulefree import AdamWScheduleFree
+        except ImportError as error:
+            raise RuntimeError(
+                "schedule-free-adamw requires the schedulefree package"
+            ) from error
+        optimizer = AdamWScheduleFree(
+            model.parameters(),
+            lr=args.learning_rate,
+            weight_decay=args.weight_decay,
+            warmup_steps=args.warmup_steps,
+            foreach=False,
+        )
+    else:
+        optimizer = torch.optim.AdamW(
+            model.parameters(), lr=args.learning_rate,
+            weight_decay=args.weight_decay,
+        )
     first_epoch = 0
     steps = 0
     if args.resume:
@@ -94,11 +111,13 @@ def train(args: argparse.Namespace) -> None:
         scaler = torch.cuda.amp.GradScaler(enabled=scale_gradients)
     print(
         f"device={device} records={loader.record_count:,} "
-        f"batch={args.batch_size:,} amp={use_amp}"
+        f"batch={args.batch_size:,} amp={use_amp} optimizer={args.optimizer}"
     )
 
     for epoch in range(first_epoch, args.epochs):
         model.train()
+        if schedule_free:
+            optimizer.train()
         started = time.perf_counter()
         positions = 0
         loss_total = torch.zeros((), device=device)
@@ -121,6 +140,12 @@ def train(args: argparse.Namespace) -> None:
             scaler.step(optimizer)
             scaler.update()
             model.clamp_for_quantization()
+            if schedule_free:
+                with torch.no_grad():
+                    for parameter in model.parameters():
+                        z = optimizer.state.get(parameter, {}).get("z")
+                        if z is not None:
+                            z.clamp_(-1.0, 1.0)
 
             steps += 1
             positions += batch.size
@@ -138,6 +163,9 @@ def train(args: argparse.Namespace) -> None:
             raise ValueError("dataset does not contain one complete batch")
         average_loss = loss_total.item() / batch_count
         training_elapsed = time.perf_counter() - started
+        if schedule_free:
+            optimizer.eval()
+            model.clamp_for_quantization()
         checkpoint_path = Path(args.output).with_suffix(".pt")
         torch.save(
             {
@@ -167,9 +195,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--block-records", type=int, default=1 << 20)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-2)
+    parser.add_argument(
+        "--optimizer", choices=("adamw", "schedule-free-adamw"),
+        default="schedule-free-adamw",
+    )
+    parser.add_argument("--warmup-steps", type=int, default=0)
     parser.add_argument("--score-scale", type=float, default=400.0)
     parser.add_argument("--wdl-weight", type=float, default=0.5)
-    parser.add_argument("--loss-power", type=float, default=2.5)
+    parser.add_argument("--loss-power", type=float, default=2.0)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--log-interval", type=int, default=100)
     parser.add_argument("--prefetch", type=int, default=2)

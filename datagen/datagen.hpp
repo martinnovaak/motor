@@ -288,6 +288,7 @@ play_game(const std::string& fen, const Options& options, Player& white, Player&
         }
 
         play_move(*pos, search.best_move);
+        set_position(*pos);
     }
     return {std::move(records), dataformat::Result::Draw};
 }
