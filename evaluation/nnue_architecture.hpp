@@ -5,22 +5,14 @@
 #include <cstddef>
 #include <cstdint>
 
-constexpr unsigned int HIDDEN_SIZE = 1536;
+constexpr unsigned int HIDDEN_SIZE = 16;
 constexpr int QA = 403;
 constexpr int QB = 81;
-constexpr int Buckets = 8;
+constexpr int Buckets = 1;
+constexpr bool HORIZONTAL_MIRRORING = false;
 constexpr int NNUE_FEATURES = Buckets * 2 * 6 * 64;
 
-constexpr std::array<int, 64> buckets = {
-    0, 1, 2, 3, 11, 10, 9, 8,
-    4, 4, 5, 5, 13, 13, 12, 12,
-    6, 6, 6, 6, 14, 14, 14, 14,
-    6, 6, 6, 6, 14, 14, 14, 14,
-    7, 7, 7, 7, 15, 15, 15, 15,
-    7, 7, 7, 7, 15, 15, 15, 15,
-    7, 7, 7, 7, 15, 15, 15, 15,
-    7, 7, 7, 7, 15, 15, 15, 15,
-};
+constexpr std::array<int, 64> buckets{};
 
 constexpr std::size_t nnue_feature_index(int bucket, int color, int piece,
                                          int square) {

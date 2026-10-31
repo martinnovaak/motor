@@ -14,6 +14,41 @@
 #include <arm_neon.h>
 #endif
 
+#if defined(RANDOM_NNUE)
+
+Weights make_random_weights() {
+    std::uint64_t state = 1;
+    const auto random = [&state]() {
+        state ^= state >> 12;
+        state ^= state << 25;
+        state ^= state >> 27;
+        return state * 2685821657736338717ULL;
+    };
+
+    Weights result{};
+    for (auto& feature : result.feature_weight) {
+        for (std::int16_t& weight : feature) {
+            int sample = 0;
+            for (int index = 0; index < 12; index++) {
+                sample += static_cast<int>(random() >> 56);
+            }
+            const int centered = sample - 1530;
+            weight = static_cast<std::int16_t>(centered / 64);
+        }
+    }
+    for (std::size_t index = 0; index < HIDDEN_SIZE; index++) {
+        result.output_weight_STM[index] = static_cast<std::int16_t>(
+                static_cast<int>(random() % 41) - 20);
+        result.output_weight_NSTM[index] = static_cast<std::int16_t>(
+                static_cast<int>(random() % 41) - 20);
+    }
+    return result;
+}
+
+alignas(64) const Weights weights = make_random_weights();
+
+#else
+
 #if !defined(__has_embed)
 #error "Motor requires a compiler with #embed support (Clang 19 or newer)"
 #endif
@@ -31,6 +66,8 @@ alignas(64) constexpr unsigned char weights_data[] = {
 
 static_assert(sizeof(weights_data) >= sizeof(Weights), "nnue.bin is smaller than the Weights struct");
 const Weights& weights = *reinterpret_cast<const Weights*>(weights_data);
+
+#endif
 
 enum class Operation {
     Set, Unset
@@ -145,7 +182,10 @@ public:
     }
 
     int get_square_index(int square, int king_square) {
-        return (king_square % 8 > 3) ? square ^ 7 : square;
+        if constexpr (HORIZONTAL_MIRRORING) {
+            return (king_square % 8 > 3) ? square ^ 7 : square;
+        }
+        return square;
     }
 
     template<Operation operation, Color perspective>
@@ -310,7 +350,8 @@ private:
         // independent accumulators so the vmlal chains can overlap
         int32x4_t sum_lo[UNROLL] = {};
         int32x4_t sum_hi[UNROLL] = {};
-        for (std::size_t i = 0; i < hidden_size; i += UNROLL * CHUNK) {
+        std::size_t i = 0;
+        for (; i + UNROLL * CHUNK <= hidden_size; i += UNROLL * CHUNK) {
             for (std::size_t j = 0; j < UNROLL; j++) {
                 int16x8_t us_vector = vld1q_s16(accumulator + i + j * CHUNK);
                 int16x8_t weights_vec = vld1q_s16(weights + i + j * CHUNK);
@@ -323,6 +364,14 @@ private:
         int32x4_t sum = vdupq_n_s32(0);
         for (std::size_t j = 0; j < UNROLL; j++) {
             sum = vaddq_s32(sum, vaddq_s32(sum_lo[j], sum_hi[j]));
+        }
+        for (; i + CHUNK <= hidden_size; i += CHUNK) {
+            int16x8_t us_vector = vld1q_s16(accumulator + i);
+            int16x8_t weights_vec = vld1q_s16(weights + i);
+            int16x8_t clamped = vminq_s16(vmaxq_s16(us_vector, min), max);
+            int16x8_t mul = vmulq_s16(clamped, weights_vec);
+            sum = vmlal_s16(sum, vget_low_s16(clamped), vget_low_s16(mul));
+            sum = vmlal_high_s16(sum, clamped, mul);
         }
         return vaddvq_s32(sum);
     }

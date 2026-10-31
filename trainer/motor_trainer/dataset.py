@@ -15,6 +15,7 @@ import torch
 
 from .architecture import (
     FEATURE_COUNT,
+    HORIZONTAL_MIRRORING,
     KING_BUCKET_COUNT,
     KING_BUCKETS,
     MAX_ACTIVE_FEATURES,
@@ -238,16 +239,18 @@ def decode_features(records: np.ndarray) -> FeatureBatch:
         raise ValueError("record contains an invalid king square")
     stm_bucket = KING_BUCKETS[stm_king] % KING_BUCKET_COUNT
     stm_square = flat_squares.copy()
-    stm_mirror = (stm_king[flat_rows] & 7) > 3
-    stm_square[stm_mirror] ^= 7
+    if HORIZONTAL_MIRRORING:
+        stm_mirror = (stm_king[flat_rows] & 7) > 3
+        stm_square[stm_mirror] ^= 7
     stm = feature_index(
         stm_bucket[flat_rows], flat_codes >> 3, flat_codes & 7, stm_square,
     )
 
     nstm_bucket = KING_BUCKETS[nstm_king ^ 56] % KING_BUCKET_COUNT
     nstm_square = flat_squares.copy()
-    nstm_mirror = (nstm_king[flat_rows] & 7) > 3
-    nstm_square[nstm_mirror] ^= 7
+    if HORIZONTAL_MIRRORING:
+        nstm_mirror = (nstm_king[flat_rows] & 7) > 3
+        nstm_square[nstm_mirror] ^= 7
     nstm_square ^= 56
     nstm = feature_index(
         nstm_bucket[flat_rows], (flat_codes >> 3) ^ 1,
