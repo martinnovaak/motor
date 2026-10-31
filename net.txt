@@ -1,1 +1,1 @@
-https://huggingface.co/martinnovaak/motor/resolve/2a2d2b97acfac70f98b409e1f2d72e6fb3bfbba2/nnue.bin
+https://huggingface.co/martinnovaak/motor/resolve/35bd5a962a08d1404197583070fdd63330fefc64/nnue.bin
