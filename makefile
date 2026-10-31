@@ -29,7 +29,7 @@ else
     COMPILER = clang++-19
 endif
 
-RANDOM_NNUE ?= 1
+RANDOM_NNUE ?= 0
 
 ifeq ($(RANDOM_NNUE),1)
 	CXXFLAGS += -DRANDOM_NNUE

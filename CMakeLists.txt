@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS "-march=native")
 
-option(RANDOM_NNUE "Initialize a deterministic random NNUE at startup" ON)
+option(RANDOM_NNUE "Initialize a deterministic random NNUE at startup" OFF)
 
 if(NOT RANDOM_NNUE)
     set(EVALFILE "" CACHE FILEPATH "NNUE network to embed")
