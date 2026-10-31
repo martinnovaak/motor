@@ -6,36 +6,13 @@
 #include <cstdint>
 
 #include "../chess_board/board.hpp"
+#include "nnue_architecture.hpp"
 
 #if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
 #include <immintrin.h>
 #elif defined(__aarch64__) || defined(_M_ARM64)
 #include <arm_neon.h>
 #endif
-
-constexpr unsigned int HIDDEN_SIZE = 1536;
-constexpr int QA = 403;
-constexpr int QB = 81;
-constexpr int Cells = 8;
-
-constexpr std::array<int, 64> buckets = {
-        0, 1, 2, 3, 11, 10, 9, 8,
-        4, 4, 5, 5, 13, 13, 12, 12,
-        6, 6, 6, 6, 14, 14, 14, 14,
-        6, 6, 6, 6, 14, 14, 14, 14,
-        7, 7, 7, 7, 15, 15, 15, 15,
-        7, 7, 7, 7, 15, 15, 15, 15,
-        7, 7, 7, 7, 15, 15, 15, 15,
-        7, 7, 7, 7, 15, 15, 15, 15,
-};
-
-struct Weights {
-    std::array<std::array<std::array<std::array<std::array<std::int16_t, HIDDEN_SIZE>, 64>, 6>, 2>, Cells> feature_weight;
-    std::array<std::int16_t, HIDDEN_SIZE> feature_bias;
-    std::array<std::int16_t, HIDDEN_SIZE> output_weight_STM;
-    std::array<std::int16_t, HIDDEN_SIZE> output_weight_NSTM;
-    std::int16_t output_bias;
-};
 
 #if !defined(__has_embed)
 #error "Motor requires a compiler with #embed support (Clang 19 or newer)"
@@ -174,7 +151,9 @@ public:
     template<Operation operation, Color perspective>
     void update_accumulator(const Piece piece, const Color color, const Square square, int king) {
         if constexpr (perspective == White) {
-            const auto& white_weights = weights.feature_weight[buckets[king] % Cells][color][piece][get_square_index(square, king)];
+            const auto feature = nnue_feature_index(buckets[king] % Buckets, color, piece,
+                                                    get_square_index(square, king));
+            const auto& white_weights = weights.feature_weight[feature];
             auto& white_accumulator = white_accumulator_stack[index];
 
             if constexpr (operation == Operation::Set) {
@@ -188,7 +167,9 @@ public:
                 }
             }
         } else {
-            const auto& black_weights = weights.feature_weight[buckets[king ^ 56] % Cells][color ^ 1][piece][get_square_index(square, king) ^ 56];
+            const auto feature = nnue_feature_index(buckets[king ^ 56] % Buckets, color ^ 1,
+                                                    piece, get_square_index(square, king) ^ 56);
+            const auto& black_weights = weights.feature_weight[feature];
             auto& black_accumulator = black_accumulator_stack[index];
 
             if constexpr (operation == Operation::Set) {
@@ -206,8 +187,12 @@ public:
 
     template<Operation operation>
     void update_accumulator(const Piece piece, const Color color, const Square square, int wking, int bking) {
-        const auto& white_weights = weights.feature_weight[buckets[wking] % Cells][color][piece][get_square_index(square, wking)];
-        const auto& black_weights = weights.feature_weight[buckets[bking ^ 56] % Cells][color ^ 1][piece][get_square_index(square, bking) ^ 56];
+        const auto white_feature = nnue_feature_index(buckets[wking] % Buckets, color, piece,
+                                                      get_square_index(square, wking));
+        const auto black_feature = nnue_feature_index(buckets[bking ^ 56] % Buckets, color ^ 1,
+                                                      piece, get_square_index(square, bking) ^ 56);
+        const auto& white_weights = weights.feature_weight[white_feature];
+        const auto& black_weights = weights.feature_weight[black_feature];
 
         auto& white_accumulator = white_accumulator_stack[index];
         auto& black_accumulator = black_accumulator_stack[index];

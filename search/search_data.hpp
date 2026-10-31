@@ -75,6 +75,10 @@ public:
         return principal_variation_table.get_best_move().to_string();
     }
 
+    [[nodiscard]] chess_move get_best_move_object() const {
+        return principal_variation_table.get_best_move();
+    }
+
     void reduce_ply() {
         ply--;
     }

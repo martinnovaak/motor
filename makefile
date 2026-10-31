@@ -3,6 +3,8 @@ CXXFLAGS = -std=c++20 -march=native -O3 -Wunused -Wall -Wextra -DNDEBUG
 SUFFIX =
 
 .DELETE_ON_ERROR:
+.PHONY: all datagen
+
 # clang >= 19 is required for #embed (used to embed nnue.bin)
 ifeq ($(OS), Windows_NT)
 NNUE_URL = $(shell type net.txt)
@@ -18,7 +20,7 @@ else
 NNUE_URL = $(shell cat net.txt)
 	EXE ?= motor
 	CLANG_PLUS_PLUS_19 = $(shell command -v clang++-19 2>/dev/null)
-	CXXFLAGS += -lstdc++ -lm
+	CXXFLAGS += -lstdc++ -lm -pthread
 endif
 
 ifeq ($(strip $(CLANG_PLUS_PLUS_19)),)
@@ -36,3 +38,6 @@ nnue.bin: net.txt
 
 all: $(EVALFILE)
 	$(COMPILER) $(CXXFLAGS) main.cpp -o $(EXE)$(SUFFIX)
+
+datagen: $(EVALFILE)
+	$(COMPILER) $(CXXFLAGS) datagen/main.cpp -o motor-datagen$(SUFFIX)
