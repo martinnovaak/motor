@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -29,6 +30,7 @@
 #include "../dataformat/dataformat.hpp"
 #include "../executioner/makemove.hpp"
 #include "../move_generation/move_generator.hpp"
+#include "../search/move_ordering/see.hpp"
 #include "../search/search.hpp"
 
 namespace motor::datagen {
@@ -36,14 +38,22 @@ namespace motor::datagen {
 constexpr std::size_t MIN_TRAINING_PLY = 16;
 constexpr int MIN_TRAINING_PIECES = 4;
 constexpr int MAX_TRAINING_EVAL = 20'000;
+constexpr std::size_t RANDOM_OPENING_PLIES = 8;
+constexpr std::size_t RANDOM_MOVE_ATTEMPTS = 8;
+constexpr int RANDOM_SEE_THRESHOLD = -1'000;
+constexpr std::uint64_t RANDOM_OPENING_FILTER_NODES = 50'000;
+constexpr int RANDOM_OPENING_MAX_EVAL = 1'000;
+constexpr std::size_t MAX_RANDOM_OPENING_ATTEMPTS = 1'024;
 
 struct Options {
     std::filesystem::path openings;
     std::filesystem::path output;
+    bool random_openings = false;
     std::size_t threads = std::max(1U, std::thread::hardware_concurrency());
     std::uint64_t nodes = 25'000;
     std::size_t games = 0;
     std::size_t max_plies = 256;
+    std::uint64_t seed = 1;
 };
 
 struct SearchResult {
@@ -187,6 +197,62 @@ inline void play_move(position& pos, chess_move move) {
     }
 }
 
+inline std::uint64_t splitmix64(std::uint64_t value) {
+    value += 0x9e3779b97f4a7c15ULL;
+    value = (value ^ (value >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    value = (value ^ (value >> 27)) * 0x94d049bb133111ebULL;
+    return value ^ (value >> 31);
+}
+
+inline bool random_move_passes_see(board& chessboard, chess_move move) {
+    return chessboard.get_side() == White
+            ? see<White>(chessboard, move, RANDOM_SEE_THRESHOLD)
+            : see<Black>(chessboard, move, RANDOM_SEE_THRESHOLD);
+}
+
+inline bool play_random_move(position& pos, std::mt19937_64& random) {
+    board& chessboard = pos.chessboard;
+    move_list moves;
+    if (chessboard.get_side() == White) {
+        generate_all_moves<White>(chessboard, moves);
+    } else {
+        generate_all_moves<Black>(chessboard, moves);
+    }
+    if (moves.size() == 0) {
+        return false;
+    }
+
+    std::uniform_int_distribution<std::size_t> pick(0, moves.size() - 1);
+    chess_move selected = *(moves.begin() + pick(random));
+    for (std::size_t attempt = 0; attempt < RANDOM_MOVE_ATTEMPTS; attempt++) {
+        const chess_move candidate = *(moves.begin() + pick(random));
+        selected = candidate;
+        if (random_move_passes_see(chessboard, candidate)) {
+            break;
+        }
+    }
+    play_move(pos, selected);
+    return true;
+}
+
+inline std::unique_ptr<position> random_starting_position(
+        std::uint64_t seed, std::size_t game, std::size_t attempt) {
+    auto pos = std::make_unique<position>();
+    set_position(*pos);
+    std::mt19937_64 random(splitmix64(seed ^ splitmix64(game)
+                                     ^ splitmix64(attempt)));
+    for (std::size_t ply = 0; ply < RANDOM_OPENING_PLIES; ply++) {
+        if (!play_random_move(*pos, random)) {
+            return nullptr;
+        }
+    }
+    if (terminal_result(*pos)) {
+        return nullptr;
+    }
+    set_position(*pos);
+    return pos;
+}
+
 inline std::size_t initial_ply_from_fen(const std::string& fen) {
     std::istringstream input(fen);
     std::string placement;
@@ -222,10 +288,8 @@ inline bool should_store_position(board& chessboard, chess_move best_move,
 }
 
 inline std::pair<std::vector<PendingRecord>, dataformat::Result>
-play_game(const std::string& fen, const Options& options, Player& white, Player& black) {
-    auto pos = std::make_unique<position>();
-    pos->chessboard.fen_to_board(fen);
-    set_position(*pos);
+play_game(std::unique_ptr<position> pos, std::size_t initial_ply,
+          const Options& options, Player& white, Player& black) {
     white.new_game();
     black.new_game();
 
@@ -234,8 +298,6 @@ play_game(const std::string& fen, const Options& options, Player& white, Player&
     int decisive_count = 0;
     int decisive_sign = 0;
     int draw_count = 0;
-    const std::size_t initial_ply = initial_ply_from_fen(fen);
-
     for (std::size_t ply = 0; ply < options.max_plies; ply++) {
         if (const auto result = terminal_result(*pos)) {
             return {std::move(records), *result};
@@ -291,6 +353,14 @@ play_game(const std::string& fen, const Options& options, Player& white, Player&
         set_position(*pos);
     }
     return {std::move(records), dataformat::Result::Draw};
+}
+
+inline std::pair<std::vector<PendingRecord>, dataformat::Result>
+play_game(const std::string& fen, const Options& options, Player& white, Player& black) {
+    auto pos = std::make_unique<position>();
+    pos->chessboard.fen_to_board(fen);
+    set_position(*pos);
+    return play_game(std::move(pos), initial_ply_from_fen(fen), options, white, black);
 }
 
 inline bool decimal(const std::string& value) {
@@ -402,11 +472,18 @@ inline void run(const Options& options) {
         throw std::runtime_error("output already exists: " + options.output.string());
     }
 
-    const std::vector<std::string> openings = read_openings(options.openings);
-    const std::size_t game_limit = options.games == 0 ? openings.size() : options.games;
+    if (options.random_openings && options.games == 0) {
+        throw std::runtime_error("random opening mode requires a game count");
+    }
+    const std::vector<std::string> openings = options.random_openings
+            ? std::vector<std::string>{}
+            : read_openings(options.openings);
+    const std::size_t game_limit = options.random_openings
+            ? options.games
+            : (options.games == 0 ? openings.size() : options.games);
     const auto created = static_cast<std::uint64_t>(
             std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
-    dataformat::Writer writer(options.output, 0, options.nodes, created);
+    dataformat::Writer writer(options.output, options.seed, options.nodes, created);
     std::mutex writer_mutex;
     std::mutex error_mutex;
     std::exception_ptr error;
@@ -414,6 +491,7 @@ inline void run(const Options& options) {
     std::atomic<std::size_t> next_game = 0;
     std::atomic<std::size_t> completed = 0;
     std::atomic<std::uint64_t> positions = 0;
+    std::atomic<std::uint64_t> rejected_openings = 0;
 
     auto worker = [&] {
         try {
@@ -425,8 +503,46 @@ inline void run(const Options& options) {
                     return;
                 }
 
-                auto [records, white_result] = play_game(
-                        openings[game % openings.size()], options, white, black);
+                std::vector<PendingRecord> records;
+                dataformat::Result white_result;
+                if (options.random_openings) {
+                    bool accepted = false;
+                    for (std::size_t attempt = 0;
+                         attempt < MAX_RANDOM_OPENING_ATTEMPTS; attempt++) {
+                        auto pos = random_starting_position(options.seed, game, attempt);
+                        if (!pos) {
+                            rejected_openings.fetch_add(1, std::memory_order_relaxed);
+                            continue;
+                        }
+
+                        white.new_game();
+                        black.new_game();
+                        Player& player = pos->chessboard.get_side() == White ? white : black;
+                        const SearchResult opening = player.search(
+                                *pos, RANDOM_OPENING_FILTER_NODES);
+                        if (std::abs(static_cast<int>(opening.score))
+                            > RANDOM_OPENING_MAX_EVAL) {
+                            rejected_openings.fetch_add(1, std::memory_order_relaxed);
+                            continue;
+                        }
+
+                        auto generated = play_game(std::move(pos), MIN_TRAINING_PLY,
+                                                   options, white, black);
+                        records = std::move(generated.first);
+                        white_result = generated.second;
+                        accepted = true;
+                        break;
+                    }
+                    if (!accepted) {
+                        throw std::runtime_error(
+                                "failed to generate a balanced random opening");
+                    }
+                } else {
+                    auto generated = play_game(
+                            openings[game % openings.size()], options, white, black);
+                    records = std::move(generated.first);
+                    white_result = generated.second;
+                }
                 for (PendingRecord& pending : records) {
                     dataformat::set_game_result(
                             pending.record, white_result, pending.black_to_move);
@@ -446,7 +562,13 @@ inline void run(const Options& options) {
                     std::lock_guard<std::mutex> lock(writer_mutex);
                     std::cerr << "datagen: " << done << "/" << game_limit
                               << " games, " << positions.load(std::memory_order_relaxed)
-                              << " positions\n";
+                              << " positions";
+                    if (options.random_openings) {
+                        std::cerr << ", "
+                                  << rejected_openings.load(std::memory_order_relaxed)
+                                  << " rejected openings";
+                    }
+                    std::cerr << '\n';
                 }
             }
         } catch (...) {
