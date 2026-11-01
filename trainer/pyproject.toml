@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 motor-train = "motor_trainer.train:main"
+motor-train-corrhist-material = "motor_trainer.corrhist_material_train:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

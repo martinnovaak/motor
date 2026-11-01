@@ -4,8 +4,10 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <csignal>
 #include <cctype>
 #include <cstdint>
+#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -44,6 +46,17 @@ constexpr int RANDOM_SEE_THRESHOLD = -1'000;
 constexpr std::uint64_t RANDOM_OPENING_FILTER_NODES = 50'000;
 constexpr int RANDOM_OPENING_MAX_EVAL = 1'000;
 constexpr std::size_t MAX_RANDOM_OPENING_ATTEMPTS = 1'024;
+constexpr std::size_t UNLIMITED_COUNT = std::numeric_limits<std::size_t>::max();
+
+inline volatile std::sig_atomic_t interrupt_signal = 0;
+
+inline void handle_interrupt(int) noexcept {
+    interrupt_signal = 1;
+}
+
+inline bool interrupt_requested() noexcept {
+    return interrupt_signal != 0;
+}
 
 struct Options {
     std::filesystem::path openings;
@@ -51,7 +64,7 @@ struct Options {
     bool random_openings = false;
     std::size_t threads = std::max(1U, std::thread::hardware_concurrency());
     std::uint64_t nodes = 25'000;
-    std::size_t games = 0;
+    std::size_t positions = 0;
     std::size_t max_plies = 256;
     std::uint64_t seed = 1;
 };
@@ -70,6 +83,9 @@ public:
     }
 
     SearchResult search(position& pos, std::uint64_t nodes) {
+#ifdef MOTOR_CORRHIST_TRACE
+        corrhist_trace::begin_search();
+#endif
         context.new_search();
         search_data data(context);
         data.history = history.get();
@@ -369,6 +385,28 @@ inline bool decimal(const std::string& value) {
     });
 }
 
+#ifdef MOTOR_CORRHIST_TRACE
+inline std::uint32_t corrhist_sample_rate() {
+    const char* value = std::getenv("MOTOR_CORRHIST_TRACE_SAMPLE_RATE");
+    if (value == nullptr || *value == '\0') {
+        return 16;
+    }
+    try {
+        std::size_t parsed = 0;
+        const std::string text(value);
+        const auto result = std::stoull(text, &parsed);
+        if (parsed != text.size() || result == 0
+                || result > std::numeric_limits<std::uint32_t>::max()) {
+            throw std::invalid_argument("invalid sample rate");
+        }
+        return static_cast<std::uint32_t>(result);
+    } catch (const std::exception&) {
+        throw std::runtime_error(
+                "invalid MOTOR_CORRHIST_TRACE_SAMPLE_RATE: " + std::string(value));
+    }
+}
+#endif
+
 inline std::string fen_from_epd(const std::string& line) {
     std::istringstream input(line);
     std::vector<std::string> fields;
@@ -465,6 +503,7 @@ private:
 };
 
 inline void run(const Options& options) {
+    interrupt_signal = 0;
     if (options.threads == 0 || options.nodes == 0 || options.max_plies == 0) {
         throw std::runtime_error("threads, nodes and max plies must be positive");
     }
@@ -472,15 +511,18 @@ inline void run(const Options& options) {
         throw std::runtime_error("output already exists: " + options.output.string());
     }
 
-    if (options.random_openings && options.games == 0) {
-        throw std::runtime_error("random opening mode requires a game count");
+    if (options.random_openings && options.positions == 0) {
+        throw std::runtime_error("random opening mode requires a position count");
     }
     const std::vector<std::string> openings = options.random_openings
             ? std::vector<std::string>{}
             : read_openings(options.openings);
-    const std::size_t game_limit = options.random_openings
-            ? options.games
-            : (options.games == 0 ? openings.size() : options.games);
+    const std::size_t position_limit = options.positions == 0
+            ? UNLIMITED_COUNT
+            : options.positions;
+    const std::size_t game_limit = !options.random_openings && options.positions == 0
+            ? openings.size()
+            : UNLIMITED_COUNT;
     const auto created = static_cast<std::uint64_t>(
             std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
     dataformat::Writer writer(options.output, options.seed, options.nodes, created);
@@ -492,16 +534,44 @@ inline void run(const Options& options) {
     std::atomic<std::size_t> completed = 0;
     std::atomic<std::uint64_t> positions = 0;
     std::atomic<std::uint64_t> rejected_openings = 0;
+#ifdef MOTOR_CORRHIST_TRACE
+    const char* trace_prefix_value = std::getenv("MOTOR_CORRHIST_TRACE_PREFIX");
+    const std::string trace_prefix = trace_prefix_value == nullptr
+            ? std::string{}
+            : std::string(trace_prefix_value);
+    const std::uint32_t trace_sample_rate = corrhist_sample_rate();
+#endif
 
-    auto worker = [&] {
+    auto worker = [&](std::size_t worker_index) {
         try {
+#ifdef MOTOR_CORRHIST_TRACE
+            std::unique_ptr<corrhist_trace::Writer> trace_writer;
+            if (!trace_prefix.empty()) {
+                const std::filesystem::path trace_path = trace_prefix
+                        + ".w" + std::to_string(worker_index) + ".bin";
+                if (!trace_path.parent_path().empty()) {
+                    std::filesystem::create_directories(trace_path.parent_path());
+                }
+                trace_writer = std::make_unique<corrhist_trace::Writer>(
+                        trace_path, trace_sample_rate);
+                if (!trace_writer->is_enabled()) {
+                    throw std::runtime_error(
+                            "failed to enable corrhist trace: " + trace_path.string());
+                }
+                corrhist_trace::activate(trace_writer.get());
+            }
+#endif
             Player white;
             Player black;
-            while (!stop.load(std::memory_order_relaxed)) {
+            while (!stop.load(std::memory_order_relaxed)
+                   && !interrupt_requested()) {
                 const std::size_t game = next_game.fetch_add(1, std::memory_order_relaxed);
                 if (game >= game_limit) {
                     return;
                 }
+#ifdef MOTOR_CORRHIST_TRACE
+                corrhist_trace::set_game_id(static_cast<std::uint32_t>(game + 1));
+#endif
 
                 std::vector<PendingRecord> records;
                 dataformat::Result white_result;
@@ -548,21 +618,46 @@ inline void run(const Options& options) {
                             pending.record, white_result, pending.black_to_move);
                 }
 
+                std::size_t written_records = 0;
+                std::uint64_t total_positions = 0;
+                bool stored_game = false;
+                bool reached_position_limit = false;
                 {
                     std::lock_guard<std::mutex> lock(writer_mutex);
-                    for (const PendingRecord& pending : records) {
-                        writer.write(pending.record);
+                    const std::size_t current_positions = writer.size();
+                    if (current_positions < position_limit) {
+                        written_records = std::min(
+                                records.size(), position_limit - current_positions);
+                        for (std::size_t i = 0; i < written_records; i++) {
+                            writer.write(records[i].record);
+                        }
+                        writer.finish_game();
+                        total_positions = positions.fetch_add(
+                                written_records, std::memory_order_relaxed)
+                                + written_records;
+                        stored_game = true;
+                        reached_position_limit = writer.size() == position_limit;
+                        if (reached_position_limit) {
+                            stop.store(true, std::memory_order_relaxed);
+                        }
                     }
-                    writer.finish_game();
+                }
+                if (!stored_game) {
+                    return;
                 }
 
-                positions.fetch_add(records.size(), std::memory_order_relaxed);
                 const std::size_t done = completed.fetch_add(1, std::memory_order_relaxed) + 1;
-                if (done % 100 == 0 || done == game_limit) {
+                if (done % 100 == 0 || done == game_limit || reached_position_limit) {
                     std::lock_guard<std::mutex> lock(writer_mutex);
-                    std::cerr << "datagen: " << done << "/" << game_limit
-                              << " games, " << positions.load(std::memory_order_relaxed)
-                              << " positions";
+                    std::cerr << "datagen: " << done;
+                    if (game_limit != UNLIMITED_COUNT) {
+                        std::cerr << "/" << game_limit;
+                    }
+                    std::cerr << " games, " << total_positions;
+                    if (position_limit != UNLIMITED_COUNT) {
+                        std::cerr << "/" << position_limit;
+                    }
+                    std::cerr << " positions";
                     if (options.random_openings) {
                         std::cerr << ", "
                                   << rejected_openings.load(std::memory_order_relaxed)
@@ -584,7 +679,9 @@ inline void run(const Options& options) {
     std::vector<std::unique_ptr<WorkerThread>> workers;
     workers.reserve(worker_count);
     for (std::size_t i = 0; i < worker_count; i++) {
-        workers.push_back(std::make_unique<WorkerThread>(worker));
+        workers.push_back(std::make_unique<WorkerThread>([&, i] {
+            worker(i);
+        }));
     }
     for (auto& thread : workers) {
         thread->join();
@@ -593,6 +690,11 @@ inline void run(const Options& options) {
     if (error) {
         writer.abort();
         std::rethrow_exception(error);
+    }
+    if (interrupt_requested()) {
+        std::cerr << "datagen: Ctrl-C received; saved "
+                  << completed.load(std::memory_order_relaxed) << " games and "
+                  << positions.load(std::memory_order_relaxed) << " positions\n";
     }
     writer.close();
 }

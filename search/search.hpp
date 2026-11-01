@@ -14,6 +14,10 @@
 #include "../move_generation/move_generator.hpp"
 #include "../executioner/makemove.hpp"
 
+#ifdef MOTOR_CORRHIST_TRACE
+#include "corrhist_trace.hpp"
+#endif
+
 constexpr int iir_depth = 4;
 constexpr int razoring = 500;
 constexpr int razoring_depth = 3;
@@ -41,6 +45,21 @@ constexpr int asp_window = 20;
 constexpr int asp_window_mul = 15;
 constexpr int asp_window_max = 650;
 constexpr int asp_depth = 8;
+
+#ifdef MOTOR_CORRHIST_TRACE
+inline std::uint8_t corrhist_material_phase(const board &chessboard) {
+    const int phase =
+            popcount(chessboard.get_pieces(White, Knight)
+                   | chessboard.get_pieces(Black, Knight))
+          + popcount(chessboard.get_pieces(White, Bishop)
+                   | chessboard.get_pieces(Black, Bishop))
+          + 2 * popcount(chessboard.get_pieces(White, Rook)
+                       | chessboard.get_pieces(Black, Rook))
+          + 4 * popcount(chessboard.get_pieces(White, Queen)
+                       | chessboard.get_pieces(Black, Queen));
+    return static_cast<std::uint8_t>(std::min(phase, 24));
+}
+#endif
 
 template <Color color, NodeType node_type>
 std::int16_t alpha_beta(position& pos, search_data& data, std::int16_t alpha, std::int16_t beta, std::int8_t depth, bool cutnode) {
@@ -87,6 +106,7 @@ std::int16_t alpha_beta(position& pos, search_data& data, std::int16_t alpha, st
     chess_move best_move;
     chess_move tt_move = {};
     std::int16_t eval, static_eval, raw_eval;
+    CorrectionHistoryComponents correction_components;
     bool would_tt_prune = false;
     bool tt_pv = is_pv;
 
@@ -95,7 +115,8 @@ std::int16_t alpha_beta(position& pos, search_data& data, std::int16_t alpha, st
         tt_move = tt_entry.tt_move;
         std::int16_t tt_eval = tt_entry.score;
         raw_eval = tt_entry.static_eval;
-        eval = static_eval = data.history->correct_eval<color>(chessboard, data, raw_eval);
+        correction_components = data.history->correction_components<color>(chessboard, data);
+        eval = static_eval = data.history->correct_eval(raw_eval, correction_components);
         tt_pv = tt_pv || tt_entry.tt_pv;
 
         if constexpr (!is_root) {
@@ -122,7 +143,8 @@ std::int16_t alpha_beta(position& pos, search_data& data, std::int16_t alpha, st
         }
     } else {
         raw_eval = in_check ? -INF : evaluate<color>(pos);
-        eval = static_eval = data.history->correct_eval<color>(chessboard, data, raw_eval);
+        correction_components = data.history->correction_components<color>(chessboard, data);
+        eval = static_eval = data.history->correct_eval(raw_eval, correction_components);
         if (data.singular_move[data.get_ply()] == 0 && depth >= iir_depth) {
             depth--;
         }
@@ -362,6 +384,21 @@ std::int16_t alpha_beta(position& pos, search_data& data, std::int16_t alpha, st
 
     if (data.singular_move[data.get_ply()] == 0) {
         int avg_eval = (raw_eval + static_eval * 2) / 3;
+#ifdef MOTOR_CORRHIST_TRACE
+        if (!in_check && flag == Bound::EXACT && depth >= 3
+                && best_move.get_value() != 0 && chessboard.is_quiet(best_move)
+                && std::abs(raw_eval) <= 8'000 && std::abs(best_score) <= 8'000) {
+            std::uint8_t trace_flags = corrhist_trace::FLAG_QUIET_BEST_MOVE;
+            if constexpr (is_pv) trace_flags |= corrhist_trace::FLAG_PV;
+            if constexpr (is_root) trace_flags |= corrhist_trace::FLAG_ROOT;
+            if (data.main_thread) trace_flags |= corrhist_trace::FLAG_MAIN_THREAD;
+            if constexpr (color == Black) trace_flags |= corrhist_trace::FLAG_BLACK_TO_MOVE;
+            corrhist_trace::append(
+                    raw_eval, best_score, correction_components,
+                    corrhist_material_phase(chessboard), depth,
+                    static_cast<std::uint8_t>(flag), trace_flags);
+        }
+#endif
         if (!(in_check || !(best_move.get_value() == 0 || chessboard.is_quiet(best_move))
               || (flag == Bound::LOWER && best_score <= avg_eval) || (flag == Bound::UPPER && best_score >= avg_eval))
         ) {

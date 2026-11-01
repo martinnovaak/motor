@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.28)
 project(motor)
 
+option(MOTOR_CORRHIST_TRACE "Enable corrhist trace logging in motor-datagen" OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
@@ -46,6 +48,9 @@ add_executable(motor-datagen datagen/main.cpp)
 
 target_compile_definitions(motor PRIVATE NNUE_FILE="${EVALFILE}")
 target_compile_definitions(motor-datagen PRIVATE NNUE_FILE="${EVALFILE}")
+if(MOTOR_CORRHIST_TRACE)
+        target_compile_definitions(motor-datagen PRIVATE MOTOR_CORRHIST_TRACE=1)
+endif()
 
 # Rebuild when the embedded network changes
 set_property(SOURCE main.cpp APPEND PROPERTY OBJECT_DEPENDS "${EVALFILE}")

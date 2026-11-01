@@ -7,6 +7,7 @@
 #include "../../chess_board/board.hpp"
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
+#include "../correction_history.hpp"
 #include "../search_data.hpp"
 
 auto murmur_hash_3(std::uint64_t key) -> std::uint64_t {
@@ -173,33 +174,49 @@ public:
     }
 
     template <Color color>
-    std::int16_t correct_eval(const board &chessboard, const search_data &data, int raw_eval) {
-        if (std::abs(raw_eval) > 8'000) return raw_eval;
+    CorrectionHistoryComponents correction_components(
+            const board &chessboard, const search_data &data) const {
         std::uint64_t threat_key = murmur_hash_3(chessboard.get_threats() & chessboard.get_side_occupancy<color>());
 
-        const int pawn_entry = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
-        const int threat_entry = threat_correction_table[color][threat_key % 16384];
-        const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
-        const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+        CorrectionHistoryComponents components;
+        components.pawn = pawn_correction_table[color][chessboard.get_pawn_key() % 16384];
+        components.threat = threat_correction_table[color][threat_key % 16384];
+        components.minor = minor_correction_table[color][chessboard.get_minor_key() % 16384];
+        components.major = major_correction_table[color][chessboard.get_major_key() % 16384];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
-        const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
+        components.nonpawn = nonpawn_correction_table[color][White][wkey % 16384]
+                           + nonpawn_correction_table[color][Black][bkey % 16384];
 
-        int cont_entry = 0;
-        int cont_entry2 = 0;
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
             auto prev2 = data.prev_moves[data.get_ply() - 2];
-            cont_entry = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
+            components.continuation1 = continuation_correction_table[prev2.piece_type][prev2.to][prev1.piece_type][prev1.to];
             if (data.get_ply() > 2) {
                 auto prev3 = data.prev_moves[data.get_ply() - 3];
-                cont_entry2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
+                components.continuation2 = continuation_correction_table2[prev3.piece_type][prev3.to][prev1.piece_type][prev1.to];
             }
         }
-
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        return components;
     }
 
+    static std::int16_t correct_eval(
+            int raw_eval, const CorrectionHistoryComponents &components) {
+        if (std::abs(raw_eval) > 8'000) return raw_eval;
+        return raw_eval + (components.pawn * 200
+                         + components.threat * 100
+                         + components.nonpawn * 200
+                         + components.minor * 150
+                         + components.major * 120
+                         + components.continuation1 * 180
+                         + components.continuation2 * 180) / (256 * 300);
+    }
+
+    template <Color color>
+    std::int16_t correct_eval(
+            const board &chessboard, const search_data &data, int raw_eval) const {
+        return correct_eval(raw_eval, correction_components<color>(chessboard, data));
+    }
 
 private:
     std::array<std::array<std::array<std::array<std::array<int, 64>, 64>, 2>, 2>, 2> history_table;
