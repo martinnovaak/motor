@@ -2,8 +2,9 @@
 #define HISTORY_HPP
 
 #include <array>
-#include <memory>
 #include <algorithm>
+#include <cstdint>
+#include <memory>
 #include "../../chess_board/board.hpp"
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
@@ -197,7 +198,35 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        const int phase = std::min(24,
+                popcount(chessboard.get_pieces(White, Knight)
+                       | chessboard.get_pieces(Black, Knight))
+              + popcount(chessboard.get_pieces(White, Bishop)
+                       | chessboard.get_pieces(Black, Bishop))
+              + 2 * popcount(chessboard.get_pieces(White, Rook)
+                           | chessboard.get_pieces(Black, Rook))
+              + 4 * popcount(chessboard.get_pieces(White, Queen)
+                           | chessboard.get_pieces(Black, Queen)));
+        const int endgame = 24 - phase;
+
+        constexpr std::array<int, 7> endgame_weights = {
+                96, 32, 210, 349, 289, 162, 79,
+        };
+        constexpr std::array<int, 7> middlegame_weights = {
+                161, 197, 270, 84, 184, 218, 108,
+        };
+        const std::array<int, 7> entries = {
+                pawn_entry, threat_entry, nonpawn_entry, minor_entry,
+                major_entry, cont_entry, cont_entry2,
+        };
+
+        std::int64_t correction = 0;
+        for (std::size_t index = 0; index < entries.size(); index++) {
+            const int weight = endgame_weights[index] * endgame
+                             + middlegame_weights[index] * phase;
+            correction += static_cast<std::int64_t>(entries[index]) * weight;
+        }
+        return raw_eval + correction / (24 * 256 * 300);
     }
 
 
