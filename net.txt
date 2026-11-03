@@ -1,1 +1,1 @@
-https://huggingface.co/martinnovaak/motor/resolve/9dbad211b474859860b984549be074febd1ef32d/networks/motor-768x16-wdl60-d42500k-random8-multiseed-e15-optadamw-mse-q403.bin
+https://huggingface.co/martinnovaak/motor/resolve/9400690e4948d2b5dd9935dc75cc2eb0309786fe/networks/motor-768x16-wdl60-d114413k-random8-hs8-e10-optadamw-cosine1e5-mse-q403.bin
