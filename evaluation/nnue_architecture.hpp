@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-constexpr unsigned int HIDDEN_SIZE = 16;
+constexpr unsigned int HIDDEN_SIZE = 32;
 constexpr int QA = 403;
 constexpr int QB = 81;
 constexpr int Buckets = 1;
