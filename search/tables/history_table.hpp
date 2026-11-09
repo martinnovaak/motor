@@ -2,8 +2,9 @@
 #define HISTORY_HPP
 
 #include <array>
-#include <memory>
 #include <algorithm>
+#include <bit>
+#include <memory>
 #include "../../chess_board/board.hpp"
 #include "../../chess_board/chess_move.hpp"
 #include "../../move_generation/move_list.hpp"
@@ -23,7 +24,8 @@ public:
     History()
             : history_table({}), pawn_history_table({}), continuation_table({}), capture_table({}),
               pawn_correction_table({}), nonpawn_correction_table({}), minor_correction_table({}), major_correction_table({}),
-              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}) {}
+              threat_correction_table({}), continuation_correction_table({}), continuation_correction_table2({}),
+              router_correction_table({}) {}
 
     void clear() {
         history_table = {};
@@ -37,6 +39,7 @@ public:
         threat_correction_table = {};
         continuation_correction_table = {};
         continuation_correction_table2 = {};
+        router_correction_table = {};
     }
 
     template <Color color, bool is_root>
@@ -159,6 +162,7 @@ public:
 
         update_entry(minor_correction_table[color][chessboard.get_minor_key() % CORRECTION_TABLE_SIZE]);
         update_entry(major_correction_table[color][chessboard.get_major_key() % CORRECTION_TABLE_SIZE]);
+        update_entry(router_correction_table[color][corrhist_router_bucket<color>(chessboard)]);
 
         if (data.get_ply() > 1) {
             auto prev1 = data.prev_moves[data.get_ply() - 1];
@@ -181,6 +185,7 @@ public:
         const int threat_entry = threat_correction_table[color][threat_key % 16384];
         const int minor_entry = minor_correction_table[color][chessboard.get_minor_key() % 16384];
         const int major_entry = major_correction_table[color][chessboard.get_major_key() % 16384];
+        const int router_entry = router_correction_table[color][corrhist_router_bucket<color>(chessboard)];
 
         auto [wkey, bkey] = chessboard.get_nonpawn_key();
         const int nonpawn_entry = nonpawn_correction_table[color][White][wkey % 16384] + nonpawn_correction_table[color][Black][bkey % 16384];
@@ -197,7 +202,11 @@ public:
             }
         }
 
-        return raw_eval + (pawn_entry * 200 + threat_entry * 100 + nonpawn_entry * 200 + minor_entry * 150 + major_entry * 120 + cont_entry * 180 + cont_entry2 * 180) / (256 * 300);
+        const int correction = pawn_entry * 200 + threat_entry * 100
+                             + nonpawn_entry * 200 + minor_entry * 150
+                             + major_entry * 120 + cont_entry * 180
+                             + cont_entry2 * 180 + router_entry * 100;
+        return raw_eval + correction / (256 * 300);
     }
 
 
@@ -213,6 +222,57 @@ private:
     std::array<std::array<int, 16384>, 2> threat_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table;
     std::array<std::array<std::array<std::array<int, 64>, 7>, 64>, 7> continuation_correction_table2;
+    std::array<std::array<int, 256>, 2> router_correction_table;
+
+    template <Color side>
+    static std::uint64_t passed_pawns(std::uint64_t pawns, std::uint64_t enemy_pawns) {
+        const std::uint64_t neighboring_files = enemy_pawns
+                | ((enemy_pawns & ~files[FILE_H]) << 1)
+                | ((enemy_pawns & ~files[FILE_A]) >> 1);
+        std::uint64_t front_span = 0;
+        std::uint64_t frontier = neighboring_files;
+        for (int distance = 0; distance < 7; distance++) {
+            if constexpr (side == White) frontier >>= 8;
+            else frontier <<= 8;
+            front_span |= frontier;
+        }
+        return pawns & ~front_span;
+    }
+
+    template <Color side>
+    static int most_advanced_passer(std::uint64_t pawns, std::uint64_t enemy_pawns) {
+        const std::uint64_t passers = passed_pawns<side>(pawns, enemy_pawns);
+        if (passers == 0) return 0;
+        if constexpr (side == White) {
+            return (63 - std::countl_zero(passers)) / 8;
+        } else {
+            return 7 - std::countr_zero(passers) / 8;
+        }
+    }
+
+    template <Color color>
+    static std::uint8_t corrhist_router_bucket(const board &chessboard) {
+        constexpr Color their_color = color == White ? Black : White;
+        const std::uint64_t our_pawns = chessboard.get_pieces(color, Pawn);
+        const std::uint64_t their_pawns = chessboard.get_pieces(their_color, Pawn);
+        const int pawn_difference = popcount(our_pawns) - popcount(their_pawns);
+        const int minor_difference =
+                popcount(chessboard.get_pieces(color, Knight) | chessboard.get_pieces(color, Bishop))
+              - popcount(chessboard.get_pieces(their_color, Knight) | chessboard.get_pieces(their_color, Bishop));
+        const int our_passer = most_advanced_passer<color>(our_pawns, their_pawns);
+        const int their_passer = most_advanced_passer<their_color>(their_pawns, our_pawns);
+        const int their_rooks = popcount(chessboard.get_pieces(their_color, Rook));
+
+        return static_cast<std::uint8_t>(
+                  (pawn_difference >= 2)
+                | ((pawn_difference >= -1) << 1)
+                | ((our_passer >= 4) << 2)
+                | ((their_passer >= 5) << 3)
+                | ((minor_difference >= 1) << 4)
+                | ((their_rooks >= 2) << 5)
+                | ((pawn_difference >= 0) << 6)
+                | ((their_passer >= 3) << 7));
+    }
 
     int history_bonus(int depth) const {
         return std::min(2040, 236 * depth);
