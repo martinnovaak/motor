@@ -209,21 +209,45 @@ public:
                            | chessboard.get_pieces(Black, Queen)));
         const int endgame = 24 - phase;
 
-        constexpr std::array<int, 7> endgame_weights = {
-                124, 23, 198, 341, 314, 176, 90,
-        };
-        constexpr std::array<int, 7> middlegame_weights = {
-                105, 166, 270, 64, 200, 276, 127,
-        };
         const std::array<int, 7> entries = {
                 pawn_entry, threat_entry, nonpawn_entry, minor_entry,
                 major_entry, cont_entry, cont_entry2,
         };
+        const int minimum_entry = *std::min_element(entries.begin(), entries.end());
+        const int maximum_entry = *std::max_element(entries.begin(), entries.end());
+
+        std::size_t mixer;
+        if (maximum_entry < 24'576) {
+            if (minimum_entry <= -24'576) {
+                mixer = std::abs(raw_eval) <= 633 ? 0 : 1;
+            } else {
+                mixer = cont_entry <= -12'284 ? 2 : 3;
+            }
+        } else {
+            mixer = std::abs(raw_eval) <= 654 ? 4 : 5;
+        }
+
+        constexpr std::array<std::array<int, 7>, 6> endgame_weights = {{
+                {140, 50, 394, 208, 341, 168, 55},
+                {188, 198, 623, 393, 437, 104, -8},
+                {121, 47, 50, 186, 246, 633, 196},
+                {108, 3, 136, 289, 267, 200, 131},
+                {344, 207, 52, 366, 481, 202, 42},
+                {375, 334, 294, 460, 581, 201, -198},
+        }};
+        constexpr std::array<std::array<int, 7>, 6> middlegame_weights = {{
+                {104, 191, 403, 99, 276, 262, 68},
+                {136, 217, 473, 238, 321, 193, -1},
+                {94, 169, 129, 64, 189, 585, 154},
+                {74, 110, 205, 63, 140, 286, 194},
+                {259, 244, 186, 228, 419, 295, 124},
+                {307, 353, 452, 371, 527, 348, 45},
+        }};
 
         std::int64_t correction = 0;
         for (std::size_t index = 0; index < entries.size(); index++) {
-            const int weight = endgame_weights[index] * endgame
-                             + middlegame_weights[index] * phase;
+            const int weight = endgame_weights[mixer][index] * endgame
+                             + middlegame_weights[mixer][index] * phase;
             correction += static_cast<std::int64_t>(entries[index]) * weight;
         }
         return raw_eval + correction / (24 * 256 * 300);
