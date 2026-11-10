@@ -44,6 +44,11 @@ get_filename_component(EVALFILE "${EVALFILE}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_
 add_executable(motor main.cpp)
 add_executable(motor-datagen datagen/main.cpp)
 
+option(MOTOR_CORRHIST_PROFILE "Profile correction-history key reuse in datagen" OFF)
+if(MOTOR_CORRHIST_PROFILE)
+        target_compile_definitions(motor-datagen PRIVATE MOTOR_CORRHIST_PROFILE)
+endif()
+
 target_compile_definitions(motor PRIVATE NNUE_FILE="${EVALFILE}")
 target_compile_definitions(motor-datagen PRIVATE NNUE_FILE="${EVALFILE}")
 
