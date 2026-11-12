@@ -1,1 +1,1 @@
-https://huggingface.co/martinnovaak/motor/resolve/f70737c5fe3e8b6b8dff8a239a83252e689f5955/networks/motor-768x32-wdl3entropy-norm40-d129993k-hs12-e15-optadamw-cosine1e8-qat5-mse-q403.bin
+https://huggingface.co/martinnovaak/motor/resolve/685e1ddbdec8eb9c4f60ab2f3c5a8ef39b0b8950/networks/motor-768x32-wdl40-d258900k-new-hs32-e8-optadamw-contcosine1e8-qat3-mse-q403.bin
