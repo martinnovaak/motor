@@ -201,8 +201,22 @@ std::int16_t alpha_beta(position& pos, search_data& data, std::int16_t alpha, st
         }
     }
 
-    move_list movelist, quiets, captures;
-    generate_all_moves<color, false>(chessboard, movelist);
+    move_list generated_moves, restricted_moves, quiets, captures;
+    generate_all_moves<color, false>(chessboard, generated_moves);
+    move_list* root_moves = &generated_moves;
+
+    if constexpr (is_root) {
+        if (data.has_root_move_restriction()) {
+            for (const chess_move& move : generated_moves) {
+                if (data.root_move_allowed(move)) {
+                    restricted_moves.push_back(move);
+                }
+            }
+            root_moves = &restricted_moves;
+        }
+    }
+
+    move_list& movelist = *root_moves;
 
     if (movelist.size() == 0) {
         if (data.singular_move[data.get_ply()] > 0) return alpha;

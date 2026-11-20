@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <climits>
+#include <vector>
 #include "../chess_board/chess_move.hpp"
 #include "search_context.hpp"
 #include "tuning_options.hpp"
@@ -14,6 +15,8 @@
 struct time_info {
     int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = 0, movetime = 0, max_depth = 64;
     std::uint64_t max_nodes = static_cast<std::uint64_t>(INT_MAX) / 2;
+    std::vector<chess_move> search_moves;
+    bool search_moves_specified = false;
 };
 
 TuningOption tm_expect_mul("tm_expect_mul", 41, 20, 70);

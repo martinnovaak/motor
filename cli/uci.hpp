@@ -58,7 +58,7 @@ void print_tune_options() {
     }
 }
 
-bool parse_move(position& p, const std::string& move_string) {
+bool find_move(position& p, const std::string& move_string, chess_move& result) {
     board& b = p.chessboard;
     move_list ml;
     if (b.get_side() == White) {
@@ -69,15 +69,32 @@ bool parse_move(position& p, const std::string& move_string) {
 
     for (const chess_move & m : ml) {
         if (m.to_string() == move_string) {
-            if (b.get_side() == White) {
-                make_move<White, false>(p, m);
-            } else {
-                make_move<Black, false>(p, m);
-            }
+            result = m;
             return true;
         }
     }
     return false;
+}
+
+bool parse_move(position& p, const std::string& move_string) {
+    chess_move move;
+    if (!find_move(p, move_string, move)) {
+        return false;
+    }
+
+    if (p.chessboard.get_side() == White) {
+        make_move<White, false>(p, move);
+    } else {
+        make_move<Black, false>(p, move);
+    }
+    return true;
+}
+
+bool is_go_keyword(const std::string& token) {
+    return token == "searchmoves" || token == "ponder" || token == "wtime" ||
+           token == "btime" || token == "winc" || token == "binc" ||
+           token == "movestogo" || token == "depth" || token == "nodes" ||
+           token == "mate" || token == "movetime" || token == "infinite";
 }
 
 void uci_position(position& p, const std::vector<std::string>& tokens) {
@@ -128,7 +145,16 @@ void uci_go(position& p, const std::vector<std::string>& tokens) {
 
     for (std::size_t i = 1; i < tokens.size(); i++) {
         const std::string& token = tokens[i];
-        if (token == "wtime") {
+        if (token == "searchmoves") {
+            info.search_moves_specified = true;
+            while (i + 1 < tokens.size() && !is_go_keyword(tokens[i + 1])) {
+                chess_move move;
+                if (find_move(p, tokens[++i], move) &&
+                    std::find(info.search_moves.begin(), info.search_moves.end(), move) == info.search_moves.end()) {
+                    info.search_moves.push_back(move);
+                }
+            }
+        } else if (token == "wtime") {
             info.wtime = std::max(10, static_cast<int>(parse_number(tokens, i, info.wtime)));
         } else if (token == "btime") {
             info.btime = std::max(10, static_cast<int>(parse_number(tokens, i, info.btime)));

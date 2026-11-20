@@ -176,6 +176,7 @@ private:
         search_data data(shared_context);
         data.history = ctx.history.get();
         data.main_thread = (id == 0);
+        data.set_root_moves(root_info.search_moves, root_info.search_moves_specified);
 
         std::string best_move;
         if (chessboard.get_side() == White) {

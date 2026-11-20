@@ -1,7 +1,9 @@
 #ifndef MOTOR_SEARCH_DATA_HPP
 #define MOTOR_SEARCH_DATA_HPP
 
+#include <algorithm>
 #include <cstdint>
+#include <vector>
 
 #include "pv_table.hpp"
 #include "search_context.hpp"
@@ -29,6 +31,20 @@ public:
 
     void set_timekeeper(int time, int bonus, int movestogo, int move_count, std::uint64_t max_nodes, int movetime = 0) {
         timekeeper.reset(time, bonus, movestogo, move_count, max_nodes, movetime);
+    }
+
+    void set_root_moves(const std::vector<chess_move>& moves, bool specified) {
+        root_moves = moves;
+        root_moves_specified = specified;
+    }
+
+    [[nodiscard]] bool has_root_move_restriction() const {
+        return root_moves_specified;
+    }
+
+    [[nodiscard]] bool root_move_allowed(const chess_move& move) const {
+        return !root_moves_specified ||
+               std::find(root_moves.begin(), root_moves.end(), move) != root_moves.end();
     }
 
     bool should_end() {
@@ -157,6 +173,8 @@ private:
     std::uint64_t nodes_searched;
     std::uint64_t flushed_nodes = 0;
     chess_move killer_moves[96] = {};
+    std::vector<chess_move> root_moves;
+    bool root_moves_specified = false;
 };
 
 #endif //MOTOR_SEARCH_DATA_HPP
